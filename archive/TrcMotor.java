@@ -447,6 +447,17 @@ public abstract class TrcMotor implements TrcMotorController, TrcExclusiveSubsys
         {
             posPidCtrl.setStallDetectionEnabled(stallDetectionDelay, stallDetectionTimeout, stallErrorRateThreshold);
         }
+
+        if (velPidCtrl != null)
+        {
+            velPidCtrl.setStallDetectionEnabled(stallDetectionDelay, stallDetectionTimeout, stallErrorRateThreshold);
+        }
+
+        if (currentPidCtrl != null)
+        {
+            currentPidCtrl.setStallDetectionEnabled(
+                stallDetectionDelay, stallDetectionTimeout, stallErrorRateThreshold);
+        }
     }   //setStallDetectionEnabled
 
     /**
@@ -459,6 +470,16 @@ public abstract class TrcMotor implements TrcMotorController, TrcExclusiveSubsys
         if (posPidCtrl != null)
         {
             posPidCtrl.setStallDetectionEnabled(enabled);
+        }
+
+        if (velPidCtrl != null)
+        {
+            velPidCtrl.setStallDetectionEnabled(enabled);
+        }
+
+        if (currentPidCtrl != null)
+        {
+            currentPidCtrl.setStallDetectionEnabled(enabled);
         }
     }   //setStallDetectionEnabled
 
@@ -996,7 +1017,7 @@ public abstract class TrcMotor implements TrcMotorController, TrcExclusiveSubsys
      * value to the motor repeatedly and also will take care of the followers.
      *
      * @param velocity specifies the velocity in scaled units/sec.
-     * @param feedForward specifies the feedforward value
+     * @param feedforward specifies the feedforward value
      */
     private void setControllerMotorVelocity(double velocity, double feedforward)
     {
@@ -1022,7 +1043,7 @@ public abstract class TrcMotor implements TrcMotorController, TrcExclusiveSubsys
      *
      * @param position specifies the position in scaled units.
      * @param powerLimit specifies the maximum power output limits.
-     * @param feedForward specifies the feedforward value
+     * @param feedforward specifies the feedforward value
      */
     private void setControllerMotorPosition(double position, double powerLimit, double feedforward)
     {
@@ -2020,6 +2041,16 @@ public abstract class TrcMotor implements TrcMotorController, TrcExclusiveSubsys
     }   //setVelocityPidParameters
 
     /**
+     * This method sets the velocity tolerance for PID control.
+     *
+     * @param tolerance specifies the tolerance in scaled units per second.
+     */
+    public void setVelocityPidTolerance(double tolerance)
+    {
+        velTolerance = tolerance;
+    }   //setVelocityPidTolerance
+
+    /**
      * This method returns the PID coefficients of the motor's velocity PID controller.
      *
      * @return PID coefficients of the motor's velocity PID controller.
@@ -2163,6 +2194,16 @@ public abstract class TrcMotor implements TrcMotorController, TrcExclusiveSubsys
     {
         setPositionPidParameters(new TrcPidController.PidCoefficients(kP, kI, kD, kF, 0.0), tolerance);
     }   //setPositionPidParameters
+
+    /**
+     * This method sets the position tolerance for PID control.
+     *
+     * @param tolerance specifies the tolerance in scaled units.
+     */
+    public void setPositionPidTolerance(double tolerance)
+    {
+        posTolerance = tolerance;
+    }   //setPositionPidTolerance
 
     /**
      * This method returns the PID coefficients of the motor's position PID controller.
@@ -2310,6 +2351,16 @@ public abstract class TrcMotor implements TrcMotorController, TrcExclusiveSubsys
     {
         setCurrentPidParameters(new TrcPidController.PidCoefficients(kP, kI, kD, kF, 0.0), tolerance);
     }   //setCurrentPidParameters
+
+    /**
+     * This method sets the current tolerance for PID control.
+     *
+     * @param tolerance specifies the tolerance in amperes.
+     */
+    public void setCurrentPidTolerance(double tolerance)
+    {
+        currentTolerance = tolerance;
+    }   //setCurrentPidTolerance
 
     /**
      * This method returns the PID coefficients of the motor's current PID controller.
@@ -3581,35 +3632,35 @@ public abstract class TrcMotor implements TrcMotorController, TrcExclusiveSubsys
                     motor.odometry.prevPos = motor.odometry.currPos;
                     motor.odometry.currTimestamp = TrcTimer.getCurrentTime();
                     motor.odometry.currPos = motor.getControllerPosition(true);
-                    //
-                    // Detect spurious encoder reading.
-                    //
-                    double low = Math.abs(motor.odometry.prevPos);
-                    double high = Math.abs(motor.odometry.currPos);
-
-                    if (low > high)
-                    {
-                        double temp = high;
-                        high = low;
-                        low = temp;
-                    }
-                    // To be spurious, motor must jump 10000+ units, and change by 8+ orders of magnitude
-                    // log10(high)-log10(low) gives change in order of magnitude
-                    // use log rules, equal to log10(high/low) >= 8
-                    // change of base, log2(high/low)/log2(10) >= 8
-                    // log2(high/low) >= 26.6ish
-                    // Math.getExponent() is equal to floor(log2())
-                    if (high - low > 10000)
-                    {
-                        low = Math.max(low, 1);
-                        if (Math.getExponent(high / low) >= 27)
-                        {
-                            TrcDbgTrace.globalTraceWarn(
-                                motor.instanceName, "WARNING-Spurious encoder detected! odometry=" + motor.odometry);
-                            // Throw away spurious data and use previous data instead.
-                            motor.odometry.currPos = motor.odometry.prevPos;
-                        }
-                    }
+//                    //
+//                    // Detect spurious encoder reading.
+//                    //
+//                    double low = Math.abs(motor.odometry.prevPos);
+//                    double high = Math.abs(motor.odometry.currPos);
+//
+//                    if (low > high)
+//                    {
+//                        double temp = high;
+//                        high = low;
+//                        low = temp;
+//                    }
+//                    // To be spurious, motor must jump 10000+ units, and change by 8+ orders of magnitude
+//                    // log10(high)-log10(low) gives change in order of magnitude
+//                    // use log rules, equal to log10(high/low) >= 8
+//                    // change of base, log2(high/low)/log2(10) >= 8
+//                    // log2(high/low) >= 26.6ish
+//                    // Math.getExponent() is equal to floor(log2())
+//                    if (high - low > 10000)
+//                    {
+//                        low = Math.max(low, 1);
+//                        if (Math.getExponent(high / low) >= 27)
+//                        {
+//                            TrcDbgTrace.globalTraceWarn(
+//                                motor.instanceName, "WARNING-Spurious encoder detected! odometry=" + motor.odometry);
+//                            // Throw away spurious data and use previous data instead.
+//                            motor.odometry.currPos = motor.odometry.prevPos;
+//                        }
+//                    }
 
                     try
                     {

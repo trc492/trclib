@@ -293,6 +293,17 @@ public class TrcDbgTrace
     }   //printThreadStack
 
     /**
+     * This method checks if the specified msgLevel is enabled.
+     *
+     * @param level specifies the msgLevel.
+     * @return true if enabled, false otherwise.
+     */
+    public boolean isMsgLevelEnabled(MsgLevel level)
+    {
+        return level.value <= msgLevel.value;
+    }   //isMsgLevelEnabled
+
+    /**
      * This method is the common worker for all the trace message methods.
      *
      * @param callerInstance specifies the name to identify the caller.
