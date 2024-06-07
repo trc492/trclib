@@ -408,8 +408,10 @@ public abstract class TrcMotor implements TrcMotorController, TrcExclusiveSubsys
      * - the power applied to the motor is above or equal to stallMinPower.
      * - the motor has not moved or movement stayed within stallTolerance for at least stallTimeout.
      * Note: By definition, holding target position doing software PID control is stalling. If you decide to enable
-     *       stall protection while holding target, please make sure to set a stallMinPower much greater the power
-     *       necessary to hold position against gravity, for example.
+     *       stall protection while holding target, please make sure to set a stallMinPower much greater than the
+     *       power necessary to hold position against gravity, for example. However, if you want to zero calibrate
+     *       on motor stall (e.g. don't have lower limit switch), you want to make sure calPower is at least
+     *       stallMinPower.
      *
      * @param stallMinPower specifies the minimum motor power to detect stalled condition. If the motor power is
      *                      below stallMinPower, it won't consider it as a stalled condition even if the motor does
@@ -1266,11 +1268,6 @@ public abstract class TrcMotor implements TrcMotorController, TrcExclusiveSubsys
             {
                 // We have set a duration, set up a timer for it.
                 timer.set(params.duration, this::durationExpiredCallback, params);
-            }
-            else if (params.notifyEvent != null)
-            {
-                params.notifyEvent.signal();
-                params.notifyEvent = null;
             }
         }
     }   //delayValueExpiredCallback
