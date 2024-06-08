@@ -653,8 +653,20 @@ public abstract class TrcMotor implements TrcMotorController, TrcExclusiveSubsys
      */
     public boolean isLowerLimitSwitchActive()
     {
-        return lowerLimitSwitch != null? lowerLimitSwitch.isActive():
-               limitSwitchesSwapped? isMotorFwdLimitSwitchActive(): isMotorRevLimitSwitchActive();
+        boolean limitSwitchActive;
+
+        try
+        {
+            limitSwitchActive =
+                lowerLimitSwitch != null? lowerLimitSwitch.isActive():
+                limitSwitchesSwapped? isMotorFwdLimitSwitchActive(): isMotorRevLimitSwitchActive();
+        }
+        catch (UnsupportedOperationException e)
+        {
+            limitSwitchActive = false;
+        }
+
+        return limitSwitchActive;
     }   //isLowerLimitSwitchActive
 
     /**
@@ -664,8 +676,20 @@ public abstract class TrcMotor implements TrcMotorController, TrcExclusiveSubsys
      */
     public boolean isUpperLimitSwitchActive()
     {
-        return upperLimitSwitch != null? upperLimitSwitch.isActive():
-               limitSwitchesSwapped? isMotorRevLimitSwitchActive(): isMotorFwdLimitSwitchActive();
+        boolean limitSwitchActive;
+
+        try
+        {
+            limitSwitchActive =
+                upperLimitSwitch != null? upperLimitSwitch.isActive():
+                limitSwitchesSwapped? isMotorRevLimitSwitchActive(): isMotorFwdLimitSwitchActive();
+        }
+        catch (UnsupportedOperationException e)
+        {
+            limitSwitchActive = false;
+        }
+
+        return limitSwitchActive;
     }   //isUpperLimitSwitchActive
 
     /**
