@@ -2608,7 +2608,7 @@ public abstract class TrcMotor implements TrcMotorController, TrcExclusiveSubsys
      * @param slowPeriodicLoop specifies true if it is running the slow periodic loop on the main robot thread,
      *        false otherwise.
      */
-    private void pidCtrlTask(TrcTaskMgr.TaskType taskType, TrcRobot.RunMode runMode, boolean slowPeriodicLoop)
+    private void pidCtrlTask(TaskType taskType, TrcRobot.RunMode runMode, boolean slowPeriodicLoop)
     {
         synchronized (taskParams)
         {
@@ -3641,7 +3641,7 @@ public abstract class TrcMotor implements TrcMotorController, TrcExclusiveSubsys
      * @param slowPeriodicLoop specifies true if it is running the slow periodic loop on the main robot thread,
      *        false otherwise.
      */
-    private static void odometryTask(TrcTaskMgr.TaskType taskType, TrcRobot.RunMode runMode, boolean slowPeriodicLoop)
+    private static void odometryTask(TaskType taskType, TrcRobot.RunMode runMode, boolean slowPeriodicLoop)
     {
         synchronized (odometryMotors)
         {
@@ -3708,7 +3708,7 @@ public abstract class TrcMotor implements TrcMotorController, TrcExclusiveSubsys
      * @param slowPeriodicLoop specifies true if it is running the slow periodic loop on the main robot thread,
      *        false otherwise.
      */
-    private void odometryCleanupTask(TrcTaskMgr.TaskType taskType, TrcRobot.RunMode runMode, boolean slowPeriodicLoop)
+    private void odometryCleanupTask(TaskType taskType, TrcRobot.RunMode runMode, boolean slowPeriodicLoop)
     {
         clearOdometryMotorsList(false);
     }   //odometryCleanupTask
