@@ -22,7 +22,7 @@
 
 package trclib.sensor;
 
-import trclib.robotcore.TrcUtil;
+import trclib.dataprocessor.TrcUtil;
 
 public interface TrcDistanceSensor
 {

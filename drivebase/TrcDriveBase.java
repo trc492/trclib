@@ -40,7 +40,7 @@ import trclib.robotcore.TrcPidController;
 import trclib.pathdrive.TrcPose2D;
 import trclib.robotcore.TrcRobot;
 import trclib.robotcore.TrcTaskMgr;
-import trclib.robotcore.TrcUtil;
+import trclib.dataprocessor.TrcUtil;
 import trclib.timer.TrcTimer;
 
 /**

@@ -24,7 +24,7 @@ package trclib.pathdrive;
 
 import java.util.Arrays;
 
-import trclib.robotcore.TrcUtil;
+import trclib.dataprocessor.TrcUtil;
 import trclib.dataprocessor.TrcWarpSpace;
 
 /**

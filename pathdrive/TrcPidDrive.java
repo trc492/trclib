@@ -23,7 +23,7 @@
 package trclib.pathdrive;
 
 import trclib.robotcore.TrcPidController;
-import trclib.inputoutput.TrcTone;
+import trclib.output.TrcTone;
 import trclib.robotcore.TrcLoopProfiler;
 import trclib.robotcore.TrcRobot;
 import trclib.robotcore.TrcTaskMgr;

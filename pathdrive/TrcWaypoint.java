@@ -31,7 +31,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Objects;
 
-import trclib.robotcore.TrcUtil;
+import trclib.dataprocessor.TrcUtil;
 
 /**
  * This class implements a waypoint. A waypoint specifies a point on a path that consists of a relative time step

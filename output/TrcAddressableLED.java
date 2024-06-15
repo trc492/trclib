@@ -20,11 +20,11 @@
  * SOFTWARE.
  */
 
-package trclib.inputoutput;
+package trclib.output;
 
 import java.util.Arrays;
 
-import trclib.robotcore.TrcColor;
+import trclib.dataprocessor.TrcColor;
 
 /**
  * This class implements a platform independent Addressable LED device. It is intended to be extended by a platform

@@ -20,7 +20,7 @@
  * SOFTWARE.
  */
 
-package trclib.inputoutput;
+package trclib.output;
 
 /**
  * This class implements a platform independent REV Blinkin device. This class is intended to be extended by a

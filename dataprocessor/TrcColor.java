@@ -20,7 +20,7 @@
  * SOFTWARE.
  */
 
-package trclib.robotcore;
+package trclib.dataprocessor;
 
 /**
  * This class implements a platform independent color object. The color object describes color in either RGB or HSV

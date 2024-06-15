@@ -26,7 +26,7 @@ import java.util.ArrayList;
 import java.util.Locale;
 import java.util.concurrent.atomic.AtomicReference;
 
-import trclib.robotcore.TrcUtil;
+import trclib.dataprocessor.TrcUtil;
 import trclib.robotcore.TrcDbgTrace;
 import trclib.robotcore.TrcEvent;
 import trclib.robotcore.TrcExclusiveSubsystem;

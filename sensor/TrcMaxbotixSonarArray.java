@@ -27,7 +27,7 @@ import trclib.robotcore.TrcEvent;
 import trclib.robotcore.TrcRobot;
 import trclib.robotcore.TrcStateMachine;
 import trclib.robotcore.TrcTaskMgr;
-import trclib.inputoutput.TrcDigitalOutput;
+import trclib.output.TrcDigitalOutput;
 import trclib.timer.TrcTimer;
 
 /**

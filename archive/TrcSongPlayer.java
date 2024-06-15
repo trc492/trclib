@@ -22,7 +22,7 @@
 
 package trclib.archive;
 
-import trclib.inputoutput.TrcTone;
+import trclib.output.TrcTone;
 import trclib.robotcore.TrcRobot;
 import trclib.robotcore.TrcTaskMgr;
 import trclib.robotcore.TrcTaskMgr.TaskType;

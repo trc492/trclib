@@ -26,7 +26,7 @@ import trclib.robotcore.TrcEvent;
 import trclib.sensor.TrcGyro;
 import trclib.motor.TrcMotor;
 import trclib.sensor.TrcOdometrySensor;
-import trclib.robotcore.TrcUtil;
+import trclib.dataprocessor.TrcUtil;
 import trclib.timer.TrcTimer;
 
 /**

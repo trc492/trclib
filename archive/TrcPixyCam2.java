@@ -26,7 +26,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 
 import trclib.robotcore.TrcDbgTrace;
-import trclib.robotcore.TrcUtil;
+import trclib.dataprocessor.TrcUtil;
 
 /**
  * This class implements a platform independent pixy camera 2. This class is intended to be extended by a platform

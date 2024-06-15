@@ -20,7 +20,7 @@
  * SOFTWARE.
  */
 
-package trclib.inputoutput;
+package trclib.output;
 
 import java.util.ArrayList;
 import java.util.Arrays;

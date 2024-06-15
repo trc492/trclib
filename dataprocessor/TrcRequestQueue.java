@@ -20,10 +20,12 @@
  * SOFTWARE.
  */
 
-package trclib.robotcore;
+package trclib.dataprocessor;
 
 import java.util.concurrent.LinkedBlockingQueue;
 
+import trclib.robotcore.TrcDbgTrace;
+import trclib.robotcore.TrcEvent;
 import trclib.timer.TrcTimer;
 
 /**

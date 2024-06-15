@@ -27,7 +27,7 @@ import trclib.sensor.TrcGyro;
 import trclib.motor.TrcMotor;
 import trclib.sensor.TrcOdometrySensor;
 import trclib.timer.TrcTimer;
-import trclib.robotcore.TrcUtil;
+import trclib.dataprocessor.TrcUtil;
 
 /**
  * This class implements a platform independent simple drive base. The SimpleDriveBase class implements a drive train

@@ -27,7 +27,7 @@ import java.util.Arrays;
 
 import trclib.robotcore.TrcDbgTrace;
 import trclib.robotcore.TrcSerialBusDevice;
-import trclib.robotcore.TrcUtil;
+import trclib.dataprocessor.TrcUtil;
 
 /**
  * This class implements a platform independent pixy camera 1. This class is intended to be extended by a platform

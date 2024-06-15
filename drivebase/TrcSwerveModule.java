@@ -25,7 +25,7 @@ package trclib.drivebase;
 import trclib.robotcore.TrcDbgTrace;
 import trclib.motor.TrcMotor;
 import trclib.motor.TrcServo;
-import trclib.robotcore.TrcUtil;
+import trclib.dataprocessor.TrcUtil;
 import trclib.dataprocessor.TrcWarpSpace;
 
 /**

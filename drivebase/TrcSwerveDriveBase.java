@@ -29,10 +29,10 @@ import java.util.Arrays;
 
 import trclib.robotcore.TrcEvent;
 import trclib.sensor.TrcGyro;
-import trclib.robotcore.TrcHashMap;
+import trclib.dataprocessor.TrcHashMap;
 import trclib.motor.TrcMotor;
 import trclib.sensor.TrcOdometrySensor;
-import trclib.robotcore.TrcUtil;
+import trclib.dataprocessor.TrcUtil;
 import trclib.timer.TrcTimer;
 
 /**

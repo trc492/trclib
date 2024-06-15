@@ -20,7 +20,7 @@
  * SOFTWARE.
  */
 
-package trclib.inputoutput;
+package trclib.output;
 
 /**
  * This interface provides a platform independent way to display info to the dashboard. It is mainly for TrcLib

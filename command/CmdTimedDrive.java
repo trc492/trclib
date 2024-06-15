@@ -22,7 +22,7 @@
 
 package trclib.command;
 
-import trclib.inputoutput.TrcDashboard;
+import trclib.output.TrcDashboard;
 import trclib.robotcore.TrcDbgTrace;
 import trclib.drivebase.TrcDriveBase;
 import trclib.robotcore.TrcEvent;

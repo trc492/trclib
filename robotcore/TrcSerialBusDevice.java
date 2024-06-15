@@ -24,6 +24,8 @@ package trclib.robotcore;
 
 import java.util.Arrays;
 
+import trclib.dataprocessor.TrcRequestQueue;
+
 /**
  * This class implements a platform independent serial bus device. This class is intended to be inherited by a
  * platform dependent serial bus device such as I2C device or Serial Port device that provides synchronous methods

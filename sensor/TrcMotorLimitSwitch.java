@@ -20,8 +20,9 @@
  * SOFTWARE.
  */
 
-package trclib.motor;
+package trclib.sensor;
 
+import trclib.motor.TrcMotor;
 import trclib.sensor.TrcDigitalInput;
 
 /**

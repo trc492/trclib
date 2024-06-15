@@ -24,7 +24,7 @@ package trclib.command;
 
 import java.util.Locale;
 
-import trclib.inputoutput.TrcDashboard;
+import trclib.output.TrcDashboard;
 import trclib.robotcore.TrcDbgTrace;
 import trclib.robotcore.TrcEvent;
 import trclib.motor.TrcMotor;

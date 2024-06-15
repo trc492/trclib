@@ -26,13 +26,11 @@ import java.util.Arrays;
 import java.util.Locale;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-import trclib.robotcore.TrcDataBuffer;
 import trclib.robotcore.TrcDbgTrace;
 import trclib.robotcore.TrcEvent;
 import trclib.robotcore.TrcRobot;
 import trclib.robotcore.TrcTaskMgr;
 import trclib.timer.TrcTimer;
-import trclib.robotcore.TrcValueSource;
 
 /**
  * This class implements a Threshold Range Trigger. It monitors the value source against the lower and upper

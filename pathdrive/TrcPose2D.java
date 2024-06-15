@@ -34,7 +34,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Objects;
 
-import trclib.robotcore.TrcUtil;
+import trclib.dataprocessor.TrcUtil;
 
 /**
  * This class implements a 2D pose object that represents the positional state of an object.

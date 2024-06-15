@@ -29,7 +29,6 @@ import trclib.robotcore.TrcDbgTrace;
 import trclib.robotcore.TrcEvent;
 import trclib.robotcore.TrcRobot;
 import trclib.robotcore.TrcTaskMgr;
-import trclib.robotcore.TrcValueSource;
 
 /**
  * This class implements a Threshold Zones Trigger. It monitors the value source against an array of threshold

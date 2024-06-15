@@ -20,7 +20,7 @@
  * SOFTWARE.
  */
 
-package trclib.robotcore;
+package trclib.dataprocessor;
 
 /**
  * This interface implements the method to read the value from a value source.

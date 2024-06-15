@@ -35,7 +35,7 @@ import trclib.robotcore.TrcEvent;
 import trclib.robotcore.TrcPidController;
 import trclib.robotcore.TrcRobot;
 import trclib.robotcore.TrcTaskMgr;
-import trclib.robotcore.TrcUtil;
+import trclib.dataprocessor.TrcUtil;
 import trclib.sensor.TrcRobotBattery;
 import trclib.timer.TrcTimer;
 

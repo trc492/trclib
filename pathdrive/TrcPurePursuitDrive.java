@@ -25,8 +25,8 @@ package trclib.pathdrive;
 import org.apache.commons.math3.linear.RealVector;
 
 import trclib.robotcore.TrcPidController;
-import trclib.inputoutput.TrcTone;
-import trclib.robotcore.TrcUtil;
+import trclib.output.TrcTone;
+import trclib.dataprocessor.TrcUtil;
 import trclib.dataprocessor.TrcWarpSpace;
 import trclib.drivebase.TrcDriveBase;
 import trclib.robotcore.TrcDbgTrace;

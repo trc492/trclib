@@ -29,7 +29,7 @@ import org.opencv.core.Rect;
 import java.util.Locale;
 
 import trclib.pathdrive.TrcPose2D;
-import trclib.robotcore.TrcUtil;
+import trclib.dataprocessor.TrcUtil;
 
 /**
  * This class calculates and stores the info for a vision detected target.

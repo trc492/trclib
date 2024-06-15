@@ -22,11 +22,12 @@
 
 package trclib.sensor;
 
-import trclib.archive.TrcCardinalConverter;
+import trclib.dataprocessor.TrcWrapValueConverter;
 import trclib.robotcore.TrcDbgTrace;
 import trclib.dataprocessor.TrcFilter;
 import trclib.dataprocessor.TrcDataIntegrator;
 import trclib.timer.TrcElapsedTimer;
+import trclib.timer.TrcTimer;
 
 /**
  * This class implements a platform independent gyro. Typically, this class is extended by a platform dependent
@@ -169,11 +170,12 @@ public abstract class TrcGyro extends TrcSensor<TrcGyro.DataType> implements Trc
     public static final int GYRO_HAS_Y_AXIS             = (1 << 1);
     public static final int GYRO_HAS_Z_AXIS             = (1 << 2);
     public static final int GYRO_INTEGRATE              = (1 << 3);
-    public static final int GYRO_CONVERT_TO_CARTESIAN   = (1 << 4);
 
     private final Odometry odometry;
     private TrcDataIntegrator<DataType> integrator = null;
-    private TrcCardinalConverter<DataType> cardinalConverter = null;
+    private TrcWrapValueConverter xWrapValueConverter = null;
+    private TrcWrapValueConverter yWrapValueConverter = null;
+    private TrcWrapValueConverter zWrapValueConverter = null;
     private int xIndex = -1;
     private int yIndex = -1;
     private int zIndex = -1;
@@ -190,7 +192,6 @@ public abstract class TrcGyro extends TrcSensor<TrcGyro.DataType> implements Trc
      *                GYRO_HAS_Y_AXIS - supports y-axis.
      *                GYRO_HAS_Z_AXIS - supports z-axis.
      *                GYRO_INTEGRATE - do integration on all axes to get headings.
-     *                GYRO_CONVERT_TO_CARTESIAN - converts the Cardinal heading to Cartesian heading.
      * @param filters specifies an array of filter objects one for each supported axis. It is assumed that the order
      *                of the filters in the array is x, y and then z. If an axis is specified in the options but no
      *                filter will be used on that axis, the corresponding element in the array should be set to null.
@@ -226,30 +227,12 @@ public abstract class TrcGyro extends TrcSensor<TrcGyro.DataType> implements Trc
         {
             throw new IllegalArgumentException("numAxes doesn't match the number of axes in options");
         }
-
-        //
-        // Integration of rate and converting to Cartesian heading are mutually exclusive. If we are doing software
-        // integration, the resulting heading is already Cartesian. If we need to convert to Cartesian heading, the
-        // heading is from the physical sensor and not from the integrator.
-        //
-        if ((options & GYRO_INTEGRATE) != 0 && (options & GYRO_CONVERT_TO_CARTESIAN) != 0)
-        {
-            throw new IllegalArgumentException("Options Integrator and CardinalConverter cannot coexist.");
-        }
         //
         // Create the data integrator.
         //
         if ((options & GYRO_INTEGRATE) != 0)
         {
             integrator = new TrcDataIntegrator<>(instanceName, this, DataType.ROTATION_RATE, false);
-        }
-
-        //
-        // Create the data CardinalConverter.
-        //
-        if ((options & GYRO_CONVERT_TO_CARTESIAN) != 0)
-        {
-            cardinalConverter = new TrcCardinalConverter<>(instanceName, this, DataType.HEADING);
         }
     }   //TrcGyro
 
@@ -300,13 +283,20 @@ public abstract class TrcGyro extends TrcSensor<TrcGyro.DataType> implements Trc
         {
             integrator.setEnabled(enabled);
         }
-
         //
-        // Enable/disable CardinalConverter.
+        // Enable/disable WrapValueConverters.
         //
-        if (cardinalConverter != null)
+        if (xWrapValueConverter != null)
         {
-            cardinalConverter.setEnabled(enabled);
+            xWrapValueConverter.setTaskEnabled(enabled);
+        }
+        if (yWrapValueConverter != null)
+        {
+            yWrapValueConverter.setTaskEnabled(enabled);
+        }
+        if (zWrapValueConverter != null)
+        {
+            zWrapValueConverter.setTaskEnabled(enabled);
         }
     }   //setEnabled
 
@@ -415,9 +405,22 @@ public abstract class TrcGyro extends TrcSensor<TrcGyro.DataType> implements Trc
      */
     public void setXValueRange(double valueRangeLow, double valueRangeHigh)
     {
-        if (cardinalConverter != null)
+        // Integration of rate and WrapValueConversion are mutually exclusive. If we are doing software integration,
+        // the resulting heading is already Continuous. If we need to convert to Continuous heading, the heading
+        // is from the physical sensor and not from the integrator.
+        if (integrator != null)
         {
-            cardinalConverter.setCardinalRange(xIndex, valueRangeLow, valueRangeHigh);
+            throw new IllegalArgumentException("Integrator and WrapValueConverter are mutually exclusive.");
+        }
+
+        if (xWrapValueConverter != null)
+        {
+            throw new IllegalStateException("Value range is already set.");
+        }
+        else
+        {
+            xWrapValueConverter = new TrcWrapValueConverter(
+                instanceName + ".x", this::getRawXHeading, valueRangeLow, valueRangeHigh);
         }
     }   //setXValueRange
 
@@ -430,9 +433,22 @@ public abstract class TrcGyro extends TrcSensor<TrcGyro.DataType> implements Trc
      */
     public void setYValueRange(double valueRangeLow, double valueRangeHigh)
     {
-        if (cardinalConverter != null)
+        // Integration of rate and WrapValueConversion are mutually exclusive. If we are doing software integration,
+        // the resulting heading is already Continuous. If we need to convert to Continuous heading, the heading
+        // is from the physical sensor and not from the integrator.
+        if (integrator != null)
         {
-            cardinalConverter.setCardinalRange(yIndex, valueRangeLow, valueRangeHigh);
+            throw new IllegalArgumentException("Integrator and WrapValueConverter are mutually exclusive.");
+        }
+
+        if (yWrapValueConverter != null)
+        {
+            throw new IllegalStateException("Value range is already set.");
+        }
+        else
+        {
+            yWrapValueConverter = new TrcWrapValueConverter(
+                instanceName + ".y", this::getRawYHeading, valueRangeLow, valueRangeHigh);
         }
     }   //setYValueRange
 
@@ -445,44 +461,87 @@ public abstract class TrcGyro extends TrcSensor<TrcGyro.DataType> implements Trc
      */
     public void setZValueRange(double valueRangeLow, double valueRangeHigh)
     {
-        if (cardinalConverter != null)
+        // Integration of rate and WrapValueConversion are mutually exclusive. If we are doing software integration,
+        // the resulting heading is already Continuous. If we need to convert to Continuous heading, the heading
+        // is from the physical sensor and not from the integrator.
+        if (integrator != null)
         {
-            cardinalConverter.setCardinalRange(zIndex, valueRangeLow, valueRangeHigh);
+            throw new IllegalArgumentException("Integrator and WrapValueConverter are mutually exclusive.");
+        }
+
+        if (zWrapValueConverter != null)
+        {
+            throw new IllegalStateException("Value range is already set.");
+        }
+        else
+        {
+            zWrapValueConverter = new TrcWrapValueConverter(
+                instanceName + ".y", this::getRawZHeading, valueRangeLow, valueRangeHigh);
         }
     }   //setZValueRange
 
     /**
-     * This method resets the CardinalConverter on the x-axis.
+     * This method resets the WrapValueConverter on the x-axis.
      */
-    public void resetXCardinalConverter()
+    public void resetXWrapValueConverter()
     {
-        if (cardinalConverter != null)
+        if (xWrapValueConverter != null)
         {
-            cardinalConverter.reset(xIndex);
+            xWrapValueConverter.resetConverter();
         }
-    }   //resetXCardinalConverter
+    }   //resetXWrapValueConverter
 
     /**
-     * This method resets the CardinalConverter on the y-axis.
+     * This method resets the WrapValueConverter on the y-axis.
      */
-    public void resetYCardinalConverter()
+    public void resetYWrapValueConverter()
     {
-        if (cardinalConverter != null)
+        if (yWrapValueConverter != null)
         {
-            cardinalConverter.reset(yIndex);
+            yWrapValueConverter.resetConverter();
         }
-    }   //resetYCardinalConverter
+    }   //resetYWrapValueConverter
 
     /**
-     * This method resets the CardinalConverter on the z-axis.
+     * This method resets the WrapValueConverter on the z-axis.
      */
-    public void resetZCardinalConverter()
+    public void resetZWrapValueConverter()
     {
-        if (cardinalConverter != null)
+        if (zWrapValueConverter != null)
         {
-            cardinalConverter.reset(zIndex);
+            zWrapValueConverter.resetConverter();
         }
-    }   //resetZCardinalConverter
+    }   //resetZWrapValueConverter
+
+    /**
+     * This method reads the raw X Heading.
+     *
+     * @return raw X Heading.
+     */
+    private double getRawXHeading()
+    {
+        return getRawXData(DataType.HEADING).value;
+    }   //getRawXHeading
+
+    /**
+     * This method reads the raw Y Heading.
+     *
+     * @return raw Y Heading.
+     */
+    private double getRawYHeading()
+    {
+        return getRawYData(DataType.HEADING).value;
+    }   //getRawYHeading
+
+    /**
+     * This method reads the raw Z Heading.
+     *
+     * @return raw Z Heading.
+     */
+    private double getRawZHeading()
+    {
+        return getRawZData(DataType.HEADING).value;
+    }   //getRawZHeading
 
     /**
      * This method returns the rotation rate on the x-axis.
@@ -529,9 +588,9 @@ public abstract class TrcGyro extends TrcSensor<TrcGyro.DataType> implements Trc
         {
             data = integrator.getIntegratedData(xIndex);
         }
-        else if (cardinalConverter != null)
+        else if (xWrapValueConverter != null)
         {
-            data = cardinalConverter.getCartesianData(xIndex);
+            data = new SensorData<>(TrcTimer.getCurrentTime(), xWrapValueConverter.getContinuousValue());
         }
         else
         {
@@ -556,9 +615,9 @@ public abstract class TrcGyro extends TrcSensor<TrcGyro.DataType> implements Trc
         {
             data = integrator.getIntegratedData(yIndex);
         }
-        else if (cardinalConverter != null)
+        else if (yWrapValueConverter != null)
         {
-            data = cardinalConverter.getCartesianData(yIndex);
+            data = new SensorData<>(TrcTimer.getCurrentTime(), yWrapValueConverter.getContinuousValue());
         }
         else
         {
@@ -583,9 +642,9 @@ public abstract class TrcGyro extends TrcSensor<TrcGyro.DataType> implements Trc
         {
             data = integrator.getIntegratedData(zIndex);
         }
-        else if (cardinalConverter != null)
+        else if (zWrapValueConverter != null)
         {
-            data = cardinalConverter.getCartesianData(zIndex);
+            data = new SensorData<>(TrcTimer.getCurrentTime(), zWrapValueConverter.getContinuousValue());
         }
         else
         {

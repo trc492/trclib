@@ -20,7 +20,7 @@
  * SOFTWARE.
  */
 
-package trclib.robotcore;
+package trclib.dataprocessor;
 
 import java.util.HashMap;
 import java.util.NoSuchElementException;

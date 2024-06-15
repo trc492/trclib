@@ -27,7 +27,7 @@ import java.util.Arrays;
 import trclib.robotcore.TrcDbgTrace;
 import trclib.robotcore.TrcEvent;
 import trclib.robotcore.TrcSerialBusDevice;
-import trclib.robotcore.TrcUtil;
+import trclib.dataprocessor.TrcUtil;
 import trclib.sensor.TrcSensor;
 import trclib.timer.TrcTimer;
 

@@ -20,10 +20,10 @@
  * SOFTWARE.
  */
 
-package trclib.inputoutput;
+package trclib.input;
 
 import trclib.robotcore.TrcRobot;
-import trclib.robotcore.TrcUtil;
+import trclib.dataprocessor.TrcUtil;
 import trclib.robotcore.TrcDbgTrace;
 import trclib.robotcore.TrcTaskMgr;
 

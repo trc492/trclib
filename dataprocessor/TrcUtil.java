@@ -20,7 +20,7 @@
  * SOFTWARE.
  */
 
-package trclib.robotcore;
+package trclib.dataprocessor;
 
 import org.apache.commons.math3.linear.ArrayRealVector;
 import org.apache.commons.math3.linear.MatrixUtils;

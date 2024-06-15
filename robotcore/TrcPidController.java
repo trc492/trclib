@@ -25,8 +25,9 @@ package trclib.robotcore;
 import java.util.EmptyStackException;
 import java.util.Stack;
 
+import trclib.dataprocessor.TrcUtil;
 import trclib.dataprocessor.TrcWarpSpace;
-import trclib.inputoutput.TrcDashboard;
+import trclib.output.TrcDashboard;
 import trclib.sensor.TrcRobotBattery;
 import trclib.timer.TrcTimer;
 
