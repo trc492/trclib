@@ -22,7 +22,7 @@
 
 package trclib.vision;
 
-import trclib.archive.TrcDbgTrace;
+import trclib.robotcore.TrcDbgTrace;
 import trclib.timer.TrcTimer;
 
 /**

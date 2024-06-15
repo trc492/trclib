@@ -25,11 +25,11 @@ package trclib.dataprocessor;
 import java.util.Arrays;
 import java.util.Locale;
 
-import trclib.archive.TrcDbgTrace;
-import trclib.archive.TrcEvent;
-import trclib.archive.TrcRobot;
-import trclib.archive.TrcTaskMgr;
-import trclib.archive.TrcValueSource;
+import trclib.robotcore.TrcDbgTrace;
+import trclib.robotcore.TrcEvent;
+import trclib.robotcore.TrcRobot;
+import trclib.robotcore.TrcTaskMgr;
+import trclib.robotcore.TrcValueSource;
 
 /**
  * This class implements a Threshold Zones Trigger. It monitors the value source against an array of threshold

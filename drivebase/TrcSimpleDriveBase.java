@@ -22,12 +22,12 @@
 
 package trclib.drivebase;
 
-import trclib.archive.TrcEvent;
+import trclib.robotcore.TrcEvent;
 import trclib.sensor.TrcGyro;
-import trclib.archive.TrcMotor;
-import trclib.archive.TrcOdometrySensor;
+import trclib.motor.TrcMotor;
+import trclib.sensor.TrcOdometrySensor;
 import trclib.timer.TrcTimer;
-import trclib.archive.TrcUtil;
+import trclib.robotcore.TrcUtil;
 
 /**
  * This class implements a platform independent simple drive base. The SimpleDriveBase class implements a drive train

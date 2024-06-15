@@ -29,9 +29,9 @@ import java.util.Locale;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 
-import trclib.archive.TrcDbgTrace;
-import trclib.archive.TrcEvent;
-import trclib.archive.TrcWatchdogMgr;
+import trclib.robotcore.TrcDbgTrace;
+import trclib.robotcore.TrcEvent;
+import trclib.robotcore.TrcWatchdogMgr;
 
 /**
  * This class implements a timer that will signal an event or make a notification callback when the time has expired.

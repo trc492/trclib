@@ -22,10 +22,10 @@
 
 package trclib.drivebase;
 
-import trclib.archive.TrcDbgTrace;
-import trclib.archive.TrcMotor;
-import trclib.archive.TrcServo;
-import trclib.archive.TrcUtil;
+import trclib.robotcore.TrcDbgTrace;
+import trclib.motor.TrcMotor;
+import trclib.motor.TrcServo;
+import trclib.robotcore.TrcUtil;
 import trclib.dataprocessor.TrcWarpSpace;
 
 /**

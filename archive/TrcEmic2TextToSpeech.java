@@ -24,6 +24,10 @@ package trclib.archive;
 
 import java.nio.charset.StandardCharsets;
 
+import trclib.robotcore.TrcDbgTrace;
+import trclib.robotcore.TrcSerialBusDevice;
+import trclib.robotcore.TrcUtil;
+
 /**
  * This class implements a platform independent Emic2 text to speech device that is connected to a Serial Port.
  * This class should be extended by a platform dependent Emic2 device class that provides the asynchronous access

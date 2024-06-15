@@ -24,16 +24,16 @@ package trclib.command;
 
 import java.util.Arrays;
 
-import trclib.archive.TrcDashboard;
-import trclib.archive.TrcDbgTrace;
+import trclib.inputoutput.TrcDashboard;
+import trclib.robotcore.TrcDbgTrace;
 import trclib.drivebase.TrcDriveBase;
-import trclib.archive.TrcEvent;
-import trclib.archive.TrcPidController;
-import trclib.archive.TrcPidController.PidCoefficients;
-import trclib.archive.TrcPidDrive;
-import trclib.archive.TrcPose2D;
-import trclib.archive.TrcRobot;
-import trclib.archive.TrcStateMachine;
+import trclib.robotcore.TrcEvent;
+import trclib.robotcore.TrcPidController;
+import trclib.robotcore.TrcPidController.PidCoefficients;
+import trclib.path.TrcPidDrive;
+import trclib.path.TrcPose2D;
+import trclib.robotcore.TrcRobot;
+import trclib.robotcore.TrcStateMachine;
 import trclib.timer.TrcTimer;
 
 /**

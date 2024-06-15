@@ -22,7 +22,12 @@
 
 package trclib.archive;
 
-import trclib.archive.TrcTaskMgr.TaskType;
+import trclib.robotcore.TrcRobot;
+import trclib.robotcore.TrcStateMachine;
+import trclib.robotcore.TrcTaskMgr;
+import trclib.robotcore.TrcTaskMgr.TaskType;
+import trclib.robotcore.TrcDbgTrace;
+import trclib.robotcore.TrcEvent;
 import trclib.timer.TrcTimer;
 
 /**

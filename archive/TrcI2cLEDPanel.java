@@ -24,6 +24,8 @@ package trclib.archive;
 
 import java.util.Arrays;
 
+import trclib.robotcore.TrcDbgTrace;
+
 /**
  * This class implements a platform independent I2C LED panel. This class is intended to be extended by a platform
  * dependent I2C LED panel which provides the abstract methods required by this class. This class provides the APIs

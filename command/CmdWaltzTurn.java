@@ -22,14 +22,14 @@
 
 package trclib.command;
 
-import trclib.archive.TrcDashboard;
-import trclib.archive.TrcDbgTrace;
+import trclib.inputoutput.TrcDashboard;
+import trclib.robotcore.TrcDbgTrace;
 import trclib.drivebase.TrcDriveBase;
-import trclib.archive.TrcEvent;
-import trclib.archive.TrcPidDrive;
-import trclib.archive.TrcPidDrive.TurnMode;
-import trclib.archive.TrcRobot;
-import trclib.archive.TrcStateMachine;
+import trclib.robotcore.TrcEvent;
+import trclib.path.TrcPidDrive;
+import trclib.path.TrcPidDrive.TurnMode;
+import trclib.robotcore.TrcRobot;
+import trclib.robotcore.TrcStateMachine;
 
 /**
  * This class implements a waltz turn command sequence. It is useful for avoiding a pushing match with our

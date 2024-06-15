@@ -22,7 +22,7 @@
 
 package trclib.sensor;
 
-import trclib.archive.TrcDbgTrace;
+import trclib.robotcore.TrcDbgTrace;
 import trclib.timer.TrcElapsedTimer;
 
 /**

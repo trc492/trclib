@@ -24,9 +24,9 @@ package trclib.vision;
 
 import java.util.concurrent.atomic.AtomicReference;
 
-import trclib.archive.TrcDbgTrace;
-import trclib.archive.TrcRobot;
-import trclib.archive.TrcTaskMgr;
+import trclib.robotcore.TrcDbgTrace;
+import trclib.robotcore.TrcRobot;
+import trclib.robotcore.TrcTaskMgr;
 import trclib.timer.TrcTimer;
 
 /**

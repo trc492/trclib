@@ -23,9 +23,8 @@
 package trclib.sensor;
 
 import trclib.archive.TrcCardinalConverter;
-import trclib.archive.TrcDbgTrace;
-import trclib.archive.TrcFilter;
-import trclib.archive.TrcOdometrySensor;
+import trclib.robotcore.TrcDbgTrace;
+import trclib.dataprocessor.TrcFilter;
 import trclib.dataprocessor.TrcDataIntegrator;
 import trclib.timer.TrcElapsedTimer;
 

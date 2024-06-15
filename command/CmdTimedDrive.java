@@ -22,12 +22,12 @@
 
 package trclib.command;
 
-import trclib.archive.TrcDashboard;
-import trclib.archive.TrcDbgTrace;
+import trclib.inputoutput.TrcDashboard;
+import trclib.robotcore.TrcDbgTrace;
 import trclib.drivebase.TrcDriveBase;
-import trclib.archive.TrcEvent;
-import trclib.archive.TrcRobot;
-import trclib.archive.TrcStateMachine;
+import trclib.robotcore.TrcEvent;
+import trclib.robotcore.TrcRobot;
+import trclib.robotcore.TrcStateMachine;
 import trclib.timer.TrcTimer;
 
 /**

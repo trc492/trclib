@@ -22,7 +22,7 @@
 
 package trclib.dataprocessor;
 
-import trclib.archive.TrcEvent;
+import trclib.robotcore.TrcEvent;
 
 /**
  * This interface specifies a collection of methods to implement an asynchronous trigger. For example, a trigger can

@@ -24,8 +24,8 @@ package trclib.dataprocessor;
 
 import java.util.ArrayList;
 
-import trclib.archive.TrcRobot;
-import trclib.archive.TrcTaskMgr;
+import trclib.robotcore.TrcRobot;
+import trclib.robotcore.TrcTaskMgr;
 import trclib.sensor.TrcSensor;
 import trclib.timer.TrcTimer;
 

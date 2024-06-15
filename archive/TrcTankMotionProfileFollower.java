@@ -22,6 +22,8 @@
 
 package trclib.archive;
 
+import trclib.robotcore.TrcEvent;
+
 /**
  * This class is intended to be extended by a platform dependent Tank Motion Profile Follower. The extended class
  * will implement the necessary abstract methods to start following the provided motion profile. In the future,

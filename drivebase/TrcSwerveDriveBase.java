@@ -27,12 +27,12 @@ import org.apache.commons.math3.linear.RealVector;
 
 import java.util.Arrays;
 
-import trclib.archive.TrcEvent;
+import trclib.robotcore.TrcEvent;
 import trclib.sensor.TrcGyro;
-import trclib.archive.TrcHashMap;
-import trclib.archive.TrcMotor;
-import trclib.archive.TrcOdometrySensor;
-import trclib.archive.TrcUtil;
+import trclib.robotcore.TrcHashMap;
+import trclib.motor.TrcMotor;
+import trclib.sensor.TrcOdometrySensor;
+import trclib.robotcore.TrcUtil;
 import trclib.timer.TrcTimer;
 
 /**

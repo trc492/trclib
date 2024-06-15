@@ -23,9 +23,9 @@
 package trclib.sensor;
 
 import trclib.dataprocessor.TrcDataIntegrator;
-import trclib.archive.TrcDbgTrace;
+import trclib.robotcore.TrcDbgTrace;
 import trclib.timer.TrcElapsedTimer;
-import trclib.archive.TrcFilter;
+import trclib.dataprocessor.TrcFilter;
 
 /**
  * This class implements a platform independent AnalogInput. Typically, this class is extended by a platform dependent

@@ -24,10 +24,10 @@ package trclib.dataprocessor;
 
 import java.util.concurrent.atomic.AtomicBoolean;
 
-import trclib.archive.TrcDbgTrace;
-import trclib.archive.TrcEvent;
-import trclib.archive.TrcRobot;
-import trclib.archive.TrcTaskMgr;
+import trclib.robotcore.TrcDbgTrace;
+import trclib.robotcore.TrcEvent;
+import trclib.robotcore.TrcRobot;
+import trclib.robotcore.TrcTaskMgr;
 import trclib.sensor.TrcDigitalInput;
 
 /**

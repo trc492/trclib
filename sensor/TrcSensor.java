@@ -24,9 +24,8 @@ package trclib.sensor;
 
 import java.util.Locale;
 
-import trclib.archive.TrcDbgTrace;
-import trclib.archive.TrcFilter;
-import trclib.archive.TrcSensorCalibrator;
+import trclib.robotcore.TrcDbgTrace;
+import trclib.dataprocessor.TrcFilter;
 
 /**
  * This class implements a platform independent value sensor that has one or more axes or data type. Typically,

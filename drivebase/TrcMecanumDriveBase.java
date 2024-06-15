@@ -22,11 +22,11 @@
 
 package trclib.drivebase;
 
-import trclib.archive.TrcEvent;
+import trclib.robotcore.TrcEvent;
 import trclib.sensor.TrcGyro;
-import trclib.archive.TrcMotor;
-import trclib.archive.TrcOdometrySensor;
-import trclib.archive.TrcUtil;
+import trclib.motor.TrcMotor;
+import trclib.sensor.TrcOdometrySensor;
+import trclib.robotcore.TrcUtil;
 import trclib.timer.TrcTimer;
 
 /**

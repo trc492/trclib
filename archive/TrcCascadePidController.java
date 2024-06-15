@@ -22,6 +22,8 @@
 
 package trclib.archive;
 
+import trclib.robotcore.TrcPidController;
+
 /**
  * This class implements a Cascade PID Controller. A Cascade PID controller consists of two PID controllers in cascade.
  * The output of the primary PID controller feeds into the input of the secondary PID controller. If the motor is not

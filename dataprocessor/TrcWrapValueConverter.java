@@ -24,8 +24,8 @@ package trclib.dataprocessor;
 
 import java.util.function.DoubleSupplier;
 
-import trclib.archive.TrcRobot;
-import trclib.archive.TrcTaskMgr;
+import trclib.robotcore.TrcRobot;
+import trclib.robotcore.TrcTaskMgr;
 
 /**
  * This class is typically used to monitor a sensor value that wraps around and convert it to a continuous value.

@@ -24,12 +24,12 @@ package trclib.command;
 
 import java.util.Locale;
 
-import trclib.archive.TrcDashboard;
-import trclib.archive.TrcDbgTrace;
-import trclib.archive.TrcEvent;
-import trclib.archive.TrcMotor;
-import trclib.archive.TrcRobot;
-import trclib.archive.TrcStateMachine;
+import trclib.inputoutput.TrcDashboard;
+import trclib.robotcore.TrcDbgTrace;
+import trclib.robotcore.TrcEvent;
+import trclib.motor.TrcMotor;
+import trclib.robotcore.TrcRobot;
+import trclib.robotcore.TrcStateMachine;
 import trclib.timer.TrcTimer;
 
 /**

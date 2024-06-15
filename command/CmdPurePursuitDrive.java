@@ -23,12 +23,12 @@
 package trclib.command;
 
 import trclib.drivebase.TrcDriveBase;
-import trclib.archive.TrcEvent;
-import trclib.archive.TrcPath;
-import trclib.archive.TrcPidController;
-import trclib.archive.TrcPose2D;
-import trclib.archive.TrcPurePursuitDrive;
-import trclib.archive.TrcRobot;
+import trclib.robotcore.TrcEvent;
+import trclib.path.TrcPath;
+import trclib.robotcore.TrcPidController;
+import trclib.path.TrcPose2D;
+import trclib.path.TrcPurePursuitDrive;
+import trclib.robotcore.TrcRobot;
 
 /**
  * This class implements a generic Pure Pursuit Drive command. It allows the caller to specify the drive path by

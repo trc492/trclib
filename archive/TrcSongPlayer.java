@@ -22,7 +22,12 @@
 
 package trclib.archive;
 
-import trclib.archive.TrcTaskMgr.TaskType;
+import trclib.inputoutput.TrcTone;
+import trclib.robotcore.TrcRobot;
+import trclib.robotcore.TrcTaskMgr;
+import trclib.robotcore.TrcTaskMgr.TaskType;
+import trclib.robotcore.TrcDbgTrace;
+import trclib.robotcore.TrcEvent;
 
 /**
  * This class implements a song player that can parse a notated song in a string

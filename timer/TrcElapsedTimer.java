@@ -26,8 +26,7 @@ import java.util.LinkedList;
 import java.util.Locale;
 import java.util.Queue;
 
-import trclib.archive.TrcDbgTrace;
-import trclib.timer.TrcTimer;
+import trclib.robotcore.TrcDbgTrace;
 
 /**
  * This class implements an elapsed timer to record elapsed time. It is a performance monitoring tool. It is especially
