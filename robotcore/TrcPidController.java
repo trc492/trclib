@@ -27,8 +27,6 @@ import java.util.Stack;
 
 import trclib.dataprocessor.TrcWarpSpace;
 import trclib.inputoutput.TrcDashboard;
-import trclib.robotcore.TrcDbgTrace;
-import trclib.robotcore.TrcUtil;
 import trclib.sensor.TrcRobotBattery;
 import trclib.timer.TrcTimer;
 

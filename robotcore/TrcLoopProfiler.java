@@ -25,7 +25,6 @@ package trclib.robotcore;
 import java.util.HashMap;
 import java.util.Locale;
 
-import trclib.robotcore.TrcDbgTrace;
 import trclib.timer.TrcTimer;
 
 /**

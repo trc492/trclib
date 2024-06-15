@@ -22,8 +22,6 @@
 
 package trclib.timer;
 
-import trclib.timer.TrcTimer;
-
 /**
  * This class implements a stopwatch.
  */

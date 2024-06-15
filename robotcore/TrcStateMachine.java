@@ -24,7 +24,6 @@ package trclib.robotcore;
 
 import java.util.ArrayList;
 
-import trclib.robotcore.TrcEvent;
 import trclib.timer.TrcTimer;
 
 /**

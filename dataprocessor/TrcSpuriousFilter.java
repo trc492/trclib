@@ -22,8 +22,6 @@
 
 package trclib.dataprocessor;
 
-import trclib.dataprocessor.TrcFilter;
-
 /**
  * This class implements the Spurious Data filter. It is used for detecting and discarding bogus sensor data.
  * When spurious data is detected, it is discarded and the previous data is returned.

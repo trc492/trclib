@@ -28,7 +28,6 @@ import java.io.IOException;
 import java.io.PrintWriter;
 import java.util.concurrent.LinkedBlockingQueue;
 
-import trclib.robotcore.TrcDbgTrace;
 import trclib.timer.TrcTimer;
 
 public class TrcTraceLogger

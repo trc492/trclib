@@ -24,8 +24,6 @@ package trclib.timer;
 
 import java.util.Locale;
 
-import trclib.timer.TrcTimer;
-
 /**
  * This class implements a performance timer to record elapsed time and interval time of a periodic task. It is a
  * performance monitoring tool. It is especially important for PID controlled loops that the loops are executed at

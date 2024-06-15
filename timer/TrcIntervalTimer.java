@@ -22,8 +22,6 @@
 
 package trclib.timer;
 
-import trclib.timer.TrcTimer;
-
 /**
  * This class implements a low cost interval timer that will expire at the specified interval. This is different
  * from TrcTimer in that it doesn't signal any event, thus no monitoring task. The caller is responsible for calling

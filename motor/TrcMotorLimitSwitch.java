@@ -22,7 +22,6 @@
 
 package trclib.motor;
 
-import trclib.motor.TrcMotor;
 import trclib.sensor.TrcDigitalInput;
 
 /**

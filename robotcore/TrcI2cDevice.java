@@ -25,10 +25,6 @@ package trclib.robotcore;
 import java.util.Arrays;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
-import trclib.robotcore.TrcRobot;
-import trclib.robotcore.TrcDbgTrace;
-import trclib.robotcore.TrcStateMachine;
-import trclib.robotcore.TrcTaskMgr;
 import trclib.timer.TrcTimer;
 
 /**

@@ -24,9 +24,6 @@ package trclib.robotcore;
 
 import java.util.concurrent.atomic.AtomicInteger;
 
-import trclib.robotcore.TrcDbgTrace;
-import trclib.robotcore.TrcEvent;
-import trclib.robotcore.TrcWatchdogMgr;
 import trclib.timer.TrcTimer;
 
 /**
