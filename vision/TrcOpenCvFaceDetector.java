@@ -27,7 +27,7 @@ import org.opencv.core.MatOfRect;
 import org.opencv.core.Rect;
 import org.opencv.objdetect.CascadeClassifier;
 
-import trclib.path.TrcPose2D;
+import trclib.pathdrive.TrcPose2D;
 
 /**
  * This class implements an OpenCV face detector using the provided classifier.

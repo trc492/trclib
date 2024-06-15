@@ -20,7 +20,7 @@
  * SOFTWARE.
  */
 
-package trclib.path;
+package trclib.pathdrive;
 
 import org.apache.commons.math3.linear.RealVector;
 

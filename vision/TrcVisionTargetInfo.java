@@ -28,7 +28,7 @@ import org.opencv.core.Rect;
 
 import java.util.Locale;
 
-import trclib.path.TrcPose2D;
+import trclib.pathdrive.TrcPose2D;
 import trclib.robotcore.TrcUtil;
 
 /**

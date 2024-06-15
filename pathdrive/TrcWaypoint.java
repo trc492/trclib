@@ -20,7 +20,7 @@
  * SOFTWARE.
  */
 
-package trclib.path;
+package trclib.pathdrive;
 
 import java.io.BufferedReader;
 import java.io.FileReader;

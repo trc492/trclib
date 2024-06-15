@@ -26,8 +26,8 @@ import trclib.inputoutput.TrcDashboard;
 import trclib.robotcore.TrcDbgTrace;
 import trclib.drivebase.TrcDriveBase;
 import trclib.robotcore.TrcEvent;
-import trclib.path.TrcPidDrive;
-import trclib.path.TrcPidDrive.TurnMode;
+import trclib.pathdrive.TrcPidDrive;
+import trclib.pathdrive.TrcPidDrive.TurnMode;
 import trclib.robotcore.TrcRobot;
 import trclib.robotcore.TrcStateMachine;
 

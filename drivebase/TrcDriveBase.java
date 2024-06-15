@@ -37,7 +37,7 @@ import trclib.motor.TrcMotor;
 import trclib.sensor.TrcOdometrySensor;
 import trclib.sensor.TrcOdometryWheels;
 import trclib.robotcore.TrcPidController;
-import trclib.path.TrcPose2D;
+import trclib.pathdrive.TrcPose2D;
 import trclib.robotcore.TrcRobot;
 import trclib.robotcore.TrcTaskMgr;
 import trclib.robotcore.TrcUtil;

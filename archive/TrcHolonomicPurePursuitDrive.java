@@ -26,10 +26,10 @@ import org.apache.commons.math3.linear.RealVector;
 
 import trclib.dataprocessor.TrcWarpSpace;
 import trclib.drivebase.TrcDriveBase;
-import trclib.path.TrcPath;
-import trclib.path.TrcPathBuilder;
-import trclib.path.TrcPose2D;
-import trclib.path.TrcWaypoint;
+import trclib.pathdrive.TrcPath;
+import trclib.pathdrive.TrcPathBuilder;
+import trclib.pathdrive.TrcPose2D;
+import trclib.pathdrive.TrcWaypoint;
 import trclib.robotcore.TrcDbgTrace;
 import trclib.robotcore.TrcEvent;
 import trclib.robotcore.TrcPidController;

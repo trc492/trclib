@@ -20,7 +20,7 @@
  * SOFTWARE.
  */
 
-package trclib.path;
+package trclib.pathdrive;
 
 import trclib.robotcore.TrcPidController;
 import trclib.inputoutput.TrcTone;

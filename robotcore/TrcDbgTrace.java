@@ -25,9 +25,9 @@ package trclib.robotcore;
 import java.io.File;
 import java.util.Locale;
 
-import trclib.path.TrcPidDrive;
-import trclib.path.TrcPose2D;
-import trclib.path.TrcPurePursuitDrive;
+import trclib.pathdrive.TrcPidDrive;
+import trclib.pathdrive.TrcPose2D;
+import trclib.pathdrive.TrcPurePursuitDrive;
 import trclib.sensor.TrcRobotBattery;
 import trclib.drivebase.TrcDriveBase;
 import trclib.timer.TrcTimer;

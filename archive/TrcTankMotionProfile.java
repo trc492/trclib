@@ -24,8 +24,8 @@ package trclib.archive;
 
 import java.util.Arrays;
 
-import trclib.path.TrcPath;
-import trclib.path.TrcWaypoint;
+import trclib.pathdrive.TrcPath;
+import trclib.pathdrive.TrcWaypoint;
 
 /**
  * This class implements a motion profile for tank drive that consists of paths for the left and right wheels.

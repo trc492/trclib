@@ -24,10 +24,10 @@ package trclib.command;
 
 import trclib.drivebase.TrcDriveBase;
 import trclib.robotcore.TrcEvent;
-import trclib.path.TrcPath;
+import trclib.pathdrive.TrcPath;
 import trclib.robotcore.TrcPidController;
-import trclib.path.TrcPose2D;
-import trclib.path.TrcPurePursuitDrive;
+import trclib.pathdrive.TrcPose2D;
+import trclib.pathdrive.TrcPurePursuitDrive;
 import trclib.robotcore.TrcRobot;
 
 /**
