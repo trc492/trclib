@@ -23,7 +23,6 @@
 package trclib.sensor;
 
 import trclib.motor.TrcMotor;
-import trclib.sensor.TrcDigitalInput;
 
 /**
  * This class implements a platform independent digital input sensor extending TrcDigitalInput. It provides
