@@ -24,6 +24,8 @@ package trclib.archive;
 
 import java.util.Arrays;
 
+import trclib.dataprocessor.TrcWarpSpace;
+
 /**
  * This class implements a path. A path is consists of an array of waypoints, and can be used for path following,
  * such as motion profiling, pure pursuit, etc. Since heading could be in degrees or radians, each path object specifies
@@ -295,7 +297,7 @@ public class TrcPath
         double acceleration = interpolate(point1.acceleration, point2.acceleration, weight);
         double jerk = interpolate(point1.jerk, point2.jerk, weight);
         double heading = interpolate(point1.pose.angle,
-            TrcWarpSpace.getOptimizedTarget(point2.pose.angle, point1.pose.angle, inDegrees? 360.0: 2*Math.PI), weight);
+                                     TrcWarpSpace.getOptimizedTarget(point2.pose.angle, point1.pose.angle, inDegrees? 360.0: 2*Math.PI), weight);
         return new TrcWaypoint(timestep, new TrcPose2D(x, y, heading), position, velocity, acceleration, jerk);
     }   //interpolate
 

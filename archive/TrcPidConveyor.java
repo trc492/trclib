@@ -24,7 +24,9 @@ package trclib.archive;
 
 import java.util.concurrent.atomic.AtomicBoolean;
 
-import trclib.archive.TrcTrigger.TriggerMode;
+import trclib.dataprocessor.TrcTrigger.TriggerMode;
+import trclib.dataprocessor.TrcTriggerDigitalInput;
+import trclib.sensor.TrcDigitalInput;
 
 /**
  * This class implements a platform independent conveyor subsystem. It contains a motor and optionally an entry

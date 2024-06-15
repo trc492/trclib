@@ -22,7 +22,7 @@
 
 package trclib.command;
 
-import trclib.archive.TrcDriveBase;
+import trclib.drivebase.TrcDriveBase;
 import trclib.archive.TrcEvent;
 import trclib.archive.TrcPath;
 import trclib.archive.TrcPidController;

@@ -22,6 +22,10 @@
 
 package trclib.archive;
 
+import trclib.sensor.TrcAnalogInput;
+import trclib.sensor.TrcSensor;
+import trclib.timer.TrcTimer;
+
 /**
  * This class implements a platform independent Maxbotix ultrasonic sensor array. The ultrasonic sensors in the array
  * are connected in analog chain mode where only one sensor will ping at a time to eliminate cross talk. This class

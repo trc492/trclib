@@ -24,11 +24,11 @@ package trclib.command;
 
 import trclib.archive.TrcDashboard;
 import trclib.archive.TrcDbgTrace;
-import trclib.archive.TrcDriveBase;
+import trclib.drivebase.TrcDriveBase;
 import trclib.archive.TrcEvent;
 import trclib.archive.TrcRobot;
 import trclib.archive.TrcStateMachine;
-import trclib.archive.TrcTimer;
+import trclib.timer.TrcTimer;
 
 /**
  * This class implements a generic timed drive command. The command drives the robot in the given direction

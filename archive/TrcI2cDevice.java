@@ -25,6 +25,8 @@ package trclib.archive;
 import java.util.Arrays;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
+import trclib.timer.TrcTimer;
+
 /**
  * This class implements a platform independent I2C device. Typically, this class is extended by a platform dependent
  * I2C device class. The platform dependent I2C device class must implement the abstract methods required by this

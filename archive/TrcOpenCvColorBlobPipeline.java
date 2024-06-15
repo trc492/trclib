@@ -38,6 +38,9 @@ import java.util.List;
 import java.util.Locale;
 import java.util.concurrent.atomic.AtomicReference;
 
+import trclib.timer.TrcTimer;
+import trclib.vision.TrcVisionPerformanceMetrics;
+
 /**
  * This class implements a generic OpenCV color blob detection pipeline.
  */

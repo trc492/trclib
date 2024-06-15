@@ -26,6 +26,9 @@ import java.util.ArrayList;
 import java.util.Locale;
 import java.util.concurrent.atomic.AtomicReference;
 
+import trclib.timer.TrcElapsedTimer;
+import trclib.timer.TrcTimer;
+
 /**
  * This class implements a platform independent servo. Typically, this class is to be extended by a platform
  * dependent servo class and must provide a set of abstract methods. This makes sure the rest of the TrcLib classes

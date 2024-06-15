@@ -24,6 +24,8 @@ package trclib.archive;
 
 import java.util.ArrayList;
 
+import trclib.sensor.TrcSensor;
+
 /**
  * This class converts cardinal data to cartesian data for sensors such as gyro or compass. It can handle sensors
  * that have one or more axes. Some value sensors such as the Modern Robotics gyro returns cardinal heading values

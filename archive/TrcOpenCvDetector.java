@@ -29,6 +29,10 @@ import java.util.Arrays;
 import java.util.Comparator;
 import java.util.Locale;
 
+import trclib.vision.TrcVisionProcessor;
+import trclib.vision.TrcVisionTargetInfo;
+import trclib.vision.TrcVisionTask;
+
 /**
  * This class implements a generic OpenCV detector. Typically, it is extended by a specific detector that provides
  * the pipeline to process an image for detecting objects using OpenCV APIs.

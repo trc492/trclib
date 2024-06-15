@@ -22,6 +22,8 @@
 
 package trclib.archive;
 
+import trclib.timer.TrcTimer;
+
 /**
  * This class implements a platform independent auto-assist shooter subsystem. It consists of a shooter motor and
  * optionally a tilt motor and/or a pan motor. It provides methods to automate the shooting operation which includes

@@ -22,6 +22,8 @@
 
 package trclib.archive;
 
+import trclib.timer.TrcElapsedTimer;
+
 /**
  * This class implements a platform independent Digital Output port device.
  */

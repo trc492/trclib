@@ -23,6 +23,7 @@
 package trclib.archive;
 
 import trclib.archive.TrcTaskMgr.TaskType;
+import trclib.timer.TrcTimer;
 
 /**
  * This class implements a platform independent RGB light. Typically, this class is extended by a platform dependent

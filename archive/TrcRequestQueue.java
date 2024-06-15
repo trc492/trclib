@@ -24,6 +24,8 @@ package trclib.archive;
 
 import java.util.concurrent.LinkedBlockingQueue;
 
+import trclib.timer.TrcTimer;
+
 /**
  * This class implements a generic request queue that runs on its own thread. It allows the caller to add requests
  * to the end of the queue. The request thread will call the client to process the request asynchronously from the

@@ -24,6 +24,8 @@ package trclib.archive;
 
 import java.util.Locale;
 
+import trclib.timer.TrcTimer;
+
 /**
  * This class monitors the robot battery level and provides methods to get the current battery voltage as well as
  * the lowest voltage it has ever seen during the monitoring session.

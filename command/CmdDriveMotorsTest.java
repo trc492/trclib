@@ -30,7 +30,7 @@ import trclib.archive.TrcEvent;
 import trclib.archive.TrcMotor;
 import trclib.archive.TrcRobot;
 import trclib.archive.TrcStateMachine;
-import trclib.archive.TrcTimer;
+import trclib.timer.TrcTimer;
 
 /**
  * This class implements the drive base motors test. This test will spin each of the drive base motors at the

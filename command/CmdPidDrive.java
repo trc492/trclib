@@ -26,7 +26,7 @@ import java.util.Arrays;
 
 import trclib.archive.TrcDashboard;
 import trclib.archive.TrcDbgTrace;
-import trclib.archive.TrcDriveBase;
+import trclib.drivebase.TrcDriveBase;
 import trclib.archive.TrcEvent;
 import trclib.archive.TrcPidController;
 import trclib.archive.TrcPidController.PidCoefficients;
@@ -34,7 +34,7 @@ import trclib.archive.TrcPidDrive;
 import trclib.archive.TrcPose2D;
 import trclib.archive.TrcRobot;
 import trclib.archive.TrcStateMachine;
-import trclib.archive.TrcTimer;
+import trclib.timer.TrcTimer;
 
 /**
  * This class implements a generic PID control drive command. It is agnostic to the PID controller sensors.

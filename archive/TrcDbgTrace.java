@@ -25,6 +25,9 @@ package trclib.archive;
 import java.io.File;
 import java.util.Locale;
 
+import trclib.drivebase.TrcDriveBase;
+import trclib.timer.TrcTimer;
+
 /**
  * This class implements the Debug Tracer.
  */

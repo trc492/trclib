@@ -25,6 +25,8 @@ package trclib.archive;
 import java.util.HashMap;
 import java.util.Locale;
 
+import trclib.timer.TrcTimer;
+
 /**
  * This class implements a loop profiler for recording the elapsed time of various segments of code in a periodic
  * loop. This is useful to identify the culprit if the loop time is unacceptably long. This can be used in profiling
@@ -107,7 +109,7 @@ public class TrcLoopProfiler
      */
     public double getHighPrecisionCurrentTime()
     {
-        return TrcTimer.getNanoTime() / 1000000000.0;
+        return TrcTimer.getNanoTime()/1000000000.0;
     }   //getHighPrecisionCurrentTime
 
     /**

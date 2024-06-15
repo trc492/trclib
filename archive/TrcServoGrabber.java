@@ -24,7 +24,9 @@ package trclib.archive;
 
 import java.util.Locale;
 
-import trclib.archive.TrcTrigger.TriggerMode;
+import trclib.dataprocessor.TrcTrigger;
+import trclib.dataprocessor.TrcTrigger.TriggerMode;
+import trclib.timer.TrcTimer;
 
 /**
  * This class implements a platform independent auto-assist servo grabber subsystem. It contains one or two servos

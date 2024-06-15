@@ -24,6 +24,9 @@ package trclib.archive;
 
 import java.util.Arrays;
 
+import trclib.sensor.TrcSensor;
+import trclib.timer.TrcTimer;
+
 /**
  * This class implements the Lidar Lite v3 Laser Ranging sensor.
  */

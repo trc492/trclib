@@ -24,6 +24,8 @@ package trclib.archive;
 
 import java.util.ArrayList;
 
+import trclib.drivebase.TrcDriveBase;
+
 /**
  * This class implements the auto-assist grid drive. It allows the driver to use the DPad to quickly navigate the
  * field maze in grid cell units in a square pattern accurately without the risk of running into obstacles at grid

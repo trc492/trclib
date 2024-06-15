@@ -26,7 +26,12 @@ import java.util.ArrayList;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import trclib.archive.TrcTaskMgr.TaskType;
-import trclib.archive.TrcTrigger.TriggerMode;
+import trclib.dataprocessor.TrcTrigger.TriggerMode;
+import trclib.dataprocessor.TrcTriggerDigitalInput;
+import trclib.sensor.TrcDigitalInput;
+import trclib.sensor.TrcEncoder;
+import trclib.timer.TrcElapsedTimer;
+import trclib.timer.TrcTimer;
 
 /**
  * This class implements a platform independent generic motor controller. Typically, this class is extended by a

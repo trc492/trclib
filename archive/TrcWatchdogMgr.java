@@ -27,6 +27,7 @@ import java.util.HashMap;
 import java.util.Locale;
 
 import trclib.archive.TrcTaskMgr.TaskType;
+import trclib.timer.TrcTimer;
 
 /**
  * This class is a singleton. It manages a list of watchdogs. Watchdogs are typically used for detecting thread

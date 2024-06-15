@@ -27,6 +27,8 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Locale;
 
+import trclib.timer.TrcTimer;
+
 /**
  * This class implements a priority indicator device that supports priority list. A priority list specifies a list of
  * indicator patterns in priority order. This means that if the indicator is set to a given pattern, it will be updated

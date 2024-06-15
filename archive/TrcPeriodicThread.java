@@ -24,6 +24,8 @@ package trclib.archive;
 
 import java.util.concurrent.atomic.AtomicInteger;
 
+import trclib.timer.TrcTimer;
+
 /**
  * This class implements a platform independent periodic task by using a separate thread. When enabled, the thread
  * periodically calls the runPeriodic method. Generally, this class is used by TrcTaskMgr to create a standalone

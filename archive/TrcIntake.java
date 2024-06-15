@@ -24,7 +24,9 @@ package trclib.archive;
 
 import java.util.concurrent.atomic.AtomicBoolean;
 
-import trclib.archive.TrcTrigger.TriggerMode;
+import trclib.dataprocessor.TrcTrigger;
+import trclib.dataprocessor.TrcTrigger.TriggerMode;
+import trclib.timer.TrcTimer;
 
 /**
  * This class implements a generic platform independent intake subsystem. It contains a motor or a continuous

@@ -24,6 +24,8 @@ package trclib.archive;
 
 import java.util.ArrayList;
 
+import trclib.timer.TrcTimer;
+
 /**
  * This class implements an event driven state machine. The caller can add multiple events for the state machine
  * to monitor. If one or more events are signaled, the state machine will automatically advance to the specified

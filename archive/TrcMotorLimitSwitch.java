@@ -22,6 +22,8 @@
 
 package trclib.archive;
 
+import trclib.sensor.TrcDigitalInput;
+
 /**
  * This class implements a platform independent digital input sensor extending TrcDigitalInput. It provides
  * implementation of the abstract methods in TrcDigitalInput. The digital input sensor in this case is one

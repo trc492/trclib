@@ -22,6 +22,9 @@
 
 package trclib.archive;
 
+import trclib.sensor.TrcSensor;
+import trclib.timer.TrcTimer;
+
 /**
  * This class implements a generic sensor calibrator on a given sensor with the specified data type.
  *

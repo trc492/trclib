@@ -24,7 +24,7 @@ package trclib.command;
 
 import trclib.archive.TrcDashboard;
 import trclib.archive.TrcDbgTrace;
-import trclib.archive.TrcDriveBase;
+import trclib.drivebase.TrcDriveBase;
 import trclib.archive.TrcEvent;
 import trclib.archive.TrcPidDrive;
 import trclib.archive.TrcPidDrive.TurnMode;
