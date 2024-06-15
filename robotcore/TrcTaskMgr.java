@@ -22,6 +22,8 @@
 
 package trclib.robotcore;
 
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
@@ -495,10 +497,25 @@ public class TrcTaskMgr
 
     }   //class TaskObject
 
+    private static class IoLoopCallbacks
+    {
+        String callerId;
+        IoTaskCallback ioLoopBeginCallback;
+        IoTaskCallback ioLoopEndCallback;
+
+        public IoLoopCallbacks(String callerId, IoTaskCallback ioLoopBeginCallback, IoTaskCallback ioLoopEndCallback)
+        {
+            this.callerId = callerId;
+            this.ioLoopBeginCallback = ioLoopBeginCallback;
+            this.ioLoopEndCallback = ioLoopEndCallback;
+        }   //IoLoopCallbacks
+
+    }   //class IoLoopCallbacks
+
     private static final List<TaskObject> taskList = new CopyOnWriteArrayList<>();
     private static TrcPeriodicThread<Object> ioThread = null;
-    private static IoTaskCallback ioTaskLoopBegin = null;
-    private static IoTaskCallback ioTaskLoopEnd = null;
+    private static final ArrayList<IoLoopCallbacks> ioLoopCallbackList = new ArrayList<>();
+    private static final HashMap<String, IoLoopCallbacks> ioLoopCallbackMap = new HashMap<>();
 
     /**
      * This method creates a TRC task. If the TRC task is registered as a STANDALONE task, it is run on a separately
@@ -537,6 +554,11 @@ public class TrcTaskMgr
                 //
                 taskObj.unregisterTask(TaskType.STANDALONE_TASK);
             }
+        }
+
+        for (IoLoopCallbacks ioCallback: ioLoopCallbackList)
+        {
+            unregisterIoTaskLoopCallback(ioCallback);
         }
 
         if (ioThread != null)
@@ -580,17 +602,48 @@ public class TrcTaskMgr
     }   //executeTaskType
 
     /**
-     * This method is called by the platform dependent scheduler to register callbacks at the beginning and ending
-     * of the IO task loop.
+     * This method registers callbacks at the beginning and ending of the IO task loop.
      *
-     * @param ioLoopBegin specifies the IO task loop begin callback, null if not provided.
-     * @param ioLoopEnd specifies the IO task loop end callback, null if not provided.
+     * @param callerId specifies the caller that registers the IO Task Loop callback.
+     * @param ioLoopBeginCallback specifies the IO task loop begin callback, null if not provided.
+     * @param ioLoopEndCallback specifies the IO task loop end callback, null if not provided.
      */
-    public static void registerIoTaskLoopCallback(IoTaskCallback ioLoopBegin, IoTaskCallback ioLoopEnd)
+    public static void registerIoTaskLoopCallback(
+        String callerId, IoTaskCallback ioLoopBeginCallback, IoTaskCallback ioLoopEndCallback)
     {
-        ioTaskLoopBegin = ioLoopBegin;
-        ioTaskLoopEnd = ioLoopEnd;
+        if (ioLoopCallbackMap.containsKey(callerId))
+        {
+            unregisterIoTaskLoopCallback(callerId);
+        }
+
+        IoLoopCallbacks ioCallbacks = new IoLoopCallbacks(callerId, ioLoopBeginCallback, ioLoopEndCallback);
+        ioLoopCallbackList.add(ioCallbacks);
+        ioLoopCallbackMap.put(callerId, ioCallbacks);
     }   //registerIoTaskLoopCallback
+
+    /**
+     * This method unregisters callbacks at the beginning and ending of the IO task loop.
+     *
+     * @param ioCallbacks specifies the IoLoopCallbacks object to be unregistered.
+     */
+    private static void unregisterIoTaskLoopCallback(IoLoopCallbacks ioCallbacks)
+    {
+        if (ioCallbacks != null)
+        {
+            ioLoopCallbackMap.remove(ioCallbacks.callerId);
+            ioLoopCallbackList.remove(ioCallbacks);
+        }
+    }   //unregisterIoTaskLoopCallback
+
+    /**
+     * This method unregisters callbacks at the beginning and ending of the IO task loop.
+     *
+     * @param callerId specifies the caller that registered the IoLoopCallbacks object and unregister it.
+     */
+    public static void unregisterIoTaskLoopCallback(String callerId)
+    {
+        unregisterIoTaskLoopCallback(ioLoopCallbackMap.get(callerId));
+    }   //unregisterIoTaskLoopCallback
 
     /**
      * This method runs the periodic an IO task loop.
@@ -601,15 +654,23 @@ public class TrcTaskMgr
     {
         TrcRobot.RunMode runMode = TrcRobot.getRunMode();
 
-        if (ioTaskLoopBegin != null)
+        for (IoLoopCallbacks ioCallbacks: ioLoopCallbackList)
         {
-            ioTaskLoopBegin.ioTaskCallback(runMode);
+            if (ioCallbacks.ioLoopBeginCallback != null)
+            {
+                ioCallbacks.ioLoopBeginCallback.ioTaskCallback(runMode);
+            }
         }
+
         executeTaskType(TaskType.INPUT_TASK, runMode, false);
         executeTaskType(TaskType.OUTPUT_TASK, runMode, false);
-        if (ioTaskLoopEnd != null)
+
+        for (IoLoopCallbacks ioCallbacks: ioLoopCallbackList)
         {
-            ioTaskLoopEnd.ioTaskCallback(runMode);
+            if (ioCallbacks.ioLoopEndCallback != null)
+            {
+                ioCallbacks.ioLoopEndCallback.ioTaskCallback(runMode);
+            }
         }
     }   //ioTask
 
