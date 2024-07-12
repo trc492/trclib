@@ -225,8 +225,13 @@ public class TrcSimpleDriveBase extends TrcDriveBase
         String owner, double leftPower, double rightPower, boolean inverted, double driveTime, TrcEvent event)
     {
         tracer.traceDebug(
-            moduleName, "owner=%s,leftPower=%f,rightPower=%f,inverted=%s,driveTime=%.1f,event=%s",
-            owner, leftPower, rightPower, inverted, driveTime, event);
+            moduleName,
+            "owner=" + owner +
+            ",leftPower=" + leftPower +
+            ",rightPower=" + rightPower +
+            ",inverted=" + inverted +
+            ",driveTime=" + driveTime +
+            ",event=" + event);
         if (validateOwnership(owner))
         {
             leftPower = TrcUtil.clipRange(leftPower);

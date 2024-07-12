@@ -60,7 +60,7 @@ import trclib.timer.TrcTimer;
  */
 public class TrcHolonomicPurePursuitDriveV2
 {
-    private final TrcDbgTrace tracer;
+    public final TrcDbgTrace tracer;
     private final String instanceName;
     private final TrcDriveBase driveBase;
     private final TrcTaskMgr.TaskObject driveTaskObj;
@@ -480,9 +480,15 @@ public class TrcHolonomicPurePursuitDriveV2
 
         tracer.traceVerbose(
             instanceName,
-            "pose=%s,followingPoint=%s,targetPoint=%s,vel=%f,targetVel=%f,targetAccel=%f,pathIndex=%d,r=%f,theta=%f",
-            pose, followingPoint.getPositionPose(), targetPoint.getPositionPose(), velocity, targetVel,
-            targetPoint.acceleration, pathIndex, r, theta);
+            "pose=" + pose +
+            ",followingPoint=" + followingPoint.getPositionPose() +
+            ",targetPoint=" + targetPoint.getPositionPose() +
+            ",vel=" + velocity +
+            ",targetVel=" + targetVel +
+            ",targetAccel=" + targetPoint.acceleration +
+            ",pathIndex=" + pathIndex +
+            ",r=" + r +
+            ",theta=" + theta);
 
         // If we have timed out or finished, stop the operation.
         boolean timedOut = TrcTimer.getCurrentTime() >= timedOutTime;

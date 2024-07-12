@@ -165,7 +165,7 @@ public class TrcPeriodicThread<T>
     }   //class TaskState
 
     private static final AtomicInteger numActiveThreads = new AtomicInteger(0);
-    private final TrcDbgTrace tracer;
+    public final TrcDbgTrace tracer;
     private final String instanceName;
     private final PeriodicTask task;
     private final Object context;
@@ -351,7 +351,8 @@ public class TrcPeriodicThread<T>
                 totalThreadNanoTime += elapsedNanoTime;
                 loopCount++;
                 tracer.traceVerbose(
-                    instanceName, "start=%.6f, elapsed=%.6f", startNanoTime/1000000000.0, elapsedNanoTime/1000000000.0);
+                    instanceName,
+                    "start=" + (startNanoTime/1000000000.0) + ", elapsed=" + elapsedNanoTime/1000000000.0);
             }
 
             TrcEvent.performEventCallback();
@@ -397,8 +398,9 @@ public class TrcPeriodicThread<T>
 
         numThreads = numActiveThreads.decrementAndGet();
         tracer.traceDebug(
-            instanceName, "Exiting thread: numThreads=%d, AvgLoopTime=%.6f",
-            numThreads, totalThreadNanoTime/1000000000.0/loopCount);
+            instanceName,
+            "Exiting thread: numThreads=" + numThreads +
+            ", AvgLoopTime=" + (totalThreadNanoTime/1000000000.0/loopCount));
     }   //run
 
 }   //class TrcPeriodicThread

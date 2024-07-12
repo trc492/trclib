@@ -60,7 +60,7 @@ public abstract class TrcAnalogInput extends TrcSensor<TrcAnalogInput.DataType>
     //
     // AnalogInput options.
     //
-    public static final int ANALOGINPUT_INTEGRATE       = (1 << 0);
+    public static final int ANALOGINPUT_INTEGRATE       = (1);
     public static final int ANALOGINPUT_DOUBLE_INTEGRATE= (1 << 1);
 
     protected static TrcElapsedTimer getInputElapsedTimer = null;

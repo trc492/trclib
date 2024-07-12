@@ -166,7 +166,7 @@ public abstract class TrcGyro extends TrcSensor<TrcGyro.DataType> implements Trc
     //
     // Gyro options.
     //
-    public static final int GYRO_HAS_X_AXIS             = (1 << 0);
+    public static final int GYRO_HAS_X_AXIS             = (1);
     public static final int GYRO_HAS_Y_AXIS             = (1 << 1);
     public static final int GYRO_HAS_Z_AXIS             = (1 << 2);
     public static final int GYRO_INTEGRATE              = (1 << 3);

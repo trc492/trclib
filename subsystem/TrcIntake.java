@@ -160,7 +160,7 @@ public class TrcIntake implements TrcExclusiveSubsystem
 
     }   //class ActionParams
 
-    private final TrcDbgTrace tracer;
+    public final TrcDbgTrace tracer;
     private final String instanceName;
     public final TrcMotor motor;
     public final Trigger entryTrigger;
@@ -238,16 +238,6 @@ public class TrcIntake implements TrcExclusiveSubsystem
                ", isActive=" + isActive() +
                ", hasObject=" + hasObject();
     }   //toString
-
-    /**
-     * This method sets the trace level for logging trace messages.
-     *
-     * @param msgLevel specifies the message level.
-     */
-    public void setTraceLevel(TrcDbgTrace.MsgLevel msgLevel)
-    {
-        tracer.setTraceLevel(msgLevel);
-    }   //setTraceLevel
 
     /**
      * This method returns the current motor power.
@@ -349,11 +339,14 @@ public class TrcIntake implements TrcExclusiveSubsystem
     {
         if (isActive())
         {
-            tracer.traceDebug(
-                instanceName, "completed=%s, timedOut=%s, hasObject=%s, finishDelay=%.3f",
-                completed, timerEvent.isSignaled(), hasObject(), actionParams.finishDelay);
             double power = completed && hasObject()? actionParams.retainPower: 0.0;
 
+            tracer.traceDebug(
+                instanceName,
+                "completed=" + completed +
+                ", timedOut=" + timerEvent.isSignaled() +
+                ", hasObject=" + hasObject() +
+                ", finishDelay=" + actionParams.finishDelay);
             tracer.traceInfo(
                 instanceName, "Finishing intake: completed=" + completed +
                 ", power=" + power + ", finishDelay=" + actionParams.finishDelay);

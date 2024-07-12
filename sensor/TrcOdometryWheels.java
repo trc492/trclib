@@ -23,7 +23,6 @@
 package trclib.sensor;
 
 import java.util.Arrays;
-import java.util.Locale;
 
 import trclib.drivebase.TrcDriveBase;
 import trclib.robotcore.TrcDbgTrace;
@@ -146,14 +145,15 @@ public class TrcOdometryWheels
         @Override
         public String toString()
         {
-            return String.format(
-                Locale.US, "(%s: axisOffset=%f, angleOffset=%f, odometry=%s",
-                sensor, axisOffset, angleOffset, odometry);
+            return "(" + sensor +
+                   ": axisOffset=" + axisOffset +
+                   ", angleOffset=" + angleOffset +
+                   ", odometry=" + odometry + ")";
         }   //toString
 
     }   //class AxisSensor
 
-    private final TrcDbgTrace tracer;
+    public final TrcDbgTrace tracer;
     private final AxisSensor[] xSensors;
     private final AxisSensor[] ySensors;
     private final TrcOdometrySensor angleSensor;
@@ -289,16 +289,6 @@ public class TrcOdometryWheels
     }   //isSensorUsed
 
     /**
-     * This method sets the message trace level for the tracer.
-     *
-     * @param msgLevel specifies the message level.
-     */
-    public void setTraceLevel(TrcDbgTrace.MsgLevel msgLevel)
-    {
-        tracer.setTraceLevel(msgLevel);
-    }   //setTraceLevel
-
-    /**
      * This method sets the scaling factors for both X, Y and angle data. This is typically used to scale encoder
      * counts to physical units such as inches. If the scale of a direction is not provided, it must be set to 1.0.
      *
@@ -402,9 +392,14 @@ public class TrcOdometryWheels
         odometryDelta.velocity.y = avgYVel*yScale;
         odometryDelta.velocity.angle = angleOdometry.velocity*angleScale;
         tracer.traceDebug(
-            moduleName, "x=%s, y=%s, avgX=%f, avgY=%f, deltaX=%f, deltaY=%f, deltaAngle=%f",
-            Arrays.toString(xSensors), Arrays.toString(ySensors), avgXPos, avgYPos, odometryDelta.position.x,
-            odometryDelta.position.y, odometryDelta.position.angle);
+            moduleName,
+            "x=" + Arrays.toString(xSensors) +
+            ", y=" + Arrays.toString(ySensors) +
+            ", avgX=" + avgXPos +
+            ", avgY=" + avgYPos +
+            ", deltaX=" + odometryDelta.position.x +
+            ", deltaY=" + odometryDelta.position.y +
+            ", deltaAngle=" + odometryDelta.position.angle);
         prevAvgXPos = avgXPos;
         prevAvgYPos = avgYPos;
 
@@ -473,9 +468,13 @@ public class TrcOdometryWheels
             if (position)
             {
                 tracer.traceDebug(
-                    moduleName, "%s.Pos[%d] timestamp=%.6f, heading=%f, pos=%f, currData=%f, avgData=%f",
-                    s.sensor.getName(), i, TrcTimer.getModeElapsedTime(s.odometry.currTimestamp),
-                    angleOdometry.currPos, s.odometry.currPos, currData, sum/(i + 1));
+                    moduleName,
+                    s.sensor.getName() + ".Pos[" + i + "]" +
+                    " timestamp=" + TrcTimer.getModeElapsedTime(s.odometry.currTimestamp) +
+                    ", heading=" + angleOdometry.currPos +
+                    ", pos=" + s.odometry.currPos +
+                    ", currData=" + currData +
+                    ", avgData=" + sum/(i + 1));
             }
         }
 

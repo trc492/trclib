@@ -23,7 +23,6 @@
 package trclib.robotcore;
 
 import java.io.File;
-import java.util.Locale;
 
 import trclib.pathdrive.TrcPidDrive;
 import trclib.pathdrive.TrcPose2D;
@@ -836,8 +835,11 @@ public class TrcDbgTrace
 
             if (battery != null)
             {
-                msg.append(String.format(
-                    Locale.US, " volt=\"%.3fV(%.3fV)\"", battery.getVoltage(), battery.getLowestVoltage()));
+                msg.append(" volt=\"")
+                   .append(battery.getVoltage())
+                   .append("V(")
+                   .append(battery.getLowestVoltage())
+                   .append("V)");
             }
 
             logEventInternal(name, 4, "StateInfo", msg.toString());
@@ -896,7 +898,6 @@ public class TrcDbgTrace
      * @param state specifies the current state of the state machine.
      * @param driveBase specifies the robot drive base, can be null if the state does not involve robot movement.
      * @param ppDrive specifies the purePursuitDrive object, can be null if the state does not involve pp drive.
-     * @param battery specifies the robot battery object, can be null if not interested in battery info.
      */
     public void tracePostStateInfo(String name, Object state, TrcDriveBase driveBase, TrcPurePursuitDrive ppDrive)
     {

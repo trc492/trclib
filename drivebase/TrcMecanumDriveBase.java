@@ -96,8 +96,15 @@ public class TrcMecanumDriveBase extends TrcSimpleDriveBase
         TrcEvent event)
     {
         tracer.traceDebug(
-            moduleName, "owner=%s,x=%f,y=%f,rot=%f,inverted=%s,angle=%f,driveTime=%.1f,event=%s",
-            owner, x, y, rotation, Boolean.toString(inverted), gyroAngle, driveTime, event);
+            moduleName,
+            "owner=" + owner +
+            ",x=" + x +
+            ",y=" + y +
+            ",rot=" + rotation +
+            ",inverted=" + inverted +
+            ",angle=" + gyroAngle +
+            ",driveTime=" + driveTime +
+            ",event=" + event);
         if (validateOwnership(owner))
         {
             x = TrcUtil.clipRange(x);

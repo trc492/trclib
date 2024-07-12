@@ -27,7 +27,7 @@ import java.util.Stack;
 
 import trclib.dataprocessor.TrcUtil;
 import trclib.dataprocessor.TrcWarpSpace;
-import trclib.output.TrcDashboard;
+import trclib.driverio.TrcDashboard;
 import trclib.sensor.TrcRobotBattery;
 import trclib.timer.TrcTimer;
 
@@ -190,7 +190,7 @@ public class TrcPidController
     }   //class PidCtrlState
 
     private final TrcDashboard dashboard = TrcDashboard.getInstance();
-    private final TrcDbgTrace tracer;
+    public final TrcDbgTrace tracer;
     private final String instanceName;
     private final PidInput pidInput;
 
@@ -760,14 +760,18 @@ public class TrcPidController
             {
                 pidCtrlState.settlingStartTime = TrcTimer.getCurrentTime();
                 tracer.traceDebug(
-                    instanceName, "InProgress: err=%f, errRate=%f, tolerance=%f",
-                    pidCtrlState.currError, pidCtrlState.errorRate, tolerance);
+                    instanceName,
+                    "InProgress: err=" + pidCtrlState.currError +
+                    ", errRate=" + pidCtrlState.errorRate +
+                    ", tolerance=" + tolerance);
             }
             else if (currTime >= pidCtrlState.settlingStartTime + settlingTime)
             {
                 tracer.traceDebug(
-                    instanceName, "OnTarget: err=%f, errRate=%f, tolerance=%f",
-                    pidCtrlState.currError, pidCtrlState.errorRate, tolerance);
+                    instanceName,
+                    "OnTarget: err=" + pidCtrlState.currError +
+                    ", errRate=" + pidCtrlState.errorRate +
+                    ", tolerance=" + tolerance);
                 onTarget = true;
             }
         }
@@ -866,7 +870,7 @@ public class TrcPidController
 
             pidCtrlState.output = output;
 
-            if (tracer.getTraceLevel().value >= TrcDbgTrace.MsgLevel.DEBUG.value)
+            if (tracer.isMsgLevelEnabled(TrcDbgTrace.MsgLevel.DEBUG))
             {
                 printPidInfo(tracer, pidCtrlState.verbosePidInfo, pidCtrlState.battery);
             }
@@ -897,11 +901,16 @@ public class TrcPidController
         synchronized (pidCtrlState)
         {
             dashboard.displayPrintf(
-                lineNum, "%s:Target=%.1f,Input=%.1f,Error=%.1f",
-                instanceName, pidCtrlState.setPoint, pidCtrlState.input, pidCtrlState.currError);
+                lineNum,
+                instanceName +
+                ":Target=" + pidCtrlState.setPoint +
+                ",Input=" + pidCtrlState.input +
+                ",Error=" + pidCtrlState.currError);
             dashboard.displayPrintf(
-                lineNum + 1, "minOutput=%.1f,Output=%.1f,maxOutput=%.1f",
-                minOutput, pidCtrlState.output, maxOutput);
+                lineNum + 1,
+                "minOutput=" + minOutput +
+                ",Output=" + pidCtrlState.output +
+                ",maxOutput=" + maxOutput);
         }
     }   //displayPidInfo
 
@@ -915,8 +924,6 @@ public class TrcPidController
      */
     public void printPidInfo(TrcDbgTrace msgTracer, boolean verbose, TrcRobotBattery battery)
     {
-        StringBuilder sb = new StringBuilder();
-
         if (msgTracer == null)
         {
             msgTracer = tracer;
@@ -930,49 +937,63 @@ public class TrcPidController
                 {
                     msgTracer.traceInfo(
                         instanceName,
-                        "Target=%6.1f, Input=%6.1f, dT=%.6f, CurrErr=%6.1f, ErrRate=%6.1f, " +
-                        "Output=%6.3f(%6.3f/%6.3f), PIDFTerms=%6.3f/%6.3f/%6.3f/%6.3f, Volt=%.1f(%.1f)",
-                        pidCtrlState.setPoint, pidCtrlState.input, pidCtrlState.deltaTime, pidCtrlState.currError,
-                        pidCtrlState.errorRate, pidCtrlState.output, minOutput, maxOutput,
-                        pidCtrlState.pTerm, pidCtrlState.iTerm, pidCtrlState.dTerm, pidCtrlState.fTerm,
-                        battery.getVoltage(), battery.getLowestVoltage());
+                        "Target=" + pidCtrlState.setPoint +
+                        ", Input=" + pidCtrlState.input +
+                        ", dT=" + pidCtrlState.deltaTime +
+                        ", CurrErr=" + pidCtrlState.currError +
+                        ", ErrRate=" + pidCtrlState.errorRate +
+                        ", Output=" + pidCtrlState.output + "(" + minOutput + "/" + maxOutput + ")" +
+                        ", PIDFTerms=" + pidCtrlState.pTerm +
+                        "/" + pidCtrlState.iTerm +
+                        "/" + pidCtrlState.dTerm +
+                        "/" + pidCtrlState.fTerm +
+                        ", Volt=" + battery.getVoltage() +
+                        "(" + battery.getLowestVoltage() + ")");
                 }
                 else
                 {
-                    tracer.traceInfo(
+                    msgTracer.traceInfo(
                         instanceName,
-                        "Target=%6.1f, Input=%6.1f, dT=%.6f, CurrErr=%6.1f, ErrRate=%6.1f, " +
-                        "Output=%6.3f(%6.3f/%6.3f), PIDFTerms=%6.3f/%6.3f/%6.3f/%6.3f",
-                        pidCtrlState.setPoint, pidCtrlState.input, pidCtrlState.deltaTime, pidCtrlState.currError,
-                        pidCtrlState.errorRate, pidCtrlState.output, minOutput, maxOutput,
-                        pidCtrlState.pTerm, pidCtrlState.iTerm, pidCtrlState.dTerm, pidCtrlState.fTerm);
+                        "Target=" + pidCtrlState.setPoint +
+                        ", Input=" + pidCtrlState.input +
+                        ", dT=" + pidCtrlState.deltaTime +
+                        ", CurrErr=" + pidCtrlState.currError +
+                        ", ErrRate=" + pidCtrlState.errorRate +
+                        ", Output=" + pidCtrlState.output + "(" + minOutput + "/" + maxOutput + ")" +
+                        ", PIDFTerms=" + pidCtrlState.pTerm +
+                        "/" + pidCtrlState.iTerm +
+                        "/" + pidCtrlState.dTerm +
+                        "/" + pidCtrlState.fTerm);
                 }
             }
             else
             {
                 if (battery != null)
                 {
-                    tracer.traceInfo(
+                    msgTracer.traceInfo(
                         instanceName,
-                        "Target=%6.1f, Input=%6.1f, dT=%.6f, CurrErr=%6.1f, ErrRate=%6.1f, " +
-                        "Output=%6.3f(%6.3f/%6.3f), Volt=%.1f(%.1f)",
-                        pidCtrlState.setPoint, pidCtrlState.input, pidCtrlState.deltaTime, pidCtrlState.currError,
-                        pidCtrlState.errorRate, pidCtrlState.output, minOutput, maxOutput,
-                        battery.getVoltage(), battery.getLowestVoltage());
+                        "Target=" + pidCtrlState.setPoint +
+                        ", Input=" + pidCtrlState.input +
+                        ", dT=" + pidCtrlState.deltaTime +
+                        ", CurrErr=" + pidCtrlState.currError +
+                        ", ErrRate=" + pidCtrlState.errorRate +
+                        ", Output=" + pidCtrlState.output + "(" + minOutput + "/" + maxOutput + ")" +
+                        ", Volt=" + battery.getVoltage() +
+                        "(" + battery.getLowestVoltage() + ")");
                 }
                 else
                 {
-                    tracer.traceInfo(
+                    msgTracer.traceInfo(
                         instanceName,
-                        "Target=%6.1f, Input=%6.1f, dT=%.6f, CurrErr=%6.1f, ErrRate=%6.1f, " +
-                        "Output=%6.3f(%6.3f/%6.3f)",
-                        pidCtrlState.setPoint, pidCtrlState.input, pidCtrlState.deltaTime, pidCtrlState.currError,
-                        pidCtrlState.errorRate, pidCtrlState.output, minOutput, maxOutput);
+                        "Target=" + pidCtrlState.setPoint +
+                        ", Input=" + pidCtrlState.input +
+                        ", dT=" + pidCtrlState.deltaTime +
+                        ", CurrErr=" + pidCtrlState.currError +
+                        ", ErrRate=" + pidCtrlState.errorRate +
+                        ", Output=" + pidCtrlState.output + "(" + minOutput + "/" + maxOutput + ")");
                 }
             }
         }
-
-        msgTracer.traceInfo(instanceName, sb.toString());
     }   //printPidInfo
 
     /**

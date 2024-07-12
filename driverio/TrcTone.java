@@ -20,7 +20,7 @@
  * SOFTWARE.
  */
 
-package trclib.output;
+package trclib.driverio;
 
 import trclib.robotcore.TrcDbgTrace;
 
@@ -67,7 +67,7 @@ public abstract class TrcTone
      */
     public abstract boolean isPlaying();
 
-    private final TrcDbgTrace tracer;
+    public final TrcDbgTrace tracer;
     private final String instanceName;
     private final Waveform defWaveform;
 
@@ -187,7 +187,7 @@ public abstract class TrcTone
         if (index < buffer.length)
         {
             length = Math.min((int)(sampleRate*attack), buffer.length - index);
-            tracer.traceDebug(instanceName, "Attack=%.3f,index=%d,len=%d", attack, index, length);
+            tracer.traceDebug(instanceName, "Attack=" + attack + ",index=" + index + ",len=" + length);
             scaleData(buffer, index, length, 1.0/length, 0.0);
         }
         //
@@ -197,7 +197,7 @@ public abstract class TrcTone
         if (index < buffer.length)
         {
             length = Math.min((int)(sampleRate*decay), buffer.length - index);
-            tracer.traceDebug(instanceName, "Decay=%.3f,index=%d,len=%d", decay, index, length);
+            tracer.traceDebug(instanceName, "Decay=" + decay + ",index=" + index + ",len=" + length);
             scaleData(buffer, index, length, (sustain - 1.0)/length, 1.0);
         }
         //
@@ -209,7 +209,7 @@ public abstract class TrcTone
             length = buffer.length - index - (int)(sampleRate*release);
             if (length < 0) length = 0;
             length = Math.min(length, buffer.length - index);
-            tracer.traceDebug(instanceName, "Sustain=%.3f,index=%d,len=%d", sustain, index, length);
+            tracer.traceDebug(instanceName, "Sustain=" + sustain + ",index=" + index + ",len=" + length);
             scaleData(buffer, index, length, 0.0, sustain);
         }
         //
@@ -219,7 +219,7 @@ public abstract class TrcTone
         if (index < buffer.length)
         {
             length = buffer.length - index;
-            tracer.traceDebug(instanceName, "Release=%.3f,index=%d,len=%d", release, index, length);
+            tracer.traceDebug(instanceName, "Release=" + release + ",index=" + index + ",len=" + length);
             scaleData(buffer, index, length, -sustain/length, sustain);
         }
     }   //applySoundEnvelope
@@ -238,7 +238,7 @@ public abstract class TrcTone
     {
         for (int i = 0; i < length; i++)
         {
-            buffer[startIndex + i] *= slope*i + zeroIntercept;
+            buffer[startIndex + i] = (short)(buffer[startIndex + i] * (slope * i + zeroIntercept));
         }
     }   //scaleData
 

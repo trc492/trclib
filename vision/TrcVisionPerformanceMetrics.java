@@ -76,8 +76,9 @@ public class TrcVisionPerformanceMetrics
     public void printMetrics(TrcDbgTrace tracer)
     {
         tracer.traceInfo(
-            instanceName, "AvgProcessTime=%.6f, FrameRate=%f",
-            totalProcessedTime/totalProcessedFrames, totalProcessedFrames/(TrcTimer.getCurrentTime() - sessionStartTime));
+            instanceName,
+            "AvgProcessTime=" + (totalProcessedTime/totalProcessedFrames) +
+            ", FrameRate=" + (totalProcessedFrames/(TrcTimer.getCurrentTime() - sessionStartTime)));
     }   //printMetrics
 
 }   //class TrcVisionPerformanceMetrics

@@ -20,9 +20,9 @@
  * SOFTWARE.
  */
 
-package trclib.command;
+package trclib.archive;
 
-import trclib.output.TrcDashboard;
+import trclib.driverio.TrcDashboard;
 import trclib.robotcore.TrcDbgTrace;
 import trclib.drivebase.TrcDriveBase;
 import trclib.robotcore.TrcEvent;

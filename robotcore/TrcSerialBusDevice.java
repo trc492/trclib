@@ -109,7 +109,7 @@ public abstract class TrcSerialBusDevice
 
     }   //class Request
 
-    protected final TrcDbgTrace tracer;
+    public final TrcDbgTrace tracer;
     protected final String instanceName;
     private final TrcRequestQueue<Request> requestQueue;
     private final TrcEvent processRequestEvent;

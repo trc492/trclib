@@ -217,9 +217,10 @@ public class TrcPidConveyor implements TrcExclusiveSubsystem
 
     /**
      * This methods sets the conveyor motor power. This is useful if the entry sensor is positioned a little way back
-     * such that the convery needs to be ON and transport the 
-     * @param owner
-     * @param power
+     * such that the conveyor motor needs to be ON and transport the object further in or out.
+     *
+     * @param owner specifies the owner ID to check if the caller has ownership of the conveyor.
+     * @param power specifies the conveyor motor power.
      */
     public void setPower(String owner, double power)
     {

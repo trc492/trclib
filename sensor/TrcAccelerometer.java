@@ -75,7 +75,7 @@ public abstract class TrcAccelerometer extends TrcSensor<TrcAccelerometer.DataTy
     //
     // Accelerometer options.
     //
-    public static final int ACCEL_HAS_X_AXIS            = (1 << 0);
+    public static final int ACCEL_HAS_X_AXIS            = (1);
     public static final int ACCEL_HAS_Y_AXIS            = (1 << 1);
     public static final int ACCEL_HAS_Z_AXIS            = (1 << 2);
     public static final int ACCEL_INTEGRATE             = (1 << 3);

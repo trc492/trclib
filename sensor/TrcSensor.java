@@ -22,8 +22,6 @@
 
 package trclib.sensor;
 
-import java.util.Locale;
-
 import trclib.robotcore.TrcDbgTrace;
 import trclib.dataprocessor.TrcFilter;
 
@@ -67,7 +65,7 @@ public abstract class TrcSensor<D>
         @Override
         public String toString()
         {
-            return String.format(Locale.US, "(timestamp=%.3f, value=%s)", timestamp, value);
+            return "(timestamp=" + timestamp + ", value=" + value + ")";
         }   //toString
 
     }   //class SensorData
@@ -108,7 +106,7 @@ public abstract class TrcSensor<D>
     private static final int NUM_CAL_SAMPLES    = 100;
     private static final long CAL_INTERVAL      = 10;   //in msec.
 
-    protected final TrcDbgTrace tracer;
+    public final TrcDbgTrace tracer;
     protected final String instanceName;
     private final int numAxes;
     private final TrcFilter[] filters;
@@ -292,23 +290,23 @@ public abstract class TrcSensor<D>
         {
             double value = data.value;
 
-            tracer.traceDebug(instanceName, "raw=%f", value);
+            tracer.traceDebug(instanceName, "raw=" + value);
             if (filters[index] != null)
             {
                 value = filters[index].filterData(value);
-                tracer.traceDebug(instanceName, "filtered=%f", value);
+                tracer.traceDebug(instanceName, "filtered=" + value);
             }
 
             if (calibrator != null)
             {
                 value = calibrator.getCalibratedData(index, value);
-                tracer.traceDebug(instanceName, "calibrated=%f", value);
+                tracer.traceDebug(instanceName, "calibrated=" + value);
             }
 
             value = signs[index] * (value - offsets[index]) * scales[index];
             tracer.traceDebug(
-                instanceName, "scaledValue=%f, (sign=%d,scale=%f,offset=%f)",
-                value, signs[index], scales[index], offsets[index]);
+                instanceName, "scaledValue=" + value +
+                ", (sign=" + signs[index] + ",scale=" + scales[index] + ",offset=" + offsets[index] + ")");
             data.value = value;
         }
 

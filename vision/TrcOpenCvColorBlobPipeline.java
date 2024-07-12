@@ -189,12 +189,13 @@ public class TrcOpenCvColorBlobPipeline implements TrcOpenCvPipeline<TrcOpenCvDe
         @Override
         public String toString()
         {
-            return String.format(
-                Locale.US,
-                "minArea=%f,minPerim=%f,width=(%f,%f),height=(%f,%f),solidity=(%f,%f),vertices=(%f,%f)," +
-                "aspectRatio=(%f,%f)",
-                minArea, minPerimeter, widthRange[0], widthRange[1], heightRange[0], heightRange[1], solidityRange[0],
-                solidityRange[1], verticesRange[0], verticesRange[1], aspectRatioRange[0], aspectRatioRange[1]);
+            return "minArea=" + minArea +
+                   ",minPerim=" + minPerimeter +
+                   ",width=(" + widthRange[0] + "," + widthRange[1] + ")" +
+                   ",height=(" + heightRange[0] + "," + heightRange[1] + ")" +
+                   ",solidity=(" + solidityRange[0] + "," + solidityRange[1] + ")" +
+                   ",vertices=(" + verticesRange[0] + "," + verticesRange[1] + ")" +
+                   ",aspectRatio=(" + aspectRatioRange[0] + "," + aspectRatioRange[1] + ")";
         }   //toString
 
     }   //class FilterContourParams
@@ -204,7 +205,7 @@ public class TrcOpenCvColorBlobPipeline implements TrcOpenCvPipeline<TrcOpenCvDe
     private static final int ANNOTATE_RECT_THICKNESS = 3;
     private static final double ANNOTATE_FONT_SCALE = 0.3;
 
-    private final TrcDbgTrace tracer;
+    public final TrcDbgTrace tracer;
     private final String instanceName;
     private final Integer colorConversion;
     private double[] colorThresholds;
@@ -270,16 +271,6 @@ public class TrcOpenCvColorBlobPipeline implements TrcOpenCvPipeline<TrcOpenCvDe
     {
         return instanceName;
     }   //toString
-
-    /**
-     * This method returns its tracer used for tracing info.
-     *
-     * @return tracer.
-     */
-    public TrcDbgTrace getTracer()
-    {
-        return tracer;
-    }   //getTracer
 
     /**
      * This method enables/disables performance metrics.
@@ -426,7 +417,7 @@ public class TrcOpenCvColorBlobPipeline implements TrcOpenCvPipeline<TrcOpenCvDe
         }
         if (performanceMetrics != null) performanceMetrics.logProcessingTime(startTime);
 
-        if (contoursOutput.size() > 0)
+        if (!contoursOutput.isEmpty())
         {
             detectedObjects = new DetectedObject[contoursOutput.size()];
             for (int i = 0; i < detectedObjects.length; i++)

@@ -23,7 +23,6 @@
 package trclib.timer;
 
 import java.util.LinkedList;
-import java.util.Locale;
 import java.util.Queue;
 
 import trclib.robotcore.TrcDbgTrace;
@@ -67,9 +66,10 @@ public class TrcElapsedTimer
     @Override
     public String toString()
     {
-        return String.format(
-            Locale.US, "%s: avgElapsed=%.6f, minElapsed=%.6f, maxElapsed=%.6f",
-            instanceName, getAverageElapsedTime(), getMinElapsedTime(), getMaxElapsedTime());
+        return instanceName +
+               ": avgElapsed=" + getAverageElapsedTime() +
+               ", minElapsed=" + getMinElapsedTime() +
+               ", maxElapsed=" + getMaxElapsedTime();
     }   //toString
 
     /**

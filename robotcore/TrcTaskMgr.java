@@ -26,7 +26,6 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Locale;
 import java.util.concurrent.CopyOnWriteArrayList;
 
 import trclib.timer.TrcTimer;
@@ -456,17 +455,19 @@ public class TrcTaskMgr
             taskTotalElapsedTimes[taskType.value] += elapsedTime;
             taskTimeSlotCounts[taskType.value]++;
 
-            if (tracer.getTraceLevel().value >= TrcDbgTrace.MsgLevel.DEBUG.value)
+            if (tracer.isMsgLevelEnabled(TrcDbgTrace.MsgLevel.DEBUG))
             {
                 tracer.traceVerbose(
-                    moduleName, "%s.%s: start=.6f, elapsed=%.6f",
-                    taskName, taskType, (startTime/1000000000.0), elapsedTime/1000000000.0);
+                    moduleName,
+                    taskName + "." + taskType +
+                    ": start=" + (startTime/1000000000.0) +
+                    ", elapsed=" + (elapsedTime/1000000000.0));
                 long timeThreshold = getTaskInterval()*1000000; //convert to nanoseconds.
                 if (timeThreshold == 0) timeThreshold = TASKTIME_THRESHOLD_MS * 1000000L;
                 if (timeThreshold > 0 && elapsedTime > timeThreshold)
                 {
                     tracer.traceWarn(
-                        moduleName, "%s.%s takes too long (%.3f)", taskName, taskType, elapsedTime/1000000000.0);
+                        moduleName, taskName + "." + taskType + " takes too long (" + (elapsedTime/1000000000.0));
                 }
             }
         }   //recordElapsedTime
@@ -681,7 +682,7 @@ public class TrcTaskMgr
     {
         for (TaskObject taskObj: taskList)
         {
-            StringBuilder msg = new StringBuilder(taskObj.taskName).append(":");
+            StringBuilder msg = new StringBuilder(taskObj.taskName + ":");
             int taskTypeCounter = 0;
 
             for (TaskType taskType : TaskType.values())
@@ -692,7 +693,12 @@ public class TrcTaskMgr
                 if (taskElapsedTime > 0.0)
                 {
                     taskTypeCounter++;
-                    msg.append(String.format(Locale.US, " %s=%.6f/%.6f", taskType, taskElapsedTime, taskInterval));
+                    msg.append(" ")
+                       .append(taskType)
+                       .append("=")
+                       .append(taskElapsedTime)
+                       .append("/")
+                       .append(taskInterval);
                 }
             }
 

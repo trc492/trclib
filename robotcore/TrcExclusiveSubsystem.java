@@ -33,7 +33,7 @@ public interface TrcExclusiveSubsystem
      * This class encapsulates all the parameters required to acquire and release exclusive ownership for the
      * operation.
      */
-    static class OwnershipParams
+    class OwnershipParams
     {
         String owner;
         TrcEvent completionEvent;

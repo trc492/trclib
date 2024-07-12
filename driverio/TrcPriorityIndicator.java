@@ -20,12 +20,11 @@
  * SOFTWARE.
  */
 
-package trclib.output;
+package trclib.driverio;
 
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
-import java.util.Locale;
 
 import trclib.robotcore.TrcDbgTrace;
 import trclib.robotcore.TrcRobot;
@@ -107,15 +106,14 @@ public abstract class TrcPriorityIndicator<T>
         @Override
         public String toString()
         {
-            return String.format(
-                Locale.US, "%s: enabled=%s, on=%s, expiredTime=%.3f", pattern, enabled, on, expiredTime);
+            return pattern + ": enabled=" + enabled + ", on=" + on + ", expiredTime=" + expiredTime;
         }   //toString
 
     }   //class PatternState
 
     private final HashMap<String, T> namedPatternMap = new HashMap<>();
 
-    protected final TrcDbgTrace tracer;
+    public final TrcDbgTrace tracer;
     protected final String instanceName;
     private final TrcTaskMgr.TaskObject indicatorTaskObj;
     private ArrayList<PatternState> patternPriorities = null;
@@ -215,8 +213,12 @@ public abstract class TrcPriorityIndicator<T>
         int index = getPatternPriority(pattern);
 
         tracer.traceDebug(
-            instanceName, "[%d] pattern=%s, enabled=%s, onDuration=%.3f, offDuration=%.3f",
-            index, pattern, enabled, onDuration, offDuration);
+            instanceName,
+            "[" + index +
+            "] pattern=" + pattern +
+            ", enabled=" + enabled +
+            ", onDuration=" + onDuration +
+            ", offDuration=" + offDuration);
         if (index != -1)
         {
             PatternState patternState = patternPriorities.get(index);
@@ -480,11 +482,7 @@ public abstract class TrcPriorityIndicator<T>
                         gotPattern = true;
                         pattern = patternState.pattern;
                     }
-                    else
-                    {
-                        // If there is no next priority pattern that is in ON-state, then we will turn it OFF.
-                        pattern = null;
-                    }
+                    // Else if there is no next priority pattern that is in ON-state, then we will turn it OFF.
                 }
             }
         }

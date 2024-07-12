@@ -20,7 +20,7 @@
  * SOFTWARE.
  */
 
-package trclib.input;
+package trclib.driverio;
 
 import trclib.robotcore.TrcRobot;
 import trclib.dataprocessor.TrcUtil;
@@ -61,7 +61,7 @@ public abstract class TrcGameController
 
     private static final double DEF_DEADBAND_THRESHOLD = 0.15;
 
-    protected final TrcDbgTrace tracer;
+    public final TrcDbgTrace tracer;
     protected final String instanceName;
     private final double deadbandThreshold;
     private final ButtonHandler buttonHandler;

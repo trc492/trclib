@@ -32,7 +32,7 @@ import trclib.motor.TrcMotor;
  */
 public class TrcMotorLimitSwitch extends TrcDigitalInput
 {
-    private TrcMotor motor;
+    private final TrcMotor motor;
     private boolean upperLimitSwitch = false;
 
     /**

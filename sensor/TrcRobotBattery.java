@@ -22,8 +22,6 @@
 
 package trclib.sensor;
 
-import java.util.Locale;
-
 import trclib.robotcore.TrcRobot;
 import trclib.robotcore.TrcTaskMgr;
 import trclib.timer.TrcTimer;
@@ -93,7 +91,7 @@ public abstract class TrcRobotBattery
     @Override
     public String toString()
     {
-        return String.format(Locale.US, "%s: Volt=%.2f/%.2f", moduleName, getVoltage(), getLowestVoltage());
+        return moduleName + ": Volt=" + getVoltage() + "/" + getLowestVoltage();
     }   //toString
 
     /**

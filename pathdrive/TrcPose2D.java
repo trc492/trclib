@@ -31,7 +31,6 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Locale;
 import java.util.Objects;
 
 import trclib.dataprocessor.TrcUtil;
@@ -97,7 +96,7 @@ public class TrcPose2D
     @Override
     public String toString()
     {
-        return String.format(Locale.US, "(x=%.1f,y=%.1f,angle=%.1f)", x, y, angle);
+        return "(x=" + x + ",y=" + y + ",angle=" + angle + ")";
     }   //toString
 
     /**
@@ -120,7 +119,8 @@ public class TrcPose2D
         {
             BufferedReader in = new BufferedReader(
                 loadFromResources?
-                    new InputStreamReader(TrcPose2D.class.getClassLoader().getResourceAsStream(path)):
+                    new InputStreamReader(
+                        Objects.requireNonNull(TrcPose2D.class.getClassLoader()).getResourceAsStream(path)):
                     new FileReader(path));
             List<TrcPose2D> poseList = new ArrayList<>();
             String line;
@@ -190,6 +190,7 @@ public class TrcPose2D
      *
      * @return a copy of this pose.
      */
+    @Override
     public TrcPose2D clone()
     {
         return new TrcPose2D(this.x, this.y, this.angle);

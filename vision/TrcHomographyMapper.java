@@ -81,6 +81,7 @@ public class TrcHomographyMapper
                  new Point(bottomLeftX, bottomLeftY), new Point(bottomRightX, bottomRightY));
         }   //Rectangle
 
+        @Override
         public String toString()
         {
             return "[topLeft" + topLeft +

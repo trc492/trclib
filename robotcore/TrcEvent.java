@@ -33,7 +33,7 @@ import java.util.concurrent.atomic.AtomicReference;
 public class TrcEvent
 {
     private static final String moduleName = TrcEvent.class.getSimpleName();
-    private static final TrcDbgTrace staticTracer = new TrcDbgTrace();
+    public static final TrcDbgTrace staticTracer = new TrcDbgTrace();
 
     /**
      * An event has three possible states:
@@ -49,7 +49,7 @@ public class TrcEvent
         CANCELED
     }   //enum EventState
 
-    private final TrcDbgTrace tracer;
+    public final TrcDbgTrace tracer;
     private final String instanceName;
     private final AtomicReference<EventState> eventState = new AtomicReference<>(EventState.CLEARED);
 

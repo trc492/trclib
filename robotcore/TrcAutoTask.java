@@ -61,7 +61,7 @@ public abstract class TrcAutoTask<T>
     protected abstract void runTaskState(
         Object params, T state, TrcTaskMgr.TaskType taskType, TrcRobot.RunMode runMode, boolean slowPeriodicLoop);
 
-    protected final TrcDbgTrace tracer;
+    public final TrcDbgTrace tracer;
     private final String instanceName;
     private final String owner;
     private final TrcTaskMgr.TaskType taskType;

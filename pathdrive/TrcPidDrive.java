@@ -23,7 +23,7 @@
 package trclib.pathdrive;
 
 import trclib.robotcore.TrcPidController;
-import trclib.output.TrcTone;
+import trclib.driverio.TrcTone;
 import trclib.robotcore.TrcLoopProfiler;
 import trclib.robotcore.TrcRobot;
 import trclib.robotcore.TrcTaskMgr;
@@ -77,7 +77,7 @@ public class TrcPidDrive
     private static final double DEF_BEEP_FREQUENCY = 880.0; //in Hz
     private static final double DEF_BEEP_DURATION = 0.2;    //in seconds
 
-    private final TrcDbgTrace tracer;
+    public final TrcDbgTrace tracer;
     private final String instanceName;
     private final TrcDriveBase driveBase;
     private final TrcPidController xPidCtrl;
@@ -140,7 +140,7 @@ public class TrcPidDrive
         TrcPidController.PidCoefficients yPidCoeffs, double yTolerance, TrcPidController.PidInput yPidInput,
         TrcPidController.PidCoefficients turnPidCoeffs, double turnTolerance, TrcPidController.PidInput turnPidInput)
     {
-        tracer = new TrcDbgTrace();
+        this.tracer = new TrcDbgTrace();
         this.instanceName = instanceName;
         this.driveBase = driveBase;
         this.xPidCtrl = xPidCoeffs != null?
@@ -154,7 +154,7 @@ public class TrcPidDrive
         driveTaskObj = TrcTaskMgr.createTask(instanceName + ".driveTask", this::driveTask);
         stopTaskObj = TrcTaskMgr.createTask(instanceName + ".stopTask", this::stopTask);
 
-        if (turnPidCtrl != null && turnPidCtrl.hasAbsoluteSetPoint())
+        if (turnPidCtrl.hasAbsoluteSetPoint())
         {
             warpSpace = new TrcWarpSpace(instanceName, 0.0, 360.0);
         }
@@ -504,8 +504,13 @@ public class TrcPidDrive
         double xError = 0.0, yError = 0.0, turnError = 0.0;
 
         tracer.traceDebug(
-            instanceName, "x=%f, y=%f, turn=%f, hold=%s, event=%s, timeout=%f",
-            xTarget, yTarget, turnTarget, holdTarget, event, timeout);
+            instanceName,
+            "x=" + xTarget +
+            ", y=" + yTarget +
+            ", turn=" + turnTarget +
+            ", hold=" + holdTarget +
+            ", event=" + event +
+            ", timeout=" + timeout);
         if (xPidCtrl != null && yPidCtrl != null &&
             xPidCtrl.hasAbsoluteSetPoint() != yPidCtrl.hasAbsoluteSetPoint())
         {
@@ -661,8 +666,13 @@ public class TrcPidDrive
             double xTarget, yTarget, turnTarget;
 
             tracer.traceDebug(
-                instanceName, "owner=%s, xDelta=%f, yDelta=%f, turnDelta=%f, absTargetPose=%s, newAbsTargetPose=%s",
-                owner, xDelta, yDelta, turnDelta, absTargetPose, newAbsTargetPose);
+                instanceName,
+                "owner=" + owner +
+                ", xDelta=" + xDelta +
+                ", yDelta=" + yDelta +
+                ", turnDelta=" + turnDelta +
+                ", absTargetPose=" + absTargetPose +
+                ", newAbsTargetPose=" + newAbsTargetPose);
             if (absTargetModeEnabled)
             {
                 if (xDelta == 0.0 && yDelta == 0.0 && turnDelta != 0.0)
@@ -721,8 +731,11 @@ public class TrcPidDrive
             }
 
             tracer.traceDebug(
-                instanceName, "xTarget=%f, yTarget=%f, turnTarget=%f, newAbsTargetPose=%s",
-                xTarget, yTarget, turnTarget, newAbsTargetPose);
+                instanceName,
+                "xTarget=" + xTarget +
+                " yTarget=" + yTarget +
+                ", turnTarget=" + turnTarget +
+                ", newAbsTargetPose=" + newAbsTargetPose);
             // The new target pose will become the updated absolute target pose.
             absTargetPose = newAbsTargetPose;
             setTarget(xTarget, yTarget, turnTarget, holdTarget, event, timeout);
@@ -927,11 +940,19 @@ public class TrcPidDrive
                     newTargetPose.angle : newTargetPose.angle - currRobotPose.angle;
 
             tracer.traceDebug(
-                instanceName, "owner=%s, absX=%f, absY=%f, absHeading=%f, currPose=%s, absTargetPose=%s",
-                owner, absX, absY, absHeading, currRobotPose, absTargetPose);
+                instanceName,
+                "owner=" + owner +
+                ", absX=" + absX +
+                ", absY=" + absY +
+                ", absHeading=" + absHeading +
+                ", currPose=" + currRobotPose +
+                ", absTargetPose=" + absTargetPose);
             tracer.traceDebug(
-                instanceName, "xTarget=%f, yTarget=%f, turnTarget=%f, newPose=%s",
-                relativePose.x, relativePose.y, turnTarget, newTargetPose);
+                instanceName,
+                "xTarget=" + relativePose.x +
+                ", yTarget=" + relativePose.y +
+                ", turnTarget=" + turnTarget +
+                ", newPose=" + newTargetPose);
             if (noOscillation)
             {
                 //

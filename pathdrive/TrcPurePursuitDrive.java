@@ -25,7 +25,7 @@ package trclib.pathdrive;
 import org.apache.commons.math3.linear.RealVector;
 
 import trclib.robotcore.TrcPidController;
-import trclib.output.TrcTone;
+import trclib.driverio.TrcTone;
 import trclib.dataprocessor.TrcUtil;
 import trclib.dataprocessor.TrcWarpSpace;
 import trclib.drivebase.TrcDriveBase;
@@ -100,7 +100,7 @@ public class TrcPurePursuitDrive
 
     }   //enum InterpolationType
 
-    private TrcDbgTrace tracer;
+    public TrcDbgTrace tracer;
     private String instanceName;
     private TrcDriveBase driveBase;
     private volatile double proximityRadius;    // Volatile so it can be changed at runtime
@@ -157,7 +157,7 @@ public class TrcPurePursuitDrive
         TrcPidController xPidCtrl, TrcPidController yPidCtrl, TrcPidController turnPidCtrl,
         TrcPidController velPidCtrl)
     {
-        tracer = new TrcDbgTrace();
+        this.tracer = new TrcDbgTrace();
         this.instanceName = instanceName;
         this.driveBase = driveBase;
         this.xPosPidCtrl = xPidCtrl;
@@ -1132,11 +1132,17 @@ public class TrcPurePursuitDrive
                 ",relPose=" + relativeTargetPose);
             tracer.traceDebug(
                 instanceName,
-                "RobotVel=%.1f,TargetVel=%.1f,xError=%.1f,yError=%.1f,turnError=%.1f,velError=%.1f,theta=%.1f," +
-                "xPower=%.1f,yPower=%.1f,turnPower=%.1f,velPower=%.1f",
-                getVelocityInput(), targetPoint.velocity, xPosPidCtrl != null? xPosPidCtrl.getError(): 0.0,
-                yPosPidCtrl.getError(), turnPidCtrl.getError(), velPidCtrl.getError(), Math.toDegrees(theta),
-                xPosPower, yPosPower, turnPower, velPower);
+                "RobotVel=" + getVelocityInput() +
+                ",TargetVel=" + targetPoint.velocity +
+                ",xError=" + (xPosPidCtrl != null? xPosPidCtrl.getError(): 0.0) +
+                ",yError=" + yPosPidCtrl.getError() +
+                ",turnError=" + turnPidCtrl.getError() +
+                ",velError=" + velPidCtrl.getError() +
+                ",theta=" + Math.toDegrees(theta) +
+                ",xPower=" + xPosPower +
+                ",yPower=" + yPosPower +
+                ",turnPower=" + turnPower +
+                ",velPower=" + velPower);
 
             // If we have timed out or finished, stop the operation.
             double currTime = TrcTimer.getCurrentTime();
@@ -1373,8 +1379,9 @@ public class TrcPurePursuitDrive
                     // The furthest intersection point is not on the line segment, so skip this segment.
                     //
                     tracer.traceDebug(
-                        instanceName, "Intersection not on line segment t1=%f, t2=%f, t=%f, stalled=%s",
-                        t1, t2, t, stalled);
+                        instanceName,
+                        "Intersection not on line segment t1=" + t1 + ", t2=" + t2 + ", t=" + t +
+                        ", stalled=" + stalled);
                     return null;
                 }
 

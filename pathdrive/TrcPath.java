@@ -132,6 +132,7 @@ public class TrcPath
      *
      * @return a copy of this waypoint.
      */
+    @Override
     public TrcPath clone()
     {
         TrcWaypoint[] points = new TrcWaypoint[waypoints.length];

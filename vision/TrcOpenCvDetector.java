@@ -27,7 +27,6 @@ import org.opencv.core.Mat;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
-import java.util.Locale;
 
 import trclib.robotcore.TrcDbgTrace;
 
@@ -66,7 +65,7 @@ public abstract class TrcOpenCvDetector implements TrcVisionProcessor<Mat, TrcOp
         @Override
         public String toString()
         {
-            return String.format(Locale.US, "label=%s, Rect=%s, area=%f", label, getObjectRect(), getObjectArea());
+            return "label=" + label + ", Rect=" + getObjectRect() + ", area=" + getObjectArea();
         }   //toString
 
     }   //class DetectedObject
@@ -79,7 +78,7 @@ public abstract class TrcOpenCvDetector implements TrcVisionProcessor<Mat, TrcOp
         boolean validateTarget(DetectedObject<?> object);
     }   //interface FilterTarget
 
-    protected final TrcDbgTrace tracer;
+    public final TrcDbgTrace tracer;
     protected final String instanceName;
     private final TrcHomographyMapper homographyMapper;
     private final TrcVisionTask<Mat, DetectedObject<?>> visionTask;
@@ -210,7 +209,7 @@ public abstract class TrcOpenCvDetector implements TrcVisionProcessor<Mat, TrcOp
                 }
             }
 
-            if (targetList.size() > 0)
+            if (!targetList.isEmpty())
             {
                 detectedTargets = targetList.toArray(new TrcVisionTargetInfo[0]);
                 if (comparator != null && detectedTargets.length > 1)

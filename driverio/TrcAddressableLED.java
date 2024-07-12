@@ -20,7 +20,7 @@
  * SOFTWARE.
  */
 
-package trclib.output;
+package trclib.driverio;
 
 import java.util.Arrays;
 

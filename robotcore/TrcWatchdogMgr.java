@@ -24,7 +24,6 @@ package trclib.robotcore;
 
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.Locale;
 
 import trclib.robotcore.TrcTaskMgr.TaskType;
 import trclib.timer.TrcTimer;
@@ -39,7 +38,7 @@ import trclib.timer.TrcTimer;
 public class TrcWatchdogMgr
 {
     public static final String moduleName = TrcWatchdogMgr.class.getSimpleName();
-    private static final TrcDbgTrace staticTracer = new TrcDbgTrace();
+    public static final TrcDbgTrace staticTracer = new TrcDbgTrace();
 
     private static final double DEF_TASK_INTERVAL = 1.0;        // in seconds.
     private static final double DEF_HEARTBEAT_THRESHOLD = 1.0;  // in seconds.
@@ -137,7 +136,7 @@ public class TrcWatchdogMgr
             if (!paused && !expired && currTime > heartBeatExpiredTime)
             {
                 expired = true;
-                staticTracer.traceWarn(moduleName, "%s expired.", this);
+                staticTracer.traceWarn(moduleName, this + " expired.");
                 TrcDbgTrace.printThreadStack(thread);
             }
 
@@ -179,9 +178,11 @@ public class TrcWatchdogMgr
         @Override
         public String toString()
         {
-            return String.format(
-                Locale.US, "([%.3f]%s:threshold=%f,expiredTime=%f,expired=%s,paused=s)",
-                TrcTimer.getCurrentTime(), name, heartBeatThreshold, heartBeatExpiredTime, expired, paused);
+            return "([" + TrcTimer.getCurrentTime() + "]" + name +
+                   ":threshold=" + heartBeatThreshold +
+                   ",expiredTime=" + heartBeatExpiredTime +
+                   ",expired=" + expired +
+                   ",paused=" + paused + ")";
         }   //toString
 
         /**

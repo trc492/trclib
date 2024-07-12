@@ -163,7 +163,7 @@ public abstract class TrcI2cDevice
 
     }   //class Request
 
-    protected final TrcDbgTrace tracer;
+    public final TrcDbgTrace tracer;
     protected final String instanceName;
     private final TrcTaskMgr.TaskObject i2cDeviceTaskObj;
     private final TrcStateMachine<PortCommandState> portCommandSM;

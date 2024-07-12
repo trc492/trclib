@@ -28,7 +28,6 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Locale;
 import java.util.Objects;
 
 import trclib.dataprocessor.TrcUtil;
@@ -141,13 +140,21 @@ public class TrcWaypoint
     {
         if (!simpleWaypoint)
         {
-            return String.format(
-                Locale.US, "TrcWaypoint(simple=%s,index=%d,timestep=%.3f,pose=%s,vel=%f,encPos=%f,accel=%f,jerk=%f)",
-                simpleWaypoint, index, timeStep, pose, velocity, encoderPosition, acceleration, jerk);
+            return "Waypoint(simple=" + simpleWaypoint +
+                   ",index=" + index +
+                   ",timestep=" + timeStep +
+                   ",pose=" + pose +
+                   ",vel=" + velocity +
+                   ",encPos=" + encoderPosition +
+                   ",accel=" + acceleration +
+                   ",jerk=" + jerk + ")";
         }
         else
         {
-            return String.format(Locale.US, "TrcWaypoint(index=%d,pose=%s,vel=%f)", index, pose, velocity);
+            return "Waypoint(simple=" + simpleWaypoint +
+                   ",index=" + index +
+                   ",pose=" + pose +
+                   ",vel=" + velocity + ")";
         }
     }   //toString
 

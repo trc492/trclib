@@ -30,7 +30,6 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Locale;
 import java.util.Objects;
 
 import trclib.dataprocessor.TrcUtil;
@@ -105,8 +104,7 @@ public class TrcPose3D
     @Override
     public String toString()
     {
-        return String.format(
-            Locale.US, "(x=%.1f,y=%.1f,z=%.1f,yaw=%.1f,pitch=%.1f,roll=%.1f)", x, y, z, yaw, pitch, roll);
+        return "(x=" + x + ",y=" + y + ",z=" + z + ",yaw=" + yaw + ",pitch=" + pitch + ",roll=" + roll + ")";
     }   //toString
 
     /**
@@ -129,7 +127,8 @@ public class TrcPose3D
         {
             BufferedReader in = new BufferedReader(
                 loadFromResources?
-                    new InputStreamReader(TrcPose3D.class.getClassLoader().getResourceAsStream(path)):
+                    new InputStreamReader(
+                        Objects.requireNonNull(TrcPose3D.class.getClassLoader()).getResourceAsStream(path)):
                     new FileReader(path));
             List<TrcPose3D> poseList = new ArrayList<>();
             String line;

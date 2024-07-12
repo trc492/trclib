@@ -32,7 +32,7 @@ import trclib.timer.TrcTimer;
 
 public class TrcTraceLogger
 {
-    private final TrcDbgTrace tracer;
+    public final TrcDbgTrace tracer;
     private final String traceLogName;
     private final LinkedBlockingQueue<String> msgQueue;
 
@@ -64,16 +64,6 @@ public class TrcTraceLogger
     {
         return traceLogName;
     }   //toString
-
-    /**
-     * This method sets the message trace level for the tracer.
-     *
-     * @param msgLevel specifies the message level.
-     */
-    public void setTraceLevel(TrcDbgTrace.MsgLevel msgLevel)
-    {
-        tracer.setTraceLevel(msgLevel);
-    }   //setTraceLevel
 
     /**
      * This method enables/disables the trace logger thread.
@@ -166,7 +156,7 @@ public class TrcTraceLogger
         if (!msg.startsWith(traceLogName))
         {
             tracer.traceDebug(
-                traceLogName, "Avg message log time=%.6f msec", totalNanoTime/totalMessages/1000000000.0);
+                traceLogName, "Avg message log time=" +  (totalNanoTime/totalMessages/1000000000.0 + " sec"));
         }
     }   //writeMessage
 

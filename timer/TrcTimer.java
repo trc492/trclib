@@ -40,7 +40,7 @@ import trclib.robotcore.TrcWatchdogMgr;
 public class TrcTimer
 {
     private static final String moduleName = TrcTimer.class.getSimpleName();
-    private static final TrcDbgTrace staticTracer = new TrcDbgTrace();
+    public static final TrcDbgTrace staticTracer = new TrcDbgTrace();
 
     /**
      * This class encapsulates the state of a timer that must be updated atomically. Therefore, when accessing this
@@ -65,7 +65,7 @@ public class TrcTimer
     }   //class State
 
     private final State state = new State();
-    private final TrcDbgTrace tracer;
+    public final TrcDbgTrace tracer;
     private final String instanceName;
 
     /**
@@ -131,8 +131,12 @@ public class TrcTimer
         }
         addTimer(this);
         tracer.traceDebug(
-            instanceName, "timer=%s, time=%.3f, event=%s, callback=%s, context=%s",
-            this, time, event, callback != null, callbackContext != null);
+            instanceName,
+            "timer=" + this +
+            ", time=" + time +
+            ", event=" + event +
+            ", callback=" + (callback != null) +
+            ", context=" + (callbackContext != null));
     }   //set
 
     /**

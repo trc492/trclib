@@ -35,7 +35,7 @@ import trclib.dataprocessor.TrcWarpSpace;
  */
 public class TrcSwerveModule
 {
-    private final TrcDbgTrace tracer;
+    public final TrcDbgTrace tracer;
     private final String instanceName;
     public final TrcMotor driveMotor;
     public final TrcMotor steerMotor;
@@ -168,7 +168,7 @@ public class TrcSwerveModule
         double angleDelta = angle - prevSteerAngle;
         double newAngle = angle;
 
-        tracer.traceDebug(instanceName, "angle=%f, optimize=%s, hold=%s", angle, optimize, hold);
+        tracer.traceDebug(instanceName, "angle=" + angle + ", optimize=" + optimize + ", hold=" + hold);
         // If we are not optimizing, reset wheel direction back to normal.
         optimizedWheelDir = 1.0;
         if (optimize && Math.abs(angleDelta) > 90.0)
@@ -210,7 +210,8 @@ public class TrcSwerveModule
         if (optimize)
         {
             tracer.traceDebug(
-                instanceName, "Optimizing steer angle: %f->%f (wheelDir=%d)", angle, newAngle, optimizedWheelDir);
+                instanceName,
+                "Optimizing steer angle: " + angle + "->" + newAngle + "(wheelDir=" + optimizedWheelDir + ")");
         }
     }   //setSteerAngle
 

@@ -22,8 +22,7 @@
 
 package trclib.subsystem;
 
-import java.util.Locale;
-
+import ftclib.subsystem.FtcServoActuator;
 import trclib.motor.TrcServo;
 import trclib.dataprocessor.TrcTrigger;
 import trclib.dataprocessor.TrcTrigger.TriggerMode;
@@ -49,8 +48,6 @@ public class TrcServoGrabber implements TrcExclusiveSubsystem
     public static class Parameters
     {
         public double maxStepRate = 0.0;
-        public double minPos = 0.0;
-        public double maxPos = 1.0;
         public boolean servo1Inverted = false;
         public boolean servo2Inverted = false;
         public boolean triggerInverted = false;
@@ -69,30 +66,28 @@ public class TrcServoGrabber implements TrcExclusiveSubsystem
         @Override
         public String toString()
         {
-            return String.format(
-                Locale.US,
-                "maxStepRate=%.1f,minPos=%.1f,maxPos=%.1f,servosInverted(%s,%s),triggerInverted=%s," +
-                "triggerThreshold=%s,hasObjThreshold=%s,openPos=%.1f,openTime=%.1f,closePos=%.1f,closeTime=%.1f",
-                maxStepRate, minPos, maxPos, servo1Inverted, servo2Inverted, triggerInverted, triggerThreshold,
-                hasObjectThreshold, openPos, openTime, closePos, closeTime);
+            return "maxStepRate=" + maxStepRate +
+                   ",servosInverted(" + servo1Inverted + "," + servo2Inverted + ")" +
+                   ",triggerInverted=" + triggerInverted +
+                   ",triggerThreshold=" + triggerThreshold +
+                   ",hasObjThreshold=" + hasObjectThreshold +
+                   ",openPos=" + openPos +
+                   ",openTime=" + openTime +
+                   ",closePos=" + closePos +
+                   ",closeTime=" + closeTime;
         }   //toString
 
         /**
-         * This method sets Step Mode parameters of the servo grabber. Step Mode allows a servo to be speed
-         * controlled.
+         * This method sets the maximum stepping rate of the servo. This enables setPower to speed control the servo.
          *
-         * @param maxStepRate specifies the maximum step rate in physical unit per second.
-         * @param minPos specifies the minimum position limit of the servo grabber.
-         * @param maxPos specifies the maximum position limit of the servo grabber.
+         * @param maxStepRate specifies the maximum stepping rate (physicalPos/sec).
          * @return this parameter object.
          */
-        public Parameters setStepParams(double maxStepRate, double minPos, double maxPos)
+        public Parameters setMaxStepRate(double maxStepRate)
         {
             this.maxStepRate = maxStepRate;
-            this.minPos = minPos;
-            this.maxPos = maxPos;
             return this;
-        }   //setStepParams
+        }   //setMaxStepRate
 
         /**
          * This mmethod sets servos to be inverted. It changes the direction of the servo movement.
@@ -185,12 +180,12 @@ public class TrcServoGrabber implements TrcExclusiveSubsystem
         @Override
         public String toString()
         {
-            return String.format(Locale.US, "(owner=%s,event=%s,timeout=%.3f)", owner, event, timeout);
+            return "(owner=" + owner + ",event=" + event + ",timeout=" + timeout + ")";
         }   //toString
 
     }   //class ActionParams
 
-    private final TrcDbgTrace tracer;
+    public final TrcDbgTrace tracer;
     private final String instanceName;
     private final TrcServo servo;
     private final Parameters params;
@@ -230,7 +225,7 @@ public class TrcServoGrabber implements TrcExclusiveSubsystem
 
         if (params.maxStepRate != 0.0)
         {
-            servo.setStepModeParams(params.maxStepRate, params.minPos, params.maxPos);
+            servo.setMaxStepRate(params.maxStepRate);
         }
 
         timer = new TrcTimer(instanceName);
@@ -276,16 +271,6 @@ public class TrcServoGrabber implements TrcExclusiveSubsystem
     }   //toString
 
     /**
-     * This method sets the trace level for logging trace messages.
-     *
-     * @param msgLevel specifies the trace level for logging messages.
-     */
-    public void setTraceLevel(TrcDbgTrace.MsgLevel msgLevel)
-    {
-        tracer.setTraceLevel(msgLevel);
-    }   //setTraceLevel
-
-    /**
      * This method returns the current grabber position.
      *
      * @return current grabber servo position.
@@ -315,8 +300,13 @@ public class TrcServoGrabber implements TrcExclusiveSubsystem
         }
 
         tracer.traceDebug(
-            instanceName, "owner=%s, delay=%f, pos=%f, event=%s, timeout=%f, cancelAutoAssist=%s",
-            owner, delay, position, event, timeout ,cancelAutoAssist);
+            instanceName,
+            "owner=" + owner +
+            ", delay=" + delay +
+            ", pos=" + position +
+            ", event=" + event +
+            ", timeout=" + timeout +
+            ", cancelAutoAssist=" + cancelAutoAssist);
 
         TrcEvent releaseOwnershipEvent = acquireOwnership(owner, event, tracer);
         if (releaseOwnershipEvent != null) event = releaseOwnershipEvent;

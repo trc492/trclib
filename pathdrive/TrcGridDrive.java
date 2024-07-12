@@ -39,7 +39,7 @@ public class TrcGridDrive
 {
     private static final String moduleName = TrcGridDrive.class.getSimpleName();
 
-    private final TrcDbgTrace tracer;
+    public final TrcDbgTrace tracer;
     private final TrcDriveBase driveBase;
     private final TrcPurePursuitDrive purePursuitDrive;
     private final double gridCellSize;
@@ -83,16 +83,6 @@ public class TrcGridDrive
     {
         this(driveBase, purePursuitDrive, gridCellSize, 0.0, 0.0);
     }   //TrcGridDrive
-
-    /**
-     * This method sets the message tracer for logging trace messages.
-     *
-     * @param msgLevel specifies the message level.
-     */
-    public void setTraceLevel(TrcDbgTrace.MsgLevel msgLevel)
-    {
-        tracer.setTraceLevel(msgLevel);
-    }   //setTraceLevel
 
     /**
      * This method cancels Grid Drive if one is in progress.

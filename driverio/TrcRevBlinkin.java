@@ -20,7 +20,7 @@
  * SOFTWARE.
  */
 
-package trclib.output;
+package trclib.driverio;
 
 /**
  * This class implements a platform independent REV Blinkin device. This class is intended to be extended by a
@@ -185,6 +185,7 @@ public abstract class TrcRevBlinkin extends TrcPriorityIndicator<TrcRevBlinkin.P
             this.ledPattern = ledPattern;
         }   //Pattern
 
+        @Override
         public String toString()
         {
             return name;

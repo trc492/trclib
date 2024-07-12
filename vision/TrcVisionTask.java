@@ -39,7 +39,7 @@ import trclib.timer.TrcTimer;
  */
 public class TrcVisionTask<I, O>
 {
-    private final TrcDbgTrace tracer;
+    public final TrcDbgTrace tracer;
     private final String instanceName;
     private final TrcVisionProcessor<I, O> visionProcessor;
     private final I[] imageBuffers;
@@ -79,16 +79,6 @@ public class TrcVisionTask<I, O>
     {
         return instanceName;
     }   //toString
-
-    /**
-     * This method sets the message trace level for the tracer.
-     *
-     * @param msgLevel specifies the message level.
-     */
-    public void setTraceLevel(TrcDbgTrace.MsgLevel msgLevel)
-    {
-        tracer.setTraceLevel(msgLevel);
-    }   //setTraceLevel
 
     /**
      * This method enables/disables the vision task. As long as the task is enabled, it will continue to
@@ -178,8 +168,9 @@ public class TrcVisionTask<I, O>
             totalTime += elapsedTime;
             totalFrames++;
             tracer.traceDebug(
-                instanceName, "AvgProcessTime=%.6f, FrameRate=%f",
-                totalTime/totalFrames, totalFrames/(TrcTimer.getCurrentTime() - taskStartTime));
+                instanceName,
+                "AvgProcessTime=" + (totalTime/totalFrames) +
+                ", FrameRate=" + (totalFrames/(TrcTimer.getCurrentTime() - taskStartTime)));
 
             I output = visionProcessor.getSelectedOutput();
             if (output != null)
