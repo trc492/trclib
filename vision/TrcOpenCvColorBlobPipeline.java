@@ -35,7 +35,6 @@ import org.opencv.imgproc.Imgproc;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Locale;
 import java.util.concurrent.atomic.AtomicReference;
 
 import trclib.pathdrive.TrcPose2D;

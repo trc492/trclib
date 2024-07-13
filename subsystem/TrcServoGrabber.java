@@ -22,7 +22,6 @@
 
 package trclib.subsystem;
 
-import ftclib.subsystem.FtcServoActuator;
 import trclib.motor.TrcServo;
 import trclib.dataprocessor.TrcTrigger;
 import trclib.dataprocessor.TrcTrigger.TriggerMode;
