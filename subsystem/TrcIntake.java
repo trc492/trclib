@@ -105,9 +105,11 @@ public class TrcIntake implements TrcExclusiveSubsystem
         @Override
         public String toString()
         {
-            return "analogThreshold=" + analogTriggerThreshold +
-                   ", analogTriggerInverted=" + analogTriggerInverted +
-                   ", triggerMode=" + triggerMode;
+            return "triggerCallback=" + (triggerCallback != null) +
+                   ", threshold=" + analogTriggerThreshold +
+                   ", inverted=" + analogTriggerInverted +
+                   ", triggerMode=" + triggerMode +
+                   ", event=" + notifyEvent;
         }   //toString
 
     }   //class Trigger
