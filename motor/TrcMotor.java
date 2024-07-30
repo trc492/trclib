@@ -1633,7 +1633,7 @@ public abstract class TrcMotor implements TrcMotorController, TrcExclusiveSubsys
         }
         else
         {
-            currVel = getMotorVelocity()/sensorScale;
+            currVel = getMotorVelocity()*sensorScale;
         }
 
         return currVel;
