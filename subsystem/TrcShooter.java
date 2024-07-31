@@ -49,8 +49,8 @@ public class TrcShooter implements TrcExclusiveSubsystem
      */
     public static class PanTiltParams
     {
-        double powerLimit;
-        double minPos, maxPos;
+        private double powerLimit;
+        private double minPos, maxPos;
 
         public PanTiltParams(double powerLimit, double minPos, double maxPos)
         {
@@ -63,7 +63,8 @@ public class TrcShooter implements TrcExclusiveSubsystem
 
     public final TrcDbgTrace tracer;
     private final String instanceName;
-    public final TrcMotor shooterMotor;
+    public final TrcMotor shooterMotor1;
+    public final TrcMotor shooterMotor2;
     public final TrcMotor tiltMotor;
     private final PanTiltParams tiltParams;
     public final TrcMotor panMotor;
@@ -72,13 +73,13 @@ public class TrcShooter implements TrcExclusiveSubsystem
     private final TrcTimer shootTimer;
 
     private String currOwner = null;
-    private boolean manualOverride = false;
     private TrcEvent completionEvent = null;
     private ShootOperation shootOp = null;
     private String shootOpOwner = null;
     private Double shootOffDelay = null;
     private boolean active = false;
-    private TrcEvent shooterOnTargetEvent = null;
+    private TrcEvent shooter1OnTargetEvent = null;
+    private TrcEvent shooter2OnTargetEvent = null;
     private TrcEvent tiltOnTargetEvent = null;
     private TrcEvent panOnTargetEvent = null;
 
@@ -86,19 +87,21 @@ public class TrcShooter implements TrcExclusiveSubsystem
      * Constructor: Creates an instance of the object.
      *
      * @param instanceName specifies the hardware name.
-     * @param shooterMotor specifies the shooter motor object.
+     * @param shooterMotor1 specifies the shooter motor 1 object.
+     * @param shooterMotor2 specifies the shooter motor 2 object, can be null for one-motor shooter.
      * @param tiltMotor specifies the tilt motor object, can be null if none.
-     * @param tiltParams specifies the tilt motor parameters, null if no tilt motor.
+     * @param tiltParams specifies the tilt parameters, null if no tilt motor.
      * @param panMotor specifies the pan motor object, can be null if none.
-     * @param panParams specifies the pan motor parameters, null if no pan motor.
+     * @param panParams specifies the pan parameters, null if no pan motor.
      */
     public TrcShooter(
-        String instanceName, TrcMotor shooterMotor, TrcMotor tiltMotor, PanTiltParams tiltParams, TrcMotor panMotor,
-        PanTiltParams panParams)
+        String instanceName, TrcMotor shooterMotor1, TrcMotor shooterMotor2,
+        TrcMotor tiltMotor, PanTiltParams tiltParams, TrcMotor panMotor, PanTiltParams panParams)
     {
         this.tracer = new TrcDbgTrace();
         this.instanceName = instanceName;
-        this.shooterMotor = shooterMotor;
+        this.shooterMotor1 = shooterMotor1;
+        this.shooterMotor2 = shooterMotor2;
         this.tiltMotor = tiltMotor;
         this.tiltParams = tiltParams;
         this.panMotor = panMotor;
@@ -131,7 +134,7 @@ public class TrcShooter implements TrcExclusiveSubsystem
         if (!completed)
         {
             // The operation was canceled, stop the shooter motor.
-            shooterMotor.stop();
+            stopShooter();
         }
         shootOp = null;
         shootOpOwner = null;
@@ -199,7 +202,8 @@ public class TrcShooter implements TrcExclusiveSubsystem
      *
      * @param owner specifies the ID string of the caller for checking ownership, can be null if caller is not
      *        ownership aware.
-     * @param velocity specifies the shooter velocity in revolutions per second.
+     * @param velocity1 specifies the shooter motor 1 velocity in revolutions per second.
+     * @param velocity2 specifies the shooter motor 2 velocity in revolutions per second, ignored if none.
      * @param tiltAngle specifies the absolute tilt angle in degrees.
      * @param panAngle specifies the absolute pan angle in degrees.
      * @param event specifies an event to signal when both reached target, can be null if not provided.
@@ -210,14 +214,14 @@ public class TrcShooter implements TrcExclusiveSubsystem
      *        on.
      */
     public void aimShooter(
-        String owner, double velocity, double tiltAngle, double panAngle, TrcEvent event, double timeout,
-        ShootOperation shootOp, Double shootOffDelay)
+        String owner, double velocity1, double velocity2, double tiltAngle, double panAngle, TrcEvent event,
+        double timeout, ShootOperation shootOp, Double shootOffDelay)
     {
         tracer.traceDebug(
             instanceName,
             "owner=" + owner +
             ", currOwner=" + getCurrentOwner() +
-            ", vel=" + velocity +
+            ", vel=" + velocity1 + "/" + velocity2 +
             ", tiltAngle=" + tiltAngle +
             ", panAngle=" + panAngle +
             ", event=" + event +
@@ -237,9 +241,15 @@ public class TrcShooter implements TrcExclusiveSubsystem
             this.shootOpOwner = shootOp != null? owner: null;
             this.shootOffDelay = shootOffDelay;
 
-            shooterOnTargetEvent = new TrcEvent(instanceName + ".shooterOnTarget");
-            shooterOnTargetEvent.setCallback(this::onTarget, null);
-            shooterMotor.setVelocity(0.0, velocity, 0.0, shooterOnTargetEvent);
+            shooter1OnTargetEvent = new TrcEvent(instanceName + ".shooter1OnTarget");
+            shooter1OnTargetEvent.setCallback(this::onTarget, null);
+            shooterMotor1.setVelocity(0.0, velocity1, 0.0, shooter1OnTargetEvent);
+            if (shooterMotor2 != null)
+            {
+                shooter2OnTargetEvent = new TrcEvent(instanceName + ".shooter2OnTarget");
+                shooter2OnTargetEvent.setCallback(this::onTarget, null);
+                shooterMotor2.setVelocity(0.0, velocity2, 0.0, shooter2OnTargetEvent);
+            }
 
             if (tiltMotor != null)
             {
@@ -271,16 +281,18 @@ public class TrcShooter implements TrcExclusiveSubsystem
      *
      * @param owner specifies the ID string of the caller for checking ownership, can be null if caller is not
      *        ownership aware.
-     * @param velocity specifies the shooter velocity in revolutions per second.
+     * @param velocity1 specifies the shooter motor 1 velocity in revolutions per second.
+     * @param velocity2 specifies the shooter motor 2 velocity in revolutions per second, ignored if none.
      * @param tiltAngle specifies the absolute tilt angle in degrees.
      * @param panAngle specifies the absolute pan angle in degrees.
      * @param event specifies an event to signal when both reached target, can be null if not provided.
      * @param timeout specifies maximum timeout period, can be zero if no timeout.
      */
     public void aimShooter(
-        String owner, double velocity, double tiltAngle, double panAngle, TrcEvent event, double timeout)
+        String owner, double velocity1, double velocity2, double tiltAngle, double panAngle, TrcEvent event,
+        double timeout)
     {
-        aimShooter(owner, velocity, tiltAngle, panAngle, event, timeout, null, null);
+        aimShooter(owner, velocity1, velocity2, tiltAngle, panAngle, event, timeout, null, null);
     }   //aimShooter
 
     /**
@@ -288,13 +300,14 @@ public class TrcShooter implements TrcExclusiveSubsystem
      * When both shooter velocity and tilt/pan positions have reached target and if shoot method is provided, it will
      * shoot and signal an event if provided.
      *
-     * @param velocity specifies the shooter velocity in revolutions per second.
+     * @param velocity1 specifies the shooter motor 1 velocity in revolutions per second.
+     * @param velocity2 specifies the shooter motor 2 velocity in revolutions per second, ignored if none.
      * @param tiltAngle specifies the absolute tilt angle in degrees.
      * @param panAngle specifies the absolute pan angle in degrees.
      */
-    public void aimShooter(double velocity, double tiltAngle, double panAngle)
+    public void aimShooter(double velocity1, double velocity2, double tiltAngle, double panAngle)
     {
-        aimShooter(null, velocity, tiltAngle, panAngle, null, 0.0, null, null);
+        aimShooter(null, velocity1, velocity2, tiltAngle, panAngle, null, 0.0, null, null);
     }   //aimShooter
 
     /**
@@ -306,11 +319,13 @@ public class TrcShooter implements TrcExclusiveSubsystem
     {
         tracer.traceDebug(
             instanceName,
-            "shooterEvent=" + shooterOnTargetEvent +
+            "shooter1Event=" + shooter1OnTargetEvent +
+            ",shooter2Event=" + shooter2OnTargetEvent +
             ", tiltEvent=" + tiltOnTargetEvent +
             ", panEvent=" + panOnTargetEvent +
             ", aimOnly=" + (shootOp == null));
-        if (shooterOnTargetEvent.isSignaled() &&
+        if (shooter1OnTargetEvent.isSignaled() &&
+            (shooter2OnTargetEvent == null || shooter2OnTargetEvent.isSignaled()) &&
             (tiltOnTargetEvent == null || tiltOnTargetEvent.isSignaled()) &&
             (panOnTargetEvent == null || panOnTargetEvent.isSignaled()))
         {
@@ -343,7 +358,7 @@ public class TrcShooter implements TrcExclusiveSubsystem
         else if (shootOffDelay == 0.0)
         {
             tracer.traceInfo(instanceName, "Shoot completed, stop shooter motor.");
-            shooterMotor.stop();
+            stopShooter();
             finish(true);
         }
         else
@@ -371,56 +386,48 @@ public class TrcShooter implements TrcExclusiveSubsystem
         tracer.traceInfo(instanceName, "Timed out: completion=" + completion);
         // Either the operation was timed out or there was a shootOffDelay.
         // Either way, we will turn off the shooter motor.
-        shooterMotor.stop();
+        stopShooter();
         finish(completion);
     }   //timedOut
-
-    /**
-     * This method enables/disables manual override for setTiltPower/setPanPower. When manual override is not enabled,
-     * setTiltPower/setPanPower will operate tilt/pan by PID control which means it will slow down the approach when
-     * it's near the upper or lower angle limits. When manul override is enabled, it will simply applied the specified
-     * power as is.
-     *
-     * @param enabled specifies true to enable manual override, false to disable.
-     */
-    public void setManualOverrideEnabled(boolean enabled)
-    {
-        manualOverride = enabled;
-    }   //setManualOverrideEnabled
-
-    /**
-     * This method checks if manual override is enabled.
-     *
-     * @return true if manual override is enabled, false if disabled.
-     */
-    public boolean isManualOverrideEnabled()
-    {
-        return manualOverride;
-    }   //isManualOverrideEnabled
 
     //
     // Shooter motor methods.
     //
 
     /**
-     * This method returns the current shooter velocity.
+     * This method returns the current shooter motor 1 velocity.
      *
-     * @return current shooter velocity in revolutions per second.
+     * @return current shooter motor 1 velocity in revolutions per second.
      */
-    public double getShooterVelocity()
+    public double getShooterMotor1Velocity()
     {
-        return shooterMotor.getVelocity();
-    }   //getShooterVelocity
+        return shooterMotor1.getVelocity();
+    }   //getShooterMotor1Velocity
 
     /**
-     * This method sets the shooter velocity.
+     * This method returns the current shooter motor 2 velocity.
      *
-     * @param velocity specifies the shooter velocity in revolutions per second.
+     * @return current shooter motor 2 velocity in revolutions per second, 0.0 if no motor 2.
      */
-    public void setShooterVelocity(double velocity)
+    public double getShooterMotor2Velocity()
     {
-        shooterMotor.setVelocity(null, 0.0, velocity, 0.0, null);
-    }   //setShooterVelocity
+        return shooterMotor2 != null? shooterMotor2.getVelocity(): 0.0;
+    }   //getShooterMotor2Velocity
+
+    /**
+     * This method sets the shooter motor velocity.
+     *
+     * @param velocity1 specifies the motor 1 velocity in revolutions per second.
+     * @param velocity2 specifies the motor 2 velocity in revolutions per second, ignore if no motor 2.
+     */
+    public void setShooterMotorVelocity(double velocity1, double velocity2)
+    {
+        shooterMotor1.setVelocity(null, 0.0, velocity1, 0.0, null);
+        if (shooterMotor2 != null)
+        {
+            shooterMotor2.setVelocity(null, 0.0, velocity2, 0.0, null);
+        }
+    }   //setShooterMotorVelocity
 
     /**
      * This method stops the shooter. Use this method instead of setting shooter velocity to zero because the shooter
@@ -428,7 +435,11 @@ public class TrcShooter implements TrcExclusiveSubsystem
      */
     public void stopShooter()
     {
-        shooterMotor.stop();
+        shooterMotor1.stop();
+        if (shooterMotor2 != null)
+        {
+            shooterMotor2.stop();
+        }
     }   //stopShooter
 
     //
@@ -466,6 +477,19 @@ public class TrcShooter implements TrcExclusiveSubsystem
     /**
      * This method sets the tilt angle.
      *
+     * @param angle specifies the tilt absolute angle from horizontal in degrees (horizontal is 0-degree).
+     * @param completionEvent specifies the event to signal when tilt reached target angle, can be null if not
+     *        provided.
+     * @param timeout specifies timeout in seconds in case PID control cannot reach target.
+     */
+    public void setTiltAngle(double angle, TrcEvent completionEvent, double timeout)
+    {
+        setTiltAngle(null, angle, completionEvent, timeout);
+    }   //setTiltAngle
+
+    /**
+     * This method sets the tilt angle.
+     *
      * @param owner specifies the ID string of the caller for checking ownership, can be null if caller is not
      *        ownership aware.
      * @param angle specifies the tilt absolute angle from horizontal in degrees (horizontal is 0-degree).
@@ -496,25 +520,59 @@ public class TrcShooter implements TrcExclusiveSubsystem
     }   //getTiltPower
 
     /**
-     * This method moves tilt up and down with the specified power. It is typically used by TeleOp to control tilt
-     * by a joystick value. Tilt movement is PID controlled when manual override is not enabled.
+     * This method moves tilt up and down with the specified power. It is typically used by TeleOp to control
+     * tilting by a joystick value in manual override mode.
+     *
+     * @param owner specifies the ID string of the caller for checking ownership, can be null if caller is not
+     *        ownership aware.
+     * @param power specifies the power duty cycle used to move tilt (in the range of -1 to 1).
+     */
+    public void setTiltPower(String owner, double power)
+    {
+        if (tiltMotor != null)
+        {
+            tiltMotor.setPower(owner, 0.0, power, 0.0, null);;
+        }
+    }   //setTiltPower
+
+    /**
+     * This method moves tilt up and down with the specified power. It is typically used by TeleOp to control
+     * tilting by a joystick value in manual override mode.
      *
      * @param power specifies the power duty cycle used to move tilt (in the range of -1 to 1).
      */
     public void setTiltPower(double power)
     {
+        setTiltPower(null, power);
+    }   //setTiltPower
+
+    /**
+     * This method moves tilt up and down with the specified power using PID control. It is typically used by
+     * TeleOp to control tilting by a joystick value.
+     *
+     * @param owner specifies the owner ID to check if the caller has ownership of the motor.
+     * @param power specifies the upper bound power of the motor.
+     * @param holdTarget specifies true to hold target when speed is set to 0, false otherwise.
+     */
+    public void setTiltPidPower(String owner, double power, boolean holdTarget)
+    {
         if (tiltMotor != null)
         {
-            if (manualOverride)
-            {
-                tiltMotor.setPower(null, 0.0, power, 0.0, null);;
-            }
-            else
-            {
-                tiltMotor.setPidPower(null, power, tiltParams.minPos, tiltParams.maxPos, true);
-            }
+            tiltMotor.setPidPower(owner, power, tiltParams.minPos, tiltParams.maxPos, holdTarget);
         }
-    }   //setTiltPower
+    }   //setTiltPidPower
+
+    /**
+     * This method moves tilt up and down with the specified power using PID control. It is typically used by
+     * TeleOp to control tilting by a joystick value.
+     *
+     * @param power specifies the upper bound power of the motor.
+     * @param holdTarget specifies true to hold target when speed is set to 0, false otherwise.
+     */
+    public void setTiltPidPower(double power, boolean holdTarget)
+    {
+        setTiltPidPower(null, power, holdTarget);
+    }   //setTiltPidPower
 
     /**
      * This method checks if tilt's lower limit switch is active.
@@ -571,6 +629,19 @@ public class TrcShooter implements TrcExclusiveSubsystem
     /**
      * This method sets the pan angle.
      *
+     * @param angle specifies the pan absolute angle in degrees.
+     * @param completionEvent specifies the event to signal when pan reached target angle, can be null if not
+     *        provided.
+     * @param timeout specifies timeout in seconds in case PID control cannot reach target.
+     */
+    public void setPanAngle(double angle, TrcEvent completionEvent, double timeout)
+    {
+        setPanAngle(null, angle, completionEvent, timeout);
+    }   //setPanAngle
+
+    /**
+     * This method sets the pan angle.
+     *
      * @param owner specifies the ID string of the caller for checking ownership, can be null if caller is not
      *        ownership aware.
      * @param angle specifies the pan absolute angle in degrees.
@@ -601,25 +672,59 @@ public class TrcShooter implements TrcExclusiveSubsystem
     }   //getPanPower
 
     /**
-     * This method moves pan left and right with the specified power. It is typically used by TeleOp to control pan
-     * by a joystick value. Pan movement is PID controlled when manual override is not enabled.
+     * This method moves pan left and right with the specified power. It is typically used by TeleOp to control
+     * panning by a joystick value in manual override mode.
+     *
+     * @param owner specifies the ID string of the caller for checking ownership, can be null if caller is not
+     *        ownership aware.
+     * @param power specifies the power duty cycle used to move pan (in the range of -1 to 1).
+     */
+    public void setPanPower(String owner, double power)
+    {
+        if (panMotor != null)
+        {
+            panMotor.setPower(owner, 0.0, power, 0.0, null);;
+        }
+    }   //setPanPower
+
+    /**
+     * This method moves pan left and right with the specified power. It is typically used by TeleOp to control
+     * panning by a joystick value in manual override mode.
      *
      * @param power specifies the power duty cycle used to move pan (in the range of -1 to 1).
      */
     public void setPanPower(double power)
     {
+        setPanPower(null, power);
+    }   //setPanPower
+
+    /**
+     * This method moves pan left and right with the specified power using PID control. It is typically used by
+     * TeleOp to control panning by a joystick value.
+     *
+     * @param owner specifies the owner ID to check if the caller has ownership of the motor.
+     * @param power specifies the upper bound power of the motor.
+     * @param holdTarget specifies true to hold target when speed is set to 0, false otherwise.
+     */
+    public void setPanPidPower(String owner, double power, boolean holdTarget)
+    {
         if (panMotor != null)
         {
-            if (manualOverride)
-            {
-                panMotor.setPower(null, 0.0, power, 0.0, null);;
-            }
-            else
-            {
-                panMotor.setPidPower(null, power, panParams.minPos, panParams.maxPos, true);
-            }
+            panMotor.setPidPower(owner, power, panParams.minPos, panParams.maxPos, holdTarget);
         }
-    }   //setPanPower
+    }   //setPanPidPower
+
+    /**
+     * This method moves pan left and right with the specified power using PID control. It is typically used by
+     * TeleOp to control panning by a joystick value.
+     *
+     * @param power specifies the upper bound power of the motor.
+     * @param holdTarget specifies true to hold target when speed is set to 0, false otherwise.
+     */
+    public void setPanPidPower(double power, boolean holdTarget)
+    {
+        setPanPidPower(null, power, holdTarget);
+    }   //setPanPidPower
 
     /**
      * This method checks if pan's lower limit switch is active.

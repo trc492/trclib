@@ -23,6 +23,7 @@
 package trclib.motor;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import trclib.robotcore.TrcDbgTrace;
@@ -56,6 +57,173 @@ import trclib.timer.TrcTimer;
 public abstract class TrcMotor implements TrcMotorController, TrcExclusiveSubsystem, TrcOdometrySensor
 {
     private static final String moduleName = TrcMotor.class.getSimpleName();
+
+    public static class Params
+    {
+        private boolean motorInverted = false;
+        private TrcMotor followerMotor = null;
+        private boolean followerMotorInverted = false;
+        private TrcDigitalInput lowerLimitSwitch = null;
+        private boolean lowerLimitSwitchInverted = false;
+        private TrcDigitalInput upperLimitSwitch = null;
+        private boolean upperLimitSwitchInverted = false;
+        private TrcEncoder externalEncoder = null;
+        private boolean externalEncoderInverted = false;
+        private boolean voltageCompensationEnabled = false;
+        private double positionScale = 1.0;
+        private double positionOffset = 0.0;
+        private double positionZeroOffset = 0.0;
+        private double[] positionPresets = null;
+        private double positionPresetTolerance = 0.0;
+
+        /**
+         * This methods sets the motor direction.
+         *
+         * @param inverted specifies true to invert motor direction, false otherwise.
+         * @return this object for chaining.
+         */
+        public Params setMotorInverted(boolean inverted)
+        {
+            this.motorInverted = inverted;
+            return this;
+        }   //setMotorInverted
+
+        /**
+         * This methods sets the follower motor if there is one and also sets its direction.
+         *
+         * @param followerMotor specifies the follower motor if there is one, null otherwise.
+         * @param inverted specifies true to invert motor direction, false otherwise.
+         * @return this object for chaining.
+         */
+        public Params setFollowerMotor(TrcMotor followerMotor, boolean inverted)
+        {
+            this.followerMotor = followerMotor;
+            this.followerMotorInverted = inverted;
+            return this;
+        }   //setFollowerMotor
+
+        /**
+         * This method sets the lower limit switch properties.
+         *
+         * @param limitSwitch specifies the lower limit switch object if there is one, null otherwise.
+         * @param inverted specifies true if the limit switch is normally open, false if normally close.
+         * @return this object for chaining.
+         */
+        public Params setLowerLimitSwitch(TrcDigitalInput limitSwitch, boolean inverted)
+        {
+            this.lowerLimitSwitch = limitSwitch;
+            this.lowerLimitSwitchInverted = inverted;
+            return this;
+        }   //setLowerLimitSwitch
+
+        /**
+         * This method sets the upper limit switch properties.
+         *
+         * @param limitSwitch specifies the upper limit switch object if there is one, null otherwise.
+         * @param inverted specifies true if the limit switch is normally open, false if normally close.
+         * @return this object for chaining.
+         */
+        public Params setUpperLimitSwitch(TrcDigitalInput limitSwitch, boolean inverted)
+        {
+            this.upperLimitSwitch = limitSwitch;
+            this.upperLimitSwitchInverted = inverted;
+            return this;
+        }   //setUpperLimitSwitch
+
+        /**
+         * This method sets whether the actuator has an external encoder.
+         *
+         * @param encoder specifies the external encoder if there is one, null otherwise.
+         * @param inverted specifies true if the encoder is inverted, false otherwise.
+         * @return this object for chaining.
+         */
+        public Params setExternalEncoder(TrcEncoder encoder, boolean inverted)
+        {
+            this.externalEncoder = encoder;
+            this.externalEncoderInverted = inverted;
+            return this;
+        }   //setExternalEncoder
+
+        /**
+         * This method enables/disables voltage compensation on the actuator motor.
+         *
+         * @param enabled specifies true to enable voltage compensation, false to disable.
+         * @return this object for chaining.
+         */
+        public Params setVoltageCompensationEnabled(boolean enabled)
+        {
+            this.voltageCompensationEnabled = enabled;
+            return this;
+        }   //setVoltageCompensationEnabled
+
+        /**
+         * This method sets the position sensor scale factor and offset.
+         *
+         * @param scale specifies scale factor to multiply the position sensor reading.
+         * @param offset specifies offset added to the scaled sensor reading.
+         * @param zeroOffset specifies the zero offset for absolute encoder.
+         * @return this object for chaining.
+         */
+        public Params setPositionScaleAndOffset(double scale, double offset, double zeroOffset)
+        {
+            this.positionScale = scale;
+            this.positionOffset = offset;
+            this.positionZeroOffset = zeroOffset;
+            return this;
+        }   //setPositionScaleAndOffset
+
+        /**
+         * This method sets the position sensor scale factor and offset.
+         *
+         * @param scale specifies scale factor to multiply the position sensor reading.
+         * @param offset specifies offset added to the scaled sensor reading.
+         * @return this object for chaining.
+         */
+        public Params setPositionScaleAndOffset(double scale, double offset)
+        {
+            return setPositionScaleAndOffset(scale, offset, 0.0);
+        }   //setPositionScaleAndOffset
+
+        /**
+         * This method sets an array of preset positions for the motor actuator.
+         *
+         * @param tolerance specifies the preset tolerance.
+         * @param posPresets specifies an array of preset positions in scaled unit.
+         * @return this object for chaining.
+         */
+        public Params setPositionPresets(double tolerance, double... posPresets)
+        {
+            this.positionPresets = posPresets;
+            this.positionPresetTolerance = tolerance;
+            return this;
+        }   //setPositionPresets
+
+        /**
+         * This method returns the string format of the Params info.
+         *
+         * @return string format of the params info.
+         */
+        @Override
+        public String toString()
+        {
+            return "motorInverted=" + motorInverted +
+                   ",followerMotor=" + followerMotor +
+                   ",followerInverted=" + followerMotorInverted +
+                   ",lowerLimitSwitch=" + lowerLimitSwitch +
+                   ",lowerLimitInverted=" + lowerLimitSwitchInverted +
+                   ",upperLimitSwitch=" + upperLimitSwitch +
+                   ",upperLimitInverted=" + upperLimitSwitchInverted +
+                   ",externalEncoder=" + externalEncoder +
+                   ",externalEncoderInverted=" + externalEncoderInverted +
+                   ",voltageCompEnabled=" + voltageCompensationEnabled +
+                   ",posScale=" + positionScale +
+                   ",posOffset=" + positionOffset +
+                   ",posZeroOffset=" + positionZeroOffset +
+                   ",posPresets=" + Arrays.toString(positionPresets) +
+                   ",posPresetTolerance=" + positionPresetTolerance;
+        }   //toString
+
+    }   //class Params
 
     /**
      * Some actuators are non-linear. The load may vary depending on the position. For example, raising an arm
@@ -146,7 +314,7 @@ public abstract class TrcMotor implements TrcMotorController, TrcExclusiveSubsys
     protected final String instanceName;
     private final TrcDigitalInput lowerLimitSwitch; // for software simulation
     private final TrcDigitalInput upperLimitSwitch; // for software simulation
-    private final TrcEncoder encoder;               // for software simulation
+    private final TrcEncoder externalEncoder;       // for software simulation
     private final TrcOdometrySensor.Odometry odometry;
     private final TrcTimer timer;
     private TrcPerformanceTimer pidCtrlTaskPerformanceTimer = null;
@@ -199,26 +367,58 @@ public abstract class TrcMotor implements TrcMotorController, TrcExclusiveSubsys
     private TrcEvent triggerCallbackEvent;
     // Presets.
     private boolean velocityPresets = false;
-    private double presetTolerance = 2.0;
     private double[] presets = null;
+    private double presetTolerance = 0.0;
 
     /**
      * Constructor: Create an instance of the object.
      *
      * @param instanceName specifies the instance name.
-     * @param lowerLimitSwitch specifies an external lower limit switch, can be null if subclass supports it natively.
-     * @param upperLimitSwitch specifies an external forward limit switch, can be null if subclass supports it natively.
-     * @param encoder specifies an external position sensor for reporting motor position, can be null if subclass
-     *        supports it natively.
+     * @param params specifies the motor parameters, can be null if not provided.
      */
-    public TrcMotor(
-        String instanceName, TrcDigitalInput lowerLimitSwitch, TrcDigitalInput upperLimitSwitch, TrcEncoder encoder)
+    public TrcMotor(String instanceName, Params params)
     {
         this.tracer = new TrcDbgTrace();
         this.instanceName = instanceName;
-        this.lowerLimitSwitch = lowerLimitSwitch;
-        this.upperLimitSwitch = upperLimitSwitch;
-        this.encoder = encoder;
+        if (params != null)
+        {
+            setMotorInverted(params.motorInverted);
+
+            if (params.followerMotor != null)
+            {
+                addFollower(params.followerMotor);
+                params.followerMotor.setMotorInverted(isMotorInverted() ^ params.followerMotorInverted);
+            }
+
+            lowerLimitSwitch = params.lowerLimitSwitch;
+            if (lowerLimitSwitch != null)
+            {
+                lowerLimitSwitch.setInverted(params.lowerLimitSwitchInverted);
+            }
+
+            upperLimitSwitch = params.upperLimitSwitch;
+            if (upperLimitSwitch != null)
+            {
+                upperLimitSwitch.setInverted(params.upperLimitSwitchInverted);
+            }
+
+            externalEncoder = params.externalEncoder;
+            if (externalEncoder != null)
+            {
+                externalEncoder.setInverted(params.externalEncoderInverted);
+            }
+
+            setVoltageCompensationEnabled(params.voltageCompensationEnabled? TrcUtil.BATTERY_NOMINAL_VOLTAGE: null);
+            setPositionSensorScaleAndOffset(params.positionScale, params.positionOffset, params.positionZeroOffset);
+            setPresets(false, params.positionPresetTolerance, params.positionPresets);
+        }
+        else
+        {
+            lowerLimitSwitch = null;
+            upperLimitSwitch = null;
+            externalEncoder = null;
+        }
+
         odometry = new TrcOdometrySensor.Odometry(this);
         timer = new TrcTimer(instanceName);
         TrcTaskMgr.TaskObject pidCtrlTaskObj = TrcTaskMgr.createTask(instanceName + ".pidCtrlTask", this::pidCtrlTask);
@@ -236,6 +436,16 @@ public abstract class TrcMotor implements TrcMotorController, TrcExclusiveSubsys
                 instanceName + ".odometryCleanupTask", this::odometryCleanupTask);
             odometryCleanupTaskObj.registerTask(TaskType.STOP_TASK);
         }
+    }   //TrcMotor
+
+    /**
+     * Constructor: Create an instance of the object.
+     *
+     * @param instanceName specifies the instance name.
+     */
+    public TrcMotor(String instanceName)
+    {
+        this(instanceName, null);
     }   //TrcMotor
 
     /**
@@ -752,9 +962,9 @@ public abstract class TrcMotor implements TrcMotorController, TrcExclusiveSubsys
      */
     public void setPositionSensorInverted(boolean inverted)
     {
-        if (encoder != null)
+        if (externalEncoder != null)
         {
-            encoder.setInverted(inverted);
+            externalEncoder.setInverted(inverted);
         }
         else
         {
@@ -769,9 +979,9 @@ public abstract class TrcMotor implements TrcMotorController, TrcExclusiveSubsys
      */
     public boolean isPositionSensorInverted()
     {
-        if (encoder != null)
+        if (externalEncoder != null)
         {
-            return encoder.isInverted();
+            return externalEncoder.isInverted();
         }
         else
         {
@@ -788,9 +998,9 @@ public abstract class TrcMotor implements TrcMotorController, TrcExclusiveSubsys
      */
     public void setPositionSensorScaleAndOffset(double scale, double offset, double zeroOffset)
     {
-        if (encoder != null)
+        if (externalEncoder != null)
         {
-            encoder.setScaleAndOffset(scale, offset, zeroOffset);
+            externalEncoder.setScaleAndOffset(scale, offset, zeroOffset);
         }
         else
         {
@@ -819,7 +1029,7 @@ public abstract class TrcMotor implements TrcMotorController, TrcExclusiveSubsys
      */
     public double getEncoderRawPosition()
     {
-        return encoder != null? encoder.getRawPosition(): 0.0;
+        return externalEncoder != null? externalEncoder.getRawPosition(): 0.0;
     }   //getEncoderRawPosition
 
     /**
@@ -833,10 +1043,10 @@ public abstract class TrcMotor implements TrcMotorController, TrcExclusiveSubsys
         double currPos;
 
         if (motorGetPositionElapsedTimer != null) motorGetPositionElapsedTimer.recordStartTime();
-        if (encoder != null)
+        if (externalEncoder != null)
         {
             // This is scaled position (i.e. encoder is responsible for scaling).
-            currPos = encoder.getScaledPosition();
+            currPos = externalEncoder.getScaledPosition();
         }
         else
         {
@@ -861,10 +1071,10 @@ public abstract class TrcMotor implements TrcMotorController, TrcExclusiveSubsys
      */
     public void resetPosition(boolean hardware)
     {
-        if (encoder != null)
+        if (externalEncoder != null)
         {
             // External encoder doesn't support soft reset.
-            encoder.reset();
+            externalEncoder.reset();
         }
         else
         {
