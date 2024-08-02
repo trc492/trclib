@@ -1527,8 +1527,8 @@ public abstract class TrcMotor implements TrcMotorController, TrcExclusiveSubsys
     }   //setTaskParams
 
     /**
-     * This method sets the motor value. The value can be power or velocity. If the motor is not in the correct
-     * control mode, it will stop the motor and set it to the appropriate mode for the value.
+     * This method sets the motor value. The value can be power, velocity or current. If the motor is not in the
+     * correct control mode, it will stop the motor and set it to the appropriate mode for the value.
      * Optionally, you can specify a delay before running the motor and a duration for which the motor will be
      * turned off afterwards.
      *
@@ -1589,7 +1589,8 @@ public abstract class TrcMotor implements TrcMotorController, TrcExclusiveSubsys
                 value = 0.0;
             }
 
-            setTaskParams(controlMode, value, duration, completionEvent, false, null, 0.0);
+            // Hold target for velocity and current control modes.
+            setTaskParams(controlMode, value, duration, completionEvent, controlMode != ControlMode.Power, null, 0.0);
 
             if (delay > 0.0)
             {
