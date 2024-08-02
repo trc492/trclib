@@ -357,4 +357,12 @@ public interface TrcMotorController
      */
     void follow(TrcMotor motor, boolean inverted);
 
+    /**
+     * This method returns the follower with the specified index.
+     *
+     * @param index specifies the follower index.
+     * @return follower.
+     */
+    TrcMotor getFollower(int index);
+
 }   //interface TrcMotorController

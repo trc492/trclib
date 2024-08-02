@@ -395,9 +395,50 @@ public class TrcShooter implements TrcExclusiveSubsystem
     //
 
     /**
-     * This method returns the current shooter motor 1 velocity.
+     * This method returns the shooter motor 1 object.
      *
-     * @return current shooter motor 1 velocity in revolutions per second.
+     * @return shooter motor 1.
+     */
+    public TrcMotor getShooterMotor1()
+    {
+        return shooterMotor1;
+    }   //getShooterMotor1
+
+    /**
+     * This method returns the shooter motor 2 object if any.
+     *
+     * @return shooter motor 2, null if none.
+     */
+    public TrcMotor getShooterMotor2()
+    {
+        return shooterMotor2 != null? shooterMotor2: shooterMotor1.getFollower(0);
+    }   //getShooterMotor2
+
+    /**
+     * This methods returns the shooter motor 1 current power.
+     *
+     * @return shooter motor 1 current power.
+     */
+    public double getShooterMotor1Power()
+    {
+        return shooterMotor1.getPower();
+    }   //getShooterMotor1Power
+
+    /**
+     * This methods returns the shooter motor 2 current power if any.
+     *
+     * @return shooter motor 2 current power, null if none.
+     */
+    public Double getShooterMotor2Power()
+    {
+        TrcMotor motor2 = getShooterMotor2();
+        return motor2 != null? motor2.getPower(): null;
+    }   //getShooterMotor2Power
+
+    /**
+     * This method returns the shooter motor 1 current velocity.
+     *
+     * @return shooter motor 1 current velocity in revolutions per second.
      */
     public double getShooterMotor1Velocity()
     {
@@ -405,14 +446,78 @@ public class TrcShooter implements TrcExclusiveSubsystem
     }   //getShooterMotor1Velocity
 
     /**
-     * This method returns the current shooter motor 2 velocity.
+     * This method returns the shooter motor 1 current RPM.
      *
-     * @return current shooter motor 2 velocity in revolutions per second, 0.0 if no motor 2.
+     * @return shooter motor 1 current velocity in RPM.
      */
-    public double getShooterMotor2Velocity()
+    public double getShooterMotor1RPM()
     {
-        return shooterMotor2 != null? shooterMotor2.getVelocity(): 0.0;
+        return shooterMotor1.getVelocity() * 60.0;
+    }   //getShooterMotor1RPM
+
+    /**
+     * This method returns the shooter motor 2 current velocity if any.
+     *
+     * @return shooter motor 2 current velocity in revolutions per second, null if none.
+     */
+    public Double getShooterMotor2Velocity()
+    {
+        TrcMotor motor2 = getShooterMotor2();
+        return motor2 != null? motor2.getVelocity(): null;
     }   //getShooterMotor2Velocity
+
+    /**
+     * This method returns the shooter motor 2 current RPM if any.
+     *
+     * @return shooter motor 2 current velocity in RPM, null if none.
+     */
+    public Double getShooterMotor2RPM()
+    {
+        TrcMotor motor2 = getShooterMotor2();
+        return motor2 != null? motor2.getVelocity() * 60.0: null;
+    }   //getShooterMotor2RPM
+
+    /**
+     * This method returns the shooter motor 1 current target velocity.
+     *
+     * @return shooter motor 1 current target velocity in revolutions per second.
+     */
+    public double getShooterMotor1TargetVelocity()
+    {
+        return shooterMotor1.getPidTarget();
+    }   //getShooterMotor1TargetVelocity
+
+    /**
+     * This method returns the shooter motor 1 current target RPM.
+     *
+     * @return shooter motor 1 current target velocity in RPM.
+     */
+    public double getShooterMotor1TargetRPM()
+    {
+        return shooterMotor1.getPidTarget() * 60.0;
+    }   //getShooterMotor1TargetRPM
+
+    /**
+     * This method returns the shooter motor 2 current target velocity if any.
+     *
+     * @return shooter motor 2 current target velocity in revolutions per second, null if none.
+     */
+    public double getShooterMotor2TargetVelocity()
+    {
+        TrcMotor motor2 = getShooterMotor2();
+        return motor2 != null? motor2.getPidTarget(): 0.0;
+    }   //getShooterMotor2TargetVelocity
+
+    /**
+     * This method returns the shooter motor 2 current target RPM if any.
+     *
+     * @return shooter motor 2 current target velocity in RPM, null if none.
+     */
+    public double getShooterMotor2TargetRPM()
+    {
+        TrcMotor motor2 = getShooterMotor2();
+        return motor2 != null? motor2.getPidTarget() * 60.0: 0.0;
+    }   //getShooterMotor2TargetRPM
 
     /**
      * This method sets the shooter motor velocity.
@@ -428,6 +533,17 @@ public class TrcShooter implements TrcExclusiveSubsystem
             shooterMotor2.setVelocity(null, 0.0, velocity2, 0.0, null);
         }
     }   //setShooterMotorVelocity
+
+    /**
+     * This method sets the shooter motor velocity in RPM.
+     *
+     * @param rpm1 specifies the motor 1 velocity in RPM.
+     * @param rpm2 specifies the motor 2 velocity in RPM, ignore if no motor 2.
+     */
+    public void setShooterMotorRPM(double rpm1, double rpm2)
+    {
+        setShooterMotorVelocity(rpm1/60.0, rpm2/60.0);
+    }   //setShooterMotorRPM
 
     /**
      * This method stops the shooter. Use this method instead of setting shooter velocity to zero because the shooter
@@ -447,14 +563,34 @@ public class TrcShooter implements TrcExclusiveSubsystem
     //
 
     /**
-     * This method returns the current absolute tilt angle from horizontal.
+     * This method returns the tilt motor object if any.
      *
-     * @return current tilt angle in degrees.
+     * @return tilt motor, null if none.
      */
-    public double getTiltAngle()
+    public TrcMotor getTiltMotor()
     {
-        return tiltMotor != null? tiltMotor.getPosition(): 0.0;
+        return tiltMotor;
+    }   //getTiltMotor
+
+    /**
+     * This method returns the current absolute tilt angle from horizontal if any.
+     *
+     * @return current tilt angle in degrees, null if no tilt motor.
+     */
+    public Double getTiltAngle()
+    {
+        return tiltMotor != null? tiltMotor.getPosition(): null;
     }   //getTiltAngle
+
+    /**
+     * This method returns the current absolute tilt angle target from horizontal if any.
+     *
+     * @return current tilt angle target in degrees, null if no tilt motor.
+     */
+    public Double getTiltAngleTarget()
+    {
+        return tiltMotor != null? tiltMotor.getPidTarget(): null;
+    }   //getTiltAngleTarget
 
     /**
      * This method sets the tilt angle.
@@ -510,13 +646,13 @@ public class TrcShooter implements TrcExclusiveSubsystem
     }   //setTiltAngle
 
     /**
-     * This method returns the current applied tilt power duty cycle (in the range of -1 to 1).
+     * This method returns the current applied tilt power duty cycle (in the range of -1 to 1) if any.
      *
-     * @return current tilt power.
+     * @return current tilt power, null if no tilt motor.
      */
-    public double getTiltPower()
+    public Double getTiltPower()
     {
-        return tiltMotor != null? tiltMotor.getPower(): 0.0;
+        return tiltMotor != null? tiltMotor.getPower(): null;
     }   //getTiltPower
 
     /**
@@ -599,14 +735,34 @@ public class TrcShooter implements TrcExclusiveSubsystem
     //
 
     /**
-     * This method returns the current absolute pan angle.
+     * This method returns the pan motor object if any.
      *
-     * @return current pan angle in degrees.
+     * @return pan motor, null if none.
      */
-    public double getPanAngle()
+    public TrcMotor getPanMotor()
     {
-        return panMotor != null? panMotor.getPosition(): 0.0;
+        return panMotor;
+    }   //getPanMotor
+
+    /**
+     * This method returns the current absolute pan angle if any.
+     *
+     * @return current pan angle in degrees, null if no pan motor.
+     */
+    public Double getPanAngle()
+    {
+        return panMotor != null? panMotor.getPosition(): null;
     }   //getPanAngle
+
+    /**
+     * This method returns the current absolute pan angle target from horizontal if any.
+     *
+     * @return current pan angle target in degrees, null if no pan motor.
+     */
+    public Double getPanAngleTarget()
+    {
+        return panMotor != null? panMotor.getPidTarget(): null;
+    }   //getPanAngleTarget
 
     /**
      * This method sets the pan angle.
@@ -662,13 +818,13 @@ public class TrcShooter implements TrcExclusiveSubsystem
     }   //setPanAngle
 
     /**
-     * This method returns the current applied pan power duty cycle (in the range of -1 to 1).
+     * This method returns the current applied pan power duty cycle (in the range of -1 to 1) if any.
      *
-     * @return current pan power.
+     * @return current pan power, null if no pan motor.
      */
-    public double getPanPower()
+    public Double getPanPower()
     {
-        return panMotor != null? panMotor.getPower(): 0.0;
+        return panMotor != null? panMotor.getPower(): null;
     }   //getPanPower
 
     /**

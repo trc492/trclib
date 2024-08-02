@@ -514,6 +514,41 @@ public abstract class TrcMotor implements TrcMotorController, TrcExclusiveSubsys
         setMotorInverted(motor.isMotorInverted() ^ inverted);
     }   //follow
 
+    /**
+     * This method returns the follower in the specifies follower list with the specified index. This method is
+     * intended to be called by the subclasses.
+     *
+     * @param followerList specifies the follower list.
+     * @param index specifies the follower index.
+     * @return follower.
+     */
+    protected TrcMotor getFollower(ArrayList<TrcMotor> followerList, int index)
+    {
+        TrcMotor follower = null;
+
+        synchronized (followerList)
+        {
+            if (index < followerList.size())
+            {
+                follower = followerList.get(index);
+            }
+        }
+
+        return follower;
+    }   //getFollower
+
+    /**
+     * This method returns the follower with the specified index.
+     *
+     * @param index specifies the follower index.
+     * @return follower.
+     */
+    @Override
+    public TrcMotor getFollower(int index)
+    {
+        return getFollower(followingMotorsList, index);
+    }   //getFollower
+
     //
     // TrcMotor only methods. Subclass should not override these methods unless you know what you are doing.
     //
