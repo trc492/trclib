@@ -24,12 +24,12 @@ package trclib.subsystem;
 
 import java.util.concurrent.atomic.AtomicBoolean;
 
-import trclib.dataprocessor.TrcTrigger;
-import trclib.dataprocessor.TrcTrigger.TriggerMode;
 import trclib.motor.TrcMotor;
 import trclib.robotcore.TrcDbgTrace;
 import trclib.robotcore.TrcEvent;
 import trclib.robotcore.TrcExclusiveSubsystem;
+import trclib.sensor.TrcTrigger;
+import trclib.sensor.TrcTrigger.TriggerMode;
 import trclib.timer.TrcTimer;
 
 /**
@@ -44,9 +44,9 @@ import trclib.timer.TrcTimer;
 public class TrcIntake implements TrcExclusiveSubsystem
 {
     /**
-     * This class contains all the parameters related to the Trigger.
+     * This class contains all the parameters of the Intake Trigger.
      */
-    public static class Trigger
+    public static class TriggerParams
     {
         private final TrcTrigger trigger;
         private final TrcEvent.Callback triggerCallback;
@@ -65,7 +65,7 @@ public class TrcIntake implements TrcExclusiveSubsystem
          * @param triggerInverted specifies true if got object triggered below threshold, false if triggered above,
          *        null if trigger is digital.
          */
-        public Trigger(
+        public TriggerParams(
             TrcTrigger trigger, TrcEvent.Callback triggerCallback, Double threshold, Boolean triggerInverted)
         {
             this.trigger = trigger;
@@ -82,7 +82,7 @@ public class TrcIntake implements TrcExclusiveSubsystem
          * @param trigger specifies the TrcTrigger object.
          * @param triggerCallback specifies the callback method to call when a trigger occurred, null if not provided.
          */
-        public Trigger(TrcTrigger trigger, TrcEvent.Callback triggerCallback)
+        public TriggerParams(TrcTrigger trigger, TrcEvent.Callback triggerCallback)
         {
             this(trigger, triggerCallback, null, null);
         }   //Trigger
@@ -92,10 +92,10 @@ public class TrcIntake implements TrcExclusiveSubsystem
          *
          * @param trigger specifies the TrcTrigger object.
          */
-        public Trigger(TrcTrigger trigger)
+        public TriggerParams(TrcTrigger trigger)
         {
             this(trigger, null, null, null);
-        }   //Trigger
+        }   //TriggerParams
 
         /**
          * This method returns the string form of all the parameters.
@@ -112,7 +112,7 @@ public class TrcIntake implements TrcExclusiveSubsystem
                    ", event=" + notifyEvent;
         }   //toString
 
-    }   //class Trigger
+    }   //class TriggerParams
 
     /**
      * Specifies the operation types.
@@ -165,8 +165,8 @@ public class TrcIntake implements TrcExclusiveSubsystem
     public final TrcDbgTrace tracer;
     private final String instanceName;
     public final TrcMotor motor;
-    public final Trigger entryTrigger;
-    public final Trigger exitTrigger;
+    public final TriggerParams entryTrigger;
+    public final TriggerParams exitTrigger;
     private final TrcTimer timer;
     private final TrcEvent timerEvent;
     private ActionParams actionParams = null;
@@ -178,10 +178,10 @@ public class TrcIntake implements TrcExclusiveSubsystem
      *
      * @param instanceName specifies the hardware name.
      * @param motor specifies the motor object.
-     * @param entryTrigger specifies the entry trigger object, can be null if none.
-     * @param exitTrigger specifies the exit trigger object, can be null if none.
+     * @param entryTrigger specifies the entry trigger parameters, can be null if no entry trigger.
+     * @param exitTrigger specifies the exit trigger parameters, can be null if no exit trigger.
      */
-    public TrcIntake(String instanceName, TrcMotor motor, Trigger entryTrigger, Trigger exitTrigger)
+    public TrcIntake(String instanceName, TrcMotor motor, TriggerParams entryTrigger, TriggerParams exitTrigger)
     {
         this.tracer = new TrcDbgTrace();
         this.instanceName = instanceName;
@@ -210,7 +210,7 @@ public class TrcIntake implements TrcExclusiveSubsystem
      * @param motor specifies the motor object.
      * @param entryTrigger specifies the entry trigger object, can be null if none.
      */
-    public TrcIntake(String instanceName, TrcMotor motor, Trigger entryTrigger)
+    public TrcIntake(String instanceName, TrcMotor motor, TriggerParams entryTrigger)
     {
         this(instanceName, motor, entryTrigger, null);
     }   //TrcIntake
@@ -237,7 +237,7 @@ public class TrcIntake implements TrcExclusiveSubsystem
         return instanceName +
                ": pwr=" + getPower() +
                ", current=" + motor.getMotorCurrent() +
-               ", isActive=" + isActive() +
+               ", isActive=" + isAutoActive() +
                ", hasObject=" + hasObject();
     }   //toString
 
@@ -339,7 +339,7 @@ public class TrcIntake implements TrcExclusiveSubsystem
      */
     private void finish(boolean completed)
     {
-        if (isActive())
+        if (isAutoActive())
         {
             double power = completed && hasObject()? actionParams.retainPower: 0.0;
 
@@ -945,7 +945,7 @@ public class TrcIntake implements TrcExclusiveSubsystem
      * @param trigger specifies the trigger.
      * @return analog trigger sensor value.
      */
-    public double getSensorValue(Trigger trigger)
+    public double getSensorValue(TriggerParams trigger)
     {
         return trigger != null && trigger.analogTriggerThreshold != null? trigger.trigger.getSensorValue(): 0.0;
     }   //getSensorValue
@@ -955,7 +955,7 @@ public class TrcIntake implements TrcExclusiveSubsystem
      *
      * @return digital trigger sensor state.
      */
-    public boolean getSensorState(Trigger trigger)
+    public boolean getSensorState(TriggerParams trigger)
     {
         return trigger != null && trigger.analogTriggerThreshold == null && trigger.trigger.getSensorState();
     }   //getSensorState
@@ -966,7 +966,7 @@ public class TrcIntake implements TrcExclusiveSubsystem
      * @param trigger specifies the trigger to check.
      * @return true if trigger sensor detected an object, false otherwise.
      */
-    public boolean isTriggerActive(Trigger trigger)
+    public boolean isTriggerActive(TriggerParams trigger)
     {
         boolean active = false;
 
@@ -1005,9 +1005,9 @@ public class TrcIntake implements TrcExclusiveSubsystem
      *
      * @return true if auto operation is in progress, false otherwise.
      */
-    public boolean isActive()
+    public boolean isAutoActive()
     {
         return actionParams != null;
-    }   //isActive
+    }   //isAutoActive
 
 }   //class TrcIntake

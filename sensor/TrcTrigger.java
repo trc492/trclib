@@ -20,7 +20,7 @@
  * SOFTWARE.
  */
 
-package trclib.dataprocessor;
+package trclib.sensor;
 
 import trclib.robotcore.TrcEvent;
 

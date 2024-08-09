@@ -20,7 +20,7 @@
  * SOFTWARE.
  */
 
-package trclib.dataprocessor;
+package trclib.sensor;
 
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -28,7 +28,6 @@ import trclib.robotcore.TrcDbgTrace;
 import trclib.robotcore.TrcEvent;
 import trclib.robotcore.TrcRobot;
 import trclib.robotcore.TrcTaskMgr;
-import trclib.sensor.TrcDigitalInput;
 
 /**
  * This class implements a trigger for a digital input device. A digital input trigger consists of a digital input

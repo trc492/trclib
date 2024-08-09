@@ -367,29 +367,34 @@ public abstract class TrcServo implements TrcExclusiveSubsystem
     {
         synchronized (actionParams)
         {
+            double prevLogicalPos = getLogicalPosition();
             double logicalPos =
                 toLogicalPosition(
                     actionParams.actionType == ActionType.SetPosition ?
                         actionParams.targetPosition : actionParams.currPosition);
 
             tracer.traceDebug(instanceName, "actionParams=" + actionParams + ", logicalPos=" + logicalPos);
-            setLogicalPosition(logicalPos);
-            synchronized (followers)
+            if (logicalPos != prevLogicalPos)
             {
-                for (TrcServo servo : followers)
+                setLogicalPosition(logicalPos);
+                synchronized (followers)
                 {
-                    servo.setLogicalPosition(logicalPos);
+                    for (TrcServo servo : followers)
+                    {
+                        servo.setLogicalPosition(logicalPos);
+                    }
+                }
+
+                if (actionParams.timeout > 0.0 && actionParams.completionEvent != null)
+                {
+                    // A timeout is specified, set a timer for it and signal an event when it expires.
+                    // Since servo has no position feedback mechanism, time is used to estimate how long it takes to
+                    // complete the operation and signal the caller.
+                    timer.set(actionParams.timeout, actionParams.completionEvent);
+                    actionParams.completionEvent = null;
                 }
             }
 
-            if (actionParams.timeout > 0.0 && actionParams.completionEvent != null)
-            {
-                // A timeout is specified, set a timer for it and signal an event when it expires.
-                // Since servo has no position feedback mechanism, time is used to estimate how long it takes to
-                // complete the operation and signal the caller.
-                timer.set(actionParams.timeout, actionParams.completionEvent);
-                actionParams.completionEvent = null;
-            }
             // Action performed, destroy the params if ActionType was SetPosition. SetPositionWithStepRate and SetPower
             // will take care of cleaning up itself.
             if (actionParams.actionType == ActionType.SetPosition)

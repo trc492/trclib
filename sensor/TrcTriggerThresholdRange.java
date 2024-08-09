@@ -20,12 +20,14 @@
  * SOFTWARE.
  */
 
-package trclib.dataprocessor;
+package trclib.sensor;
 
 import java.util.Arrays;
 import java.util.Locale;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import trclib.dataprocessor.TrcDataBuffer;
+import trclib.dataprocessor.TrcValueSource;
 import trclib.robotcore.TrcDbgTrace;
 import trclib.robotcore.TrcEvent;
 import trclib.robotcore.TrcRobot;
