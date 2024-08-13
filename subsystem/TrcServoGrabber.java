@@ -48,10 +48,10 @@ public class TrcServoGrabber implements TrcExclusiveSubsystem
     {
         private TrcServo servo;
         private TrcTrigger sensorTrigger;
-        private TrcEvent.Callback triggerCallback;
         private boolean triggerInverted = false;
         private Double triggerThreshold = null;
         private Double hasObjectThreshold = null;
+        private TrcEvent.Callback triggerCallback;
         private double openPos = 0.0;
         private double openTime = 0.5;
         private double closePos = 1.0;
@@ -67,10 +67,10 @@ public class TrcServoGrabber implements TrcExclusiveSubsystem
         {
             return "servo=" + servo +
                    ",sensorTrigger=" + sensorTrigger +
-                   ",triggerCallback=" + (triggerCallback != null) +
                    ",triggerInverted=" + triggerInverted +
                    ",triggerThreshold=" + triggerThreshold +
                    ",hasObjThreshold=" + hasObjectThreshold +
+                   ",triggerCallback=" + (triggerCallback != null) +
                    ",openPos=" + openPos +
                    ",openTime=" + openTime +
                    ",closePos=" + closePos +
@@ -93,10 +93,10 @@ public class TrcServoGrabber implements TrcExclusiveSubsystem
          * This method sets the sensor trigger object with optional trigger callback.
          *
          * @param trigger specifies the sensor trigger object.
-         * @param triggerCallback specifies trigger callback, can be null if not provided.
          * @param inverted specifies true to invert the trigger, false otherwise.
          * @param triggerThreshold specifies the trigger threshold value.
          * @param hasObjectThreshold specifies the threshold value to detect object possession.
+         * @param triggerCallback specifies trigger callback, can be null if not provided.
          * @return this parameter object.
          */
         public Params setSensorTrigger(
@@ -104,40 +104,30 @@ public class TrcServoGrabber implements TrcExclusiveSubsystem
             TrcEvent.Callback triggerCallback)
         {
             this.sensorTrigger = trigger;
-            this.triggerCallback = triggerCallback;
             this.triggerInverted = inverted;
             this.triggerThreshold = triggerThreshold;
             this.hasObjectThreshold = hasObjectThreshold;
+            this.triggerCallback = triggerCallback;
             return this;
         }   //setSensorTrigger
 
         /**
-         * This method sets the open parameters of the servo grabber.
+         * This method sets the open/close parameters of the servo grabber.
          *
-         * @param openPos specifies the open position in physical unit
-         * @param openTime specifies the time in seconds required to open from a full close position.
+         * @param openPos specifies the open position in physical unit.
+         * @param openTime specifies the time in seconds required to open from fully close position.
+         * @param closePos specifies the close position in physical unit.
+         * @param closeTime specifies the time in seconds required to close from fully open position.
          * @return this parameter object.
          */
-        public Params setOpenParams(double openPos, double openTime)
+        public Params setOpenCloseParams(double openPos, double openTime, double closePos, double closeTime)
         {
             this.openPos = openPos;
             this.openTime = openTime;
-            return this;
-        }   //setOpenParams
-
-        /**
-         * This method sets the close parameters of the servo grabber.
-         *
-         * @param closePos specifies the close position in physical unit
-         * @param closeTime specifies the time in seconds required to close from a full open position.
-         * @return this parameter object.
-         */
-        public Params setCloseParams(double closePos, double closeTime)
-        {
             this.closePos = closePos;
             this.closeTime = closeTime;
             return this;
-        }   //setCloseParams
+        }   //setOpenCloseParams
 
     }   //class Params
 
@@ -222,11 +212,6 @@ public class TrcServoGrabber implements TrcExclusiveSubsystem
     private void setPosition(
         String owner, double delay, double position, TrcEvent event, double timeout, boolean cancelAutoAssist)
     {
-        if (event != null)
-        {
-            event.clear();
-        }
-
         tracer.traceDebug(
             instanceName,
             "owner=" + owner +
@@ -235,12 +220,16 @@ public class TrcServoGrabber implements TrcExclusiveSubsystem
             ", event=" + event +
             ", timeout=" + timeout +
             ", cancelAutoAssist=" + cancelAutoAssist);
-
         TrcEvent releaseOwnershipEvent = acquireOwnership(owner, event, tracer);
         if (releaseOwnershipEvent != null) event = releaseOwnershipEvent;
 
         if (validateOwnership(owner))
         {
+            if (event != null)
+            {
+                event.clear();
+            }
+
             if (cancelAutoAssist)
             {
                 cancelAction(null);
