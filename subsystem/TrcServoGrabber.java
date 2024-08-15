@@ -298,6 +298,16 @@ public class TrcServoGrabber implements TrcExclusiveSubsystem
     }   //setPosition
 
     /**
+     * This method checks if the grabber is closed.
+     *
+     * @return true if grabber is closed, false if open.
+     */
+    public boolean isClosed()
+    {
+        return grabberClosed;
+    }   //isClosed
+
+    /**
      * This method sets the servo grabber to its open position and signals the given event after the open time
      * has expired. If cancelAutoAssist is true, cancel the pending autoAssist operation if any.
      *
