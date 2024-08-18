@@ -63,7 +63,7 @@ public class CmdPidDrive implements TrcRobot.RobotCommand
     private final double delay;
     private final boolean useSensorOdometry;
     private final TrcPidController.PidCoefficients tunePidCoeff;
-    private final TrcPose2D[] pathPoints;
+    private TrcPose2D[] pathPoints;
     private int pathIndex;
 
     private final TrcEvent event;
@@ -225,6 +225,16 @@ public class CmdPidDrive implements TrcRobot.RobotCommand
 
         sm.stop();
     }   //cancel
+
+    /**
+     * This method allows the caller to change the path after CmdPidDrive is created.
+     *
+     * @param pathPoints specifies the new path points.
+     */
+    public void setPathPoints(TrcPose2D... pathPoints)
+    {
+        this.pathPoints = pathPoints;
+    }   //setPathPoints
 
     /**
      * This method must be called periodically by the caller to drive the command sequence forward.
