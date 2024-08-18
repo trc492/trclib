@@ -49,22 +49,17 @@ public class CmdPidDrive implements TrcRobot.RobotCommand
     private enum State
     {
         DO_DELAY,
-        PREP_FOR_TUNING,
         PID_DRIVE,
         DONE
     }   //enum State
 
     private static final String moduleName = CmdPidDrive.class.getSimpleName();
-
     private final TrcDashboard dashboard = TrcDashboard.getInstance();
-    private final TrcDbgTrace tracer = new TrcDbgTrace();
+
+    private final TrcDbgTrace tracer;
     private final TrcDriveBase driveBase;
     private final TrcPidDrive pidDrive;
-    private final double delay;
     private final boolean useSensorOdometry;
-    private final TrcPidController.PidCoefficients tunePidCoeff;
-    private TrcPose2D[] pathPoints;
-    private int pathIndex;
 
     private final TrcEvent event;
     private final TrcTimer timer;
@@ -72,9 +67,16 @@ public class CmdPidDrive implements TrcRobot.RobotCommand
     private final TrcPidController xPidCtrl;
     private final TrcPidController yPidCtrl;
     private final TrcPidController turnPidCtrl;
+    private final double oldXOutputLimit;
+    private final double oldYOutputLimit;
+    private final double oldTurnOutputLimit;
+
+    private double delay;
+    private TrcPose2D[] pathPoints;
+    private int pathIndex;
 
     private TrcPidController tunePidCtrl = null;
-    private PidCoefficients savedPidCoeff = null;
+    private PidCoefficients savedPidCoeffs = null;
     private Boolean savedTargetIsAbsolute = null;
     private Boolean savedWarpSpaceEnabled = null;
 
@@ -83,33 +85,14 @@ public class CmdPidDrive implements TrcRobot.RobotCommand
      *
      * @param driveBase specifies the drive base object.
      * @param pidDrive specifies the PID drive object to be used for PID controlled drive.
-     * @param delay specifies delay in seconds before PID drive starts. 0 means no delay.
-     * @param drivePowerLimit specifies the power limit to be applied for the PID controlled drive.
      * @param useSensorOdometry specifies true to use the sensor odometry, false to use drive base odometry.
-     * @param tunePidCoeff specifies PID coefficients for tuning PID controllers, can be null if not in
-     *        tune mode.
-     * @param pathPoints specifies one or more points on the path.
      */
-    public CmdPidDrive(
-        TrcDriveBase driveBase, TrcPidDrive pidDrive, double delay, double drivePowerLimit, boolean useSensorOdometry,
-        TrcPidController.PidCoefficients tunePidCoeff, TrcPose2D... pathPoints)
+    public CmdPidDrive(TrcDriveBase driveBase, TrcPidDrive pidDrive, boolean useSensorOdometry)
     {
-        if (pathPoints.length == 0)
-        {
-            throw new IllegalArgumentException("pathPoints must contain at least one point.");
-        }
-
-        tracer.traceInfo(
-            moduleName,
-            "pidDrive=%s,delay=%.3f,powerLimit=%.1f,useSensorOdometry=%s,tunePidCoeff=%s,path=%s",
-            pidDrive, delay, drivePowerLimit, useSensorOdometry, tunePidCoeff, Arrays.toString(pathPoints));
+        this.tracer = new TrcDbgTrace();
         this.driveBase = driveBase;
         this.pidDrive = pidDrive;
-        this.delay = delay;
         this.useSensorOdometry = useSensorOdometry;
-        this.tunePidCoeff = tunePidCoeff;
-        this.pathPoints = pathPoints;
-        pathIndex = 0;
 
         event = new TrcEvent(moduleName);
         timer = new TrcTimer(moduleName);
@@ -118,14 +101,10 @@ public class CmdPidDrive implements TrcRobot.RobotCommand
         xPidCtrl = pidDrive.getXPidCtrl();
         yPidCtrl = pidDrive.getYPidCtrl();
         turnPidCtrl = pidDrive.getTurnPidCtrl();
-        //
-        // Set power limits for each direction if applicable.
-        //
-        if (xPidCtrl != null) xPidCtrl.saveAndSetOutputLimit(drivePowerLimit);
-        if (yPidCtrl != null) yPidCtrl.saveAndSetOutputLimit(drivePowerLimit);
-        if (turnPidCtrl != null) turnPidCtrl.saveAndSetOutputLimit(drivePowerLimit);
-
-        sm.start(State.DO_DELAY);
+        // Save old power limits for each DOF so we can restore them when done.
+        oldXOutputLimit = xPidCtrl.getOutputLimit();
+        oldYOutputLimit = yPidCtrl.getOutputLimit();
+        oldTurnOutputLimit = turnPidCtrl.getOutputLimit();
     }   //CmdPidDrive
 
     /**
@@ -133,48 +112,64 @@ public class CmdPidDrive implements TrcRobot.RobotCommand
      *
      * @param driveBase specifies the drive base object.
      * @param pidDrive specifies the PID drive object to be used for PID controlled drive.
+     */
+    public CmdPidDrive(TrcDriveBase driveBase, TrcPidDrive pidDrive)
+    {
+        this(driveBase, pidDrive, false);
+    }   //CmdPidDrive
+
+    /**
+     * This method starts the specified PID drive run.
+     *
      * @param delay specifies delay in seconds before PID drive starts. 0 means no delay.
      * @param drivePowerLimit specifies the power limit to be applied for the PID controlled drive.
      * @param tunePidCoeff specifies PID coefficients for tuning PID controllers, can be null if not in
      *        tune mode.
      * @param pathPoints specifies one or more points on the path.
      */
-    public CmdPidDrive(
-        TrcDriveBase driveBase, TrcPidDrive pidDrive, double delay, double drivePowerLimit,
-        TrcPidController.PidCoefficients tunePidCoeff, TrcPose2D... pathPoints)
+    public void start(
+        double delay, double drivePowerLimit, TrcPidController.PidCoefficients tunePidCoeff, TrcPose2D... pathPoints)
     {
-        this(driveBase, pidDrive, delay, drivePowerLimit, false, tunePidCoeff, pathPoints);
-    }   //CmdPidDrive
+        if (pathPoints.length == 0)
+        {
+            throw new IllegalArgumentException("pathPoints must contain at least one point.");
+        }
+        tracer.traceInfo(
+            moduleName, "delay=%.3f,powerLimit=%.1f,tunePidCoeff=%s,path=%s",
+            delay, drivePowerLimit, tunePidCoeff, Arrays.toString(pathPoints));
 
-    /**
-     * Constructor: Create an instance of the object.
-     *
-     * @param driveBase specifies the drive base object.
-     * @param pidDrive specifies the PID drive object to be used for PID controlled drive.
-     * @param delay specifies delay in seconds before PID drive starts. 0 means no delay.
-     * @param useSensorOdometry specifies true to use the sensor odometry, false to use drive base odometry.
-     *        tune mode.
-     * @param pathPoints specifies one or more points on the path.
-     */
-    public CmdPidDrive(
-        TrcDriveBase driveBase, TrcPidDrive pidDrive, double delay, boolean useSensorOdometry, TrcPose2D... pathPoints)
-    {
-        this(driveBase, pidDrive, delay, 1.0, useSensorOdometry, null, pathPoints);
-    }   //CmdPidDrive
+        this.delay = delay;
+        this.pathPoints = pathPoints;
+        if (xPidCtrl != null) xPidCtrl.setOutputLimit(drivePowerLimit);
+        if (yPidCtrl != null) yPidCtrl.setOutputLimit(drivePowerLimit);
+        if (turnPidCtrl != null) turnPidCtrl.setOutputLimit(drivePowerLimit);
+        pathIndex = 0;
 
-    /**
-     * Constructor: Create an instance of the object.
-     *
-     * @param driveBase specifies the drive base object.
-     * @param pidDrive specifies the PID drive object to be used for PID controlled drive.
-     * @param delay specifies delay in seconds before PID drive starts. 0 means no delay.
-     * @param pathPoints specifies one or more points on the path.
-     */
-    public CmdPidDrive(
-        TrcDriveBase driveBase, TrcPidDrive pidDrive, double delay, TrcPose2D... pathPoints)
-    {
-        this(driveBase, pidDrive, delay, 1.0, false, null, pathPoints);
-    }   //CmdPidDrive
+        pidDrive.resetAbsoluteTargetPose();
+        if (tunePidCoeff != null)
+        {
+            // We are in tune mode to tune PID. We tune PID one direction at a time and we only use the first point
+            // of the path. Read PID constants from the robot and change the corresponding PID controller with them.
+            if (pathPoints[0].x != 0.0 && (tunePidCtrl = xPidCtrl) != null ||
+                pathPoints[0].y != 0.0 && (tunePidCtrl = yPidCtrl) != null ||
+                pathPoints[0].angle != 0.0 && (tunePidCtrl = turnPidCtrl) != null)
+            {
+                savedPidCoeffs = tunePidCtrl.getPidCoefficients();
+                savedTargetIsAbsolute = tunePidCtrl.hasAbsoluteSetPoint();
+
+                tunePidCtrl.setPidCoefficients(tunePidCoeff);
+                tunePidCtrl.setAbsoluteSetPoint(false);
+                tracer.traceInfo(moduleName, tunePidCtrl + ": PidCoeff=" + tunePidCoeff);
+            }
+            //
+            // Do not optimize turning if we are tuning PID.
+            //
+            savedWarpSpaceEnabled = pidDrive.isWarpSpaceEnabled();
+            pidDrive.setWarpSpaceEnabled(false);
+        }
+
+        sm.start(State.DO_DELAY);
+    }   //start
 
     //
     // Implements the TrcRobot.RobotCommand interface.
@@ -201,14 +196,14 @@ public class CmdPidDrive implements TrcRobot.RobotCommand
             pidDrive.cancel();
         }
 
-        if (xPidCtrl != null) xPidCtrl.restoreOutputLimit();
-        if (yPidCtrl != null) yPidCtrl.restoreOutputLimit();
-        if (turnPidCtrl != null) turnPidCtrl.restoreOutputLimit();
+        if (xPidCtrl != null) xPidCtrl.setOutputLimit(oldXOutputLimit);
+        if (yPidCtrl != null) yPidCtrl.setOutputLimit(oldYOutputLimit);
+        if (turnPidCtrl != null) turnPidCtrl.setOutputLimit(oldTurnOutputLimit);
 
-        if (savedPidCoeff != null)
+        if (savedPidCoeffs != null)
         {
-            tunePidCtrl.setPidCoefficients(savedPidCoeff);
-            savedPidCoeff = null;
+            tunePidCtrl.setPidCoefficients(savedPidCoeffs);
+            savedPidCoeffs = null;
         }
 
         if (savedTargetIsAbsolute != null)
@@ -223,18 +218,9 @@ public class CmdPidDrive implements TrcRobot.RobotCommand
             savedWarpSpaceEnabled = null;
         }
 
+        tunePidCtrl = null;
         sm.stop();
     }   //cancel
-
-    /**
-     * This method allows the caller to change the path after CmdPidDrive is created.
-     *
-     * @param pathPoints specifies the new path points.
-     */
-    public void setPathPoints(TrcPose2D... pathPoints)
-    {
-        this.pathPoints = pathPoints;
-    }   //setPathPoints
 
     /**
      * This method must be called periodically by the caller to drive the command sequence forward.
@@ -258,57 +244,21 @@ public class CmdPidDrive implements TrcRobot.RobotCommand
             switch (state)
             {
                 case DO_DELAY:
-                    //
                     // Do delay if any.
-                    //
                     if (delay == 0.0)
                     {
-                        sm.setState(State.PREP_FOR_TUNING);
-                        //
+                        sm.setState(State.PID_DRIVE);
                         // Intentionally falling through to DO_PID_DRIVE.
-                        //
                     }
                     else
                     {
                         timer.set(delay, event);
-                        sm.waitForSingleEvent(event, State.PREP_FOR_TUNING);
+                        sm.waitForSingleEvent(event, State.PID_DRIVE);
                         break;
                     }
 
-                case PREP_FOR_TUNING:
-                    pidDrive.resetAbsoluteTargetPose();
-                    if (tunePidCoeff != null)
-                    {
-                        //
-                        // We are in tune mode to tune PID. We tune PID one direction at a time and we only use the
-                        // first point of the path.
-                        // Read PID constants from the robot and change the corresponding PID controller with them.
-                        //
-                        if (pathPoints[0].x != 0.0 && (tunePidCtrl = xPidCtrl) != null ||
-                            pathPoints[0].y != 0.0 && (tunePidCtrl = yPidCtrl) != null ||
-                            pathPoints[0].angle != 0.0 && (tunePidCtrl = turnPidCtrl) != null)
-                        {
-                            savedPidCoeff = tunePidCtrl.getPidCoefficients();
-                            savedTargetIsAbsolute = tunePidCtrl.hasAbsoluteSetPoint();
-
-                            tunePidCtrl.setPidCoefficients(tunePidCoeff);
-                            tunePidCtrl.setAbsoluteSetPoint(false);
-                            tracer.traceInfo(moduleName, tunePidCtrl + ": PidCoeff=" + tunePidCoeff);
-                        }
-                        //
-                        // Do not optimize turning if we are tuning PID.
-                        //
-                        savedWarpSpaceEnabled = pidDrive.isWarpSpaceEnabled();
-                        pidDrive.setWarpSpaceEnabled(false);
-                    }
-                    sm.setState(State.PID_DRIVE);
-                    //
-                    // Intentionally falling through.
-                    //
                 case PID_DRIVE:
-                    //
                     // Drive the set distance and heading.
-                    //
                     if (pathIndex < pathPoints.length)
                     {
                         State nextState;
@@ -325,25 +275,21 @@ public class CmdPidDrive implements TrcRobot.RobotCommand
                             // If we are tuning PID, we are doing only one path point.
                             pidDrive.setRelativeTarget(
                                 pathPoints[pathIndex].x, pathPoints[pathIndex].y, pathPoints[pathIndex].angle, event);
-                            nextState = tunePidCoeff != null? State.DONE: State.PID_DRIVE;
+                            nextState = tunePidCtrl != null? State.DONE: State.PID_DRIVE;
                             pathIndex++;
                         }
                         sm.waitForSingleEvent(event, nextState);
                     }
                     else
                     {
-                        //
                         // We ran out of path points, so we will quit.
-                        //
                         sm.setState(State.DONE);
                     }
                     break;
 
                 case DONE:
                 default:
-                    //
                     // We are done, restore everything.
-                    //
                     cancel();
                     break;
             }
