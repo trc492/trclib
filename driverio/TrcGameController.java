@@ -149,6 +149,44 @@ public abstract class TrcGameController
     }   //setButtonEventEnabled
 
     /**
+     * This method returns the exponentially raised of the given value.
+     *
+     * @param value specifies the value to be raised exponentially.
+     * @param doExp specifies true if the value will be exponentially raised, false otherwise.
+     * @return exponentially raised value.
+     */
+    private double expValue(double value, boolean doExp)
+    {
+        double output;
+
+        if (doExp)
+        {
+            double sign = Math.signum(value);
+            value = Math.abs(value);
+            output = Math.pow(value, exponent)*sign;
+        }
+        else
+        {
+            output = value;
+        }
+
+        return output;
+    }   //expValue
+
+    /**
+     * This method adjusts the analog control curve by using the cubic polynomial: coeff*value^3 + (1 - coeff)*value.
+     *
+     * @param value specifies the analog control value.
+     * @param cubicCoefficient specifies the cubic coefficient.
+     */
+    protected double adjustAnalogControl(double value, double cubicCoefficient)
+    {
+        value = (Math.abs(value) >= deadbandThreshold)? value: 0.0;
+        value = cubicCoefficient*Math.pow(value, 3) + (1 - cubicCoefficient)*value;
+        return value;
+    }   //adjustAnalogControl
+
+    /**
      * This method adjusts the analog control value by raising it exponentially and adjusting the sign if appropriate.
      *
      * @param value specifies the analog control value.
@@ -166,17 +204,17 @@ public abstract class TrcGameController
     }   //adjustAnalogControl
 
     /**
-     * This method adjusts the analog control curve by using the cubic polynomial: coeff*value^3 + (1 - coeff)*value.
+     * This method returns the magnitude value combining the x and y values. The magnitude is calculated by squaring
+     * both x and y, sum them and take the square root.
      *
-     * @param value specifies the analog control value.
-     * @param cubicCoefficient specifies the cubic coefficient.
+     * @param x specifies the x value.
+     * @param y specifies the y value.
+     * @return returns the magnitude value.
      */
-    protected double adjustAnalogControl(double value, double cubicCoefficient)
+    public double getMagnitude(double x, double y)
     {
-        value = (Math.abs(value) >= deadbandThreshold)? value: 0.0;
-        value = cubicCoefficient*Math.pow(value, 3) + (1 - cubicCoefficient)*value;
-        return value;
-    }   //adjustAnalogControl
+        return TrcUtil.magnitude(x, y);
+    }   //getMagnitude
 
     /**
      * This method returns the stick direction in radians combining the x and y axes.
@@ -203,44 +241,6 @@ public abstract class TrcGameController
     {
         return Math.toDegrees(getDirectionRadians(xValue, yValue));
     }   //getDirectionDegrees
-
-    /**
-     * This method returns the magnitude value combining the x and y values. The magnitude is calculated by squaring
-     * both x and y, sum them and take the square root.
-     *
-     * @param x specifies the x value.
-     * @param y specifies the y value.
-     * @return returns the magnitude value.
-     */
-    public double getMagnitude(double x, double y)
-    {
-        return TrcUtil.magnitude(x, y);
-    }   //getMagnitude
-
-    /**
-     * This method returns the exponentially raised of the given value.
-     *
-     * @param value specifies the value to be raised exponentially.
-     * @param doExp specifies true if the value will be exponentially raised, false otherwise.
-     * @return exponentially raised value.
-     */
-    private double expValue(double value, boolean doExp)
-    {
-        double output;
-
-        if (doExp)
-        {
-            double sign = Math.signum(value);
-            value = Math.abs(value);
-            output = Math.pow(value, exponent)*sign;
-        }
-        else
-        {
-            output = value;
-        }
-
-        return output;
-    }   //expValue
 
     /**
      * This method runs periodically and checks for changes in the button states. If any button changed state,
