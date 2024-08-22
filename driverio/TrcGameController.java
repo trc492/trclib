@@ -26,6 +26,7 @@ import trclib.robotcore.TrcRobot;
 import trclib.dataprocessor.TrcUtil;
 import trclib.robotcore.TrcDbgTrace;
 import trclib.robotcore.TrcTaskMgr;
+import trclib.timer.TrcTimer;
 
 /**
  * This class implements the platform independent game controller and is extended by a platform dependent game
@@ -36,21 +37,14 @@ import trclib.robotcore.TrcTaskMgr;
 public abstract class TrcGameController
 {
     /**
-     * This interface, if provided, will allow this class to do a notification callback when there are button
-     * activities.
+     * This enum specifies different drive modes.
      */
-    public interface ButtonHandler
+    public enum DriveMode
     {
-        /**
-         * This method is called when button event is detected.
-         *
-         * @param gameCtrl specifies the game controller object that generated the event.
-         * @param button specifies the button ID that generates the event
-         * @param pressed specifies true if the button is pressed, false otherwise.
-         */
-        void buttonEvent(TrcGameController gameCtrl, int button, boolean pressed);
-
-    }   //interface ButonHandler
+        TankMode,
+        ArcadeMode,
+        HolonomicMode
+    }   //enum DriveMode
 
     /**
      * This method returns the buttons state of the game controller.
@@ -59,49 +53,40 @@ public abstract class TrcGameController
      */
     public abstract int getButtons();
 
-    private static final double DEF_DEADBAND_THRESHOLD = 0.15;
+    /**
+     * This method is called when a button event is detected.
+     *
+     * @param buttonValue specifies the value of the button that generated the event.
+     * @param pressed specifies true if the button was pressed, false if released.
+     */
+    protected abstract void notifyButtonEvent(int buttonValue, boolean pressed);
+
+    private static final double DEF_SAMPLING_PERIOD = 0.02;     //Sampling at 50Hz.
 
     public final TrcDbgTrace tracer;
     protected final String instanceName;
     private final double deadbandThreshold;
-    private final ButtonHandler buttonHandler;
-    private int prevButtons;
+    private final TrcTaskMgr.TaskObject buttonEventTaskObj;
+
+    private int prevButtons = 0;
+    private double samplingPeriod = DEF_SAMPLING_PERIOD;
+    private double nextPeriod = 0.0;
     private int exponent = 2;
+    private boolean buttonEventEnabled = false;
 
     /**
      * Constructor: Create an instance of the object.
      *
      * @param instanceName specifies the instance name.
      * @param deadbandThreshold specifies the deadband of the game controller analog sticks.
-     * @param buttonHandler specifies the object that will handle the button events. If none provided, it is set to
-     *                      null.
      */
-    public TrcGameController(
-        final String instanceName, double deadbandThreshold, ButtonHandler buttonHandler)
+    public TrcGameController(String instanceName, double deadbandThreshold)
     {
         this.tracer = new TrcDbgTrace();
         this.instanceName = instanceName;
         this.deadbandThreshold = deadbandThreshold;
-        this.buttonHandler = buttonHandler;
-
-        if (buttonHandler != null)
-        {
-            TrcTaskMgr.TaskObject buttonEventTaskObj = TrcTaskMgr.createTask(
-                instanceName + ".buttonEventTask", this::buttonEventTask);
-            buttonEventTaskObj.registerTask(TrcTaskMgr.TaskType.PRE_PERIODIC_TASK);
-        }
-    }   //TrcGameController
-
-    /**
-     * Constructor: Create an instance of the object.
-     *
-     * @param instanceName specifies the instance name.
-     * @param buttonHandler specifies the object that will handle the button events. If none provided, it is set to
-     *                      null.
-     */
-    public TrcGameController(String instanceName, ButtonHandler buttonHandler)
-    {
-        this(instanceName, DEF_DEADBAND_THRESHOLD, buttonHandler);
+        buttonEventTaskObj = TrcTaskMgr.createTask(instanceName + ".buttonEventTask", this::buttonEventTask);
+        prevButtons = getButtons();
     }   //TrcGameController
 
     /**
@@ -116,13 +101,15 @@ public abstract class TrcGameController
     }   //toString
 
     /**
-     * This method initializes the game controller. This is done separate from the constructor because the getButtons
-     * method may not be accessible when the object is constructed.
+     * This method sets the joystick button sampling period. By default, it is sampling at 50Hz. One could change
+     * the sampling period by calling this method.
+     *
+     * @param period specifies the new sampling period in seconds.
      */
-    public void init()
+    public void setSamplingPeriod(double period)
     {
-        prevButtons = getButtons();
-    }   //init
+        samplingPeriod = period;
+    }   //setSamplingPeriod
 
     /**
      * This method sets the exponential value for raising analog control values.
@@ -135,6 +122,26 @@ public abstract class TrcGameController
     }   //setExponent
 
     /**
+     * This method enables/disables button event notification.
+     *
+     * @param enabled specifies true to enable button event notification, false to disable.
+     */
+    protected void setButtonEventEnabled(boolean enabled)
+    {
+        if (!buttonEventEnabled && enabled)
+        {
+            // Enabling button event notification.
+            buttonEventTaskObj.registerTask(TrcTaskMgr.TaskType.PRE_PERIODIC_TASK);
+        }
+        else if (buttonEventEnabled && !enabled)
+        {
+            // Disabling button event notification.
+            buttonEventTaskObj.unregisterTask();
+        }
+        buttonEventEnabled = enabled;
+    }   //setButtonEventEnabled
+
+    /**
      * This method adjusts the analog control value by raising it exponentially and adjusting the sign if appropriate.
      *
      * @param value specifies the analog control value.
@@ -144,7 +151,9 @@ public abstract class TrcGameController
      */
     protected double adjustAnalogControl(double value, boolean doExp)
     {
+        // Apply deadband.
         value = (Math.abs(value) >= deadbandThreshold)? value: 0.0;
+        // Apply exponent curve adjustment.
         value = expValue(value, doExp);
         return value;
     }   //adjustAnalogControl
@@ -237,41 +246,31 @@ public abstract class TrcGameController
      */
     private void buttonEventTask(TrcTaskMgr.TaskType taskType, TrcRobot.RunMode runMode, boolean slowPeriodicLoop)
     {
+        // Button events are human input. They are slow so don't need to run in a fast loop.
         if (slowPeriodicLoop)
         {
-            // Button events are human input. They are slow so don't need to run in a fast loop.
-            int currButtons = getButtons();
-            int changedButtons = prevButtons^currButtons;
-            int buttonMask;
-
-            while (changedButtons != 0)
+            double currTime = TrcTimer.getCurrentTime();
+            if (currTime >= nextPeriod)
             {
-                //
-                // buttonMask contains the least significant set bit.
-                //
-                buttonMask = changedButtons & ~(changedButtons^-changedButtons);
-                if ((currButtons & buttonMask) != 0)
+                int currButtons = getButtons();
+                nextPeriod = currTime + samplingPeriod;
+                if (buttonEventEnabled && runMode != TrcRobot.RunMode.DISABLED_MODE)
                 {
-                    //
-                    // Button is pressed.
-                    //
-                    tracer.traceDebug(instanceName, "Button " +  Integer.toHexString(buttonMask)+ " pressed.");
-                    buttonHandler.buttonEvent(this, buttonMask, true);
+                    int changedButtons = prevButtons ^ currButtons;
+                    while (changedButtons != 0)
+                    {
+                        // buttonMask contains the least significant set bit.
+                        int buttonMask = changedButtons & ~(changedButtons ^ -changedButtons);
+                        boolean pressed = (currButtons & buttonMask) != 0;
+                        int buttonValue = TrcUtil.leastSignificantSetBitPosition(buttonMask);
+                        tracer.traceDebug(instanceName, "Button=" + buttonValue + ", pressed=" + pressed);
+                        notifyButtonEvent(buttonMask, pressed);
+                        // Clear the least significant set bit.
+                        changedButtons &= ~buttonMask;
+                    }
                 }
-                else
-                {
-                    //
-                    // Button is released.
-                    //
-                    tracer.traceDebug(instanceName, "Button " +  Integer.toHexString(buttonMask)+ " released.");
-                    buttonHandler.buttonEvent(this, buttonMask, false);
-                }
-                //
-                // Clear the least significant set bit.
-                //
-                changedButtons &= ~buttonMask;
+                prevButtons = currButtons;
             }
-            prevButtons = currButtons;
         }
     }   //buttonEventTask
 
