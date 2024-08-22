@@ -86,7 +86,6 @@ public abstract class TrcGameController
         this.instanceName = instanceName;
         this.deadbandThreshold = deadbandThreshold;
         buttonEventTaskObj = TrcTaskMgr.createTask(instanceName + ".buttonEventTask", this::buttonEventTask);
-        prevButtons = getButtons();
     }   //TrcGameController
 
     /**
@@ -99,6 +98,14 @@ public abstract class TrcGameController
     {
         return instanceName;
     }   //toString
+
+    /**
+     * This method is called after the constructor is done because getButton may not be available before then.
+     */
+    protected void init()
+    {
+        prevButtons = getButtons();
+    }   //init
 
     /**
      * This method sets the joystick button sampling period. By default, it is sampling at 50Hz. One could change
