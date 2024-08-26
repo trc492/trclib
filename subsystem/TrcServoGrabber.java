@@ -464,8 +464,12 @@ public class TrcServoGrabber implements TrcExclusiveSubsystem
      */
     private void grabTriggerCallback(Object context)
     {
-        close(actionParams.owner, null, false);
-        finishAction(true);
+        if (objectInProximity())
+        {
+            tracer.traceDebug(instanceName, "Triggered: grab the object.");
+            close(actionParams.owner, null, false);
+            finishAction(true);
+        }
     }   //grabTriggerCallback
 
     /**
@@ -492,6 +496,7 @@ public class TrcServoGrabber implements TrcExclusiveSubsystem
             if (!grabberClosed)
             {
                 // Grabber is open but the object is near by, grab it.
+                tracer.traceDebug(instanceName, "Object already in proximity, grab it!");
                 close(ap.owner, null, false);
             }
             grabbedObject = true;
@@ -499,21 +504,25 @@ public class TrcServoGrabber implements TrcExclusiveSubsystem
         else if (grabberClosed)
         {
             // Grabber is close but has no object, open it to prepare for grabbing.
+            tracer.traceDebug(instanceName, "Claws are closed, open it back up.");
             open(ap.owner, null, false);
         }
 
         if (grabbedObject)
         {
             // Already grabbed an object, finish the action.
+            tracer.traceDebug(instanceName, "Already has object, finish the operation.");
             finishAction(true);
         }
         else
         {
             // Arm the sensor trigger as long as AutoAssist is enabled.
-            params.sensorTrigger.enableTrigger(TriggerMode.OnActive, this::grabTriggerCallback);
+            tracer.traceDebug(instanceName, "Arm sensor trigger.");
+            params.sensorTrigger.enableTrigger(TriggerMode.OnBoth, this::grabTriggerCallback);
             if (ap.timeout > 0.0)
             {
                 // Set a timeout and cancel auto-assist if timeout has expired.
+                tracer.traceDebug(instanceName, "Set timeout " + ap.timeout + " sec");
                 timer.set(ap.timeout, this::actionTimedOut, null);
             }
         }
