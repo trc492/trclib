@@ -32,6 +32,7 @@ import java.util.Stack;
 import trclib.robotcore.TrcDbgTrace;
 import trclib.robotcore.TrcEvent;
 import trclib.robotcore.TrcExclusiveSubsystem;
+import trclib.sensor.TrcDriveBaseOdometry;
 import trclib.sensor.TrcGyro;
 import trclib.motor.TrcMotor;
 import trclib.sensor.TrcOdometrySensor;
@@ -96,6 +97,16 @@ public abstract class TrcDriveBase implements TrcExclusiveSubsystem
         }   //nextDriveOrientation
 
     }   //enum DriveOrientation
+
+    /**
+     * This specifies the type of Drive Base Odometry is in use.
+     */
+    public enum OdometryType
+    {
+        MotorOdometry,
+        OdometryWheels,
+        AbsoluteOdometry    //e.g. SparkFun OTOS
+    }   //enum OdometryType
 
     /**
      * This class implements the drive base odometry. It consists of the position as well as velocity info in all
@@ -249,7 +260,9 @@ public abstract class TrcDriveBase implements TrcExclusiveSubsystem
     private String driveOwner = null;
     protected double stallStartTime = 0.0;
     protected double stallVelThreshold = 0.0;
-    private TrcOdometryWheels driveBaseOdometry = null;
+    private OdometryType odometryType = OdometryType.MotorOdometry;
+    private TrcOdometryWheels odometryWheels = null;
+    private TrcDriveBaseOdometry absoluteOdometry = null;
     protected MotorPowerMapper motorPowerMapper = null;
     private double sensitivity = DEF_SENSITIVITY;
 
@@ -444,6 +457,23 @@ public abstract class TrcDriveBase implements TrcExclusiveSubsystem
     }   //setSynchronizeOdometriesEnabled
 
     /**
+     * This method enables/disables drive motor odometry.
+     *
+     * @param enabled specifies true to enable drive motor odometry, false to disable.
+     * @param resetHardware specifies true to also reset motor encoder when enabling, false otherwise.
+     */
+    private void setMotorOdometryEnabled(boolean enabled, boolean resetHardware)
+    {
+        if (odometryType == OdometryType.MotorOdometry)
+        {
+            for (TrcMotor motor : motors)
+            {
+                motor.setOdometryEnabled(enabled, enabled, resetHardware);
+            }
+        }
+    }   //setMotorOdometryEnabled
+
+    /**
      * This method is called to enable/disable the odometry task that keeps track of the robot position and orientation.
      *
      * @param enabled specifies true to enable, false to disable.
@@ -455,10 +485,7 @@ public abstract class TrcDriveBase implements TrcExclusiveSubsystem
         tracer.traceDebug(moduleName, "enabled=" + enabled + ",resetHW=" + resetHardware);
         if (enabled)
         {
-            for (TrcMotor motor: motors)
-            {
-                motor.setOdometryEnabled(true, true, resetHardware);
-            }
+            setMotorOdometryEnabled(true, resetHardware);
             // We already reset position odometry when enabling motor odometry, so don't do it twice.
             // But we do need to reset heading odometry.
             resetOdometry(false, true, resetHardware);
@@ -467,10 +494,7 @@ public abstract class TrcDriveBase implements TrcExclusiveSubsystem
         else
         {
             odometryTaskObj.unregisterTask();
-            for (TrcMotor motor: motors)
-            {
-                motor.setOdometryEnabled(false, false, false);
-            }
+            setMotorOdometryEnabled(false, false);
         }
     }   //setOdometryEnabled
 
@@ -720,9 +744,9 @@ public abstract class TrcDriveBase implements TrcExclusiveSubsystem
             this.yScale = yScale;
             this.angleScale = angleScale;
 
-            if (driveBaseOdometry != null)
+            if (odometryWheels != null)
             {
-                driveBaseOdometry.setOdometryScales(xScale, yScale, angleScale);
+                odometryWheels.setOdometryScales(xScale, yScale, angleScale);
             }
         }
     }   //setOdometryScales
@@ -836,9 +860,13 @@ public abstract class TrcDriveBase implements TrcExclusiveSubsystem
         {
             clearReferenceOdometry();
 
-            if (driveBaseOdometry != null)
+            if (odometryWheels != null)
             {
-                driveBaseOdometry.resetOdometry(resetPositionOdometry, resetHeadingOdometry, resetHardware);
+                odometryWheels.resetOdometry(resetPositionOdometry, resetHeadingOdometry, resetHardware);
+            }
+            else if (absoluteOdometry != null)
+            {
+                absoluteOdometry.reset();
             }
             else
             {
@@ -893,15 +921,53 @@ public abstract class TrcDriveBase implements TrcExclusiveSubsystem
     }   //resetOdometry
 
     /**
-     * This method sets the given odometry device as the drive base's odometry device overriding the built-in odometry.
+     * This method sets the built-in motor odometry as the drive base's odometry device.
      *
-     * @param driveBaseOdometry specifies the drive base odometry device.
+     * @param resetHardware specifies true for resetting hardware position, false for resetting software position.
      */
-    public void setDriveBaseOdometry(TrcOdometryWheels driveBaseOdometry)
+    public void setDriveBaseOdometry(boolean resetHardware)
     {
         synchronized (odometry)
         {
-            this.driveBaseOdometry = driveBaseOdometry;
+            // Disabling motor odometry if it was active before.
+            setMotorOdometryEnabled(true, resetHardware);
+            this.odometryWheels = null;
+            this.absoluteOdometry = null;
+            this.odometryType = OdometryType.MotorOdometry;
+        }
+    }   //setDriveBaseOdometry
+
+    /**
+     * This method sets the given odometry device as the drive base's odometry device overriding the built-in odometry.
+     *
+     * @param odometryWheels specifies the odometry wheels as the drive base odometry device.
+     */
+    public void setDriveBaseOdometry(TrcOdometryWheels odometryWheels)
+    {
+        synchronized (odometry)
+        {
+            // Disabling motor odometry if it was active before.
+            setMotorOdometryEnabled(false, false);
+            this.odometryWheels = odometryWheels;
+            this.absoluteOdometry = null;
+            this.odometryType = OdometryType.OdometryWheels;
+        }
+    }   //setDriveBaseOdometry
+
+    /**
+     * This method sets the given odometry device as the drive base's odometry device overriding the built-in odometry.
+     *
+     * @param absoluteOdometry specifies the drive base absolute odometry device.
+     */
+    public void setDriveBaseOdometry(TrcDriveBaseOdometry absoluteOdometry)
+    {
+        synchronized (odometry)
+        {
+            // Disabling motor odometry if it was active before.
+            setMotorOdometryEnabled(false, false);
+            this.odometryWheels = null;
+            this.absoluteOdometry = absoluteOdometry;
+            this.odometryType = OdometryType.AbsoluteOdometry;
         }
     }   //setDriveBaseOdometry
 
@@ -1881,16 +1947,21 @@ public abstract class TrcDriveBase implements TrcExclusiveSubsystem
         {
             Odometry odometryDelta;
 
-            if (driveBaseOdometry != null)
+            if (odometryWheels != null)
             {
-                odometryDelta = driveBaseOdometry.getOdometryDelta();
+                odometryDelta = odometryWheels.getOdometryDelta();
                 updateOdometry(odometryDelta, odometry.position.angle);
-
-                if (TrcUtil.magnitude(odometryDelta.velocity.x, odometryDelta.velocity.y) > stallVelThreshold)
-                {
-                    // reset stall start time to current time if drive base has movement.
-                    stallStartTime = TrcTimer.getCurrentTime();
-                }
+            }
+            else if (absoluteOdometry != null)
+            {
+                TrcPose2D currPos = absoluteOdometry.getPosition();
+                odometry.position.x = currPos.x;
+                odometry.position.y = currPos.y;
+                odometry.position.angle = currPos.angle;
+                TrcPose2D currVel = absoluteOdometry.getVelocity();
+                odometry.velocity.x = currVel.x;
+                odometry.velocity.y = currVel.y;
+                odometry.velocity.angle = currVel.angle;
             }
             else
             {
@@ -1942,6 +2013,12 @@ public abstract class TrcDriveBase implements TrcExclusiveSubsystem
                     "motorsState=" + motorsState +
                     ", delta=" + odometryDelta +
                     ", odometry=" + odometry);
+            }
+
+            if (TrcUtil.magnitude(odometry.velocity.x, odometry.velocity.y) > stallVelThreshold)
+            {
+                // reset stall start time to current time if drive base has movement.
+                stallStartTime = TrcTimer.getCurrentTime();
             }
         }
     }   //odometryTask
