@@ -28,6 +28,7 @@ import org.opencv.core.Mat;
 import org.opencv.core.MatOfInt;
 import org.opencv.core.MatOfPoint;
 import org.opencv.core.MatOfPoint2f;
+import org.opencv.core.Point;
 import org.opencv.core.Rect;
 import org.opencv.core.Scalar;
 import org.opencv.core.Size;
@@ -215,6 +216,7 @@ public class TrcOpenCvColorBlobPipeline implements TrcOpenCvPipeline<TrcOpenCvDe
     private final Mat morphologyOutput = new Mat();
     private final Mat hierarchy = new Mat();
     private final Mat[] intermediateMats;
+    private Point[] horizontalLine = null;
 
     private final AtomicReference<DetectedObject[]> detectedObjectsUpdate = new AtomicReference<>();
     private int intermediateStep = 0;
@@ -270,6 +272,26 @@ public class TrcOpenCvColorBlobPipeline implements TrcOpenCvPipeline<TrcOpenCvDe
     {
         return instanceName;
     }   //toString
+
+    /**
+     * This methods draws a horizontal line on the video stream for tuning Homography. Homography requires mapping
+     * four screen points to four floor points. The bottom two screen points are always at the bottom of the screen.
+     * However, the top two points may not be at the screen top because if the camera is pointing relatively straight,
+     * the screen top would be very far away or worst, it may not be on the ground at all. Therefore, we may want to
+     * draw a horizontal line on the screen that is lower than screen top for mapping a reasonable top points on the
+     * ground.
+     *
+     * @param horizontalLine specifies an array of two points that form a horizontal time in screen pixel unit.
+     */
+    public void setHorizontalLine(Point[] horizontalLine)
+    {
+        if (horizontalLine.length != 2)
+        {
+            throw new IllegalArgumentException("Horizontal line must consist of exactly two points.");
+        }
+
+        this.horizontalLine = horizontalLine;
+    }   //setHorizontalLine
 
     /**
      * This method enables/disables performance metrics.
@@ -430,8 +452,11 @@ public class TrcOpenCvColorBlobPipeline implements TrcOpenCvPipeline<TrcOpenCvDe
                 Scalar color = intermediateStep == 0? ANNOTATE_RECT_COLOR: ANNOTATE_RECT_WHITE;
                 annotateFrame(
                     output, instanceName, detectedObjects, color, ANNOTATE_RECT_THICKNESS, ANNOTATE_FONT_SCALE);
-//                // This line is for tuning Homography.
-//                Imgproc.line(output, new Point(0, 120), new Point(639, 120), new Scalar(255, 255, 255), 2);
+                // This line is for tuning Homography.
+                if (horizontalLine != null)
+                {
+                    Imgproc.line(output, horizontalLine[0], horizontalLine[1], new Scalar(255, 255, 255), 2);
+                }
             }
 
             detectedObjectsUpdate.set(detectedObjects);
@@ -494,6 +519,13 @@ public class TrcOpenCvColorBlobPipeline implements TrcOpenCvPipeline<TrcOpenCvDe
     public void setNextVideoOutput()
     {
         intermediateStep = (intermediateStep + 1) % intermediateMats.length;
+        if (intermediateMats[intermediateStep].empty())
+        {
+            // This mat is empty, skip to the next mat.
+            // Warning: this assumes there is at least one non-empty mat in the array. If not, this will become a
+            // runaway recursion. (This shouldn't happen because Mat[0] should always be the input mat).
+            setNextVideoOutput();
+        }
     }   //setNextVideoOutput
 
     /**
