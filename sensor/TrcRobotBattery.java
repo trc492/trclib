@@ -32,8 +32,6 @@ import trclib.timer.TrcTimer;
  */
 public abstract class TrcRobotBattery
 {
-    private static final String moduleName = TrcRobotBattery.class.getSimpleName();
-
     /**
      * This method returns the robot battery voltage.
      *
@@ -91,7 +89,7 @@ public abstract class TrcRobotBattery
     @Override
     public String toString()
     {
-        return moduleName + ": Volt=" + getVoltage() + "/" + getLowestVoltage();
+        return getClass().getSimpleName() + ": Volt=" + getVoltage() + "/" + getLowestVoltage();
     }   //toString
 
     /**

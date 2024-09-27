@@ -44,8 +44,6 @@ public class CmdDriveMotorsTest implements TrcRobot.RobotCommand
         DONE
     }   //enum State
 
-    private static final String moduleName = CmdDriveMotorsTest.class.getSimpleName();
-
     private final TrcDashboard dashboard = TrcDashboard.getInstance();
     private final TrcDbgTrace tracer = new TrcDbgTrace();
     private final TrcMotor[] motors;
@@ -65,6 +63,8 @@ public class CmdDriveMotorsTest implements TrcRobot.RobotCommand
      */
     public CmdDriveMotorsTest(TrcMotor[] motors, double driveTime, double drivePower)
     {
+        final String moduleName = getClass().getSimpleName();
+
         this.motors = motors;
         this.driveTime = driveTime;
         this.drivePower = drivePower;

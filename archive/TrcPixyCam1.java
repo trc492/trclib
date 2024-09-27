@@ -105,7 +105,7 @@ public abstract class TrcPixyCam1
     }   //enum RequestId
 
     private final TrcDbgTrace tracer;
-    private final String instanceName;
+    protected final String instanceName;
     private final boolean msbFirst;
     private final ArrayList<ObjectBlock> objects = new ArrayList<>();
     private ObjectBlock[] detectedObjects = null;

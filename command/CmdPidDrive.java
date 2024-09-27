@@ -53,7 +53,7 @@ public class CmdPidDrive implements TrcRobot.RobotCommand
         DONE
     }   //enum State
 
-    private static final String moduleName = CmdPidDrive.class.getSimpleName();
+    private final String moduleName = getClass().getSimpleName();
     private final TrcDashboard dashboard = TrcDashboard.getInstance();
 
     private final TrcDbgTrace tracer;

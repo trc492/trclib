@@ -35,7 +35,7 @@ import trclib.timer.TrcTimer;
  */
 public class TrcMecanumDriveBase extends TrcSimpleDriveBase
 {
-    private static final String moduleName = TrcMecanumDriveBase.class.getSimpleName();
+    private final String moduleName = getClass().getSimpleName();
 
     /**
      * Constructor: Create an instance of the 4-wheel mecanum drive base.

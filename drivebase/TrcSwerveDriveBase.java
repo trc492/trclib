@@ -46,7 +46,7 @@ import trclib.timer.TrcTimer;
  */
 public class TrcSwerveDriveBase extends TrcSimpleDriveBase
 {
-    private static final String moduleName = TrcSwerveDriveBase.class.getSimpleName();
+    private final String moduleName = getClass().getSimpleName();
 
     private final TrcSwerveModule lfModule, rfModule, lbModule, rbModule;
     private final double wheelBaseWidth, wheelBaseLength, wheelBaseDiagonal;

@@ -54,7 +54,7 @@ import trclib.timer.TrcTimer;
  */
 public abstract class TrcDriveBase implements TrcExclusiveSubsystem
 {
-    private static final String moduleName = TrcDriveBase.class.getSimpleName();
+    private final String moduleName = getClass().getSimpleName();
     //
     // If true, the change in pose is a twist, and is applied to the current pose using a non-zero curvature
     // (non-zero rotation velocity).

@@ -37,7 +37,7 @@ import trclib.robotcore.TrcTaskMgr;
  */
 public class TrcGridDrive
 {
-    private static final String moduleName = TrcGridDrive.class.getSimpleName();
+    private final String moduleName = getClass().getSimpleName();
 
     public final TrcDbgTrace tracer;
     private final TrcDriveBase driveBase;

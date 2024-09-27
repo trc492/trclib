@@ -82,7 +82,7 @@ import trclib.timer.TrcTimer;
  */
 public class TrcOdometryWheels
 {
-    private static final String moduleName = TrcOdometryWheels.class.getSimpleName();
+    private final String moduleName = getClass().getSimpleName();
 
     /**
      * This class encapsulates an axis sensor with its axis offset.

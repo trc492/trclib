@@ -36,8 +36,6 @@ import trclib.timer.TrcTimer;
  */
 public class CmdTimedDrive implements TrcRobot.RobotCommand
 {
-    private static final String moduleName = CmdTimedDrive.class.getSimpleName();
-
     private enum State
     {
         DO_DELAY,
@@ -71,6 +69,8 @@ public class CmdTimedDrive implements TrcRobot.RobotCommand
         TrcDriveBase driveBase, double delay, double driveTime,
         double xDrivePower, double yDrivePower, double turnPower)
     {
+        final String moduleName = getClass().getSimpleName();
+
         tracer.traceInfo(
             moduleName, "delay=%.3f, time=%.1f, xPower=%.1f, yPower=%.1f, turnPower=%.1f",
             delay, driveTime, xDrivePower, yDrivePower, turnPower);

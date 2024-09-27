@@ -36,7 +36,7 @@ import trclib.dataprocessor.TrcUtil;
  */
 public class TrcSimpleDriveBase extends TrcDriveBase
 {
-    private static final String moduleName = TrcSimpleDriveBase.class.getSimpleName();
+    private final String moduleName = getClass().getSimpleName();
 
     public enum MotorType
     {

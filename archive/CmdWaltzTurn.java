@@ -38,8 +38,6 @@ import trclib.robotcore.TrcStateMachine;
  */
 public class CmdWaltzTurn implements TrcRobot.RobotCommand
 {
-    private static final String moduleName = CmdWaltzTurn.class.getSimpleName();
-
     private static enum State
     {
         WALTZ_TURN,
@@ -64,6 +62,8 @@ public class CmdWaltzTurn implements TrcRobot.RobotCommand
      */
     public CmdWaltzTurn(TrcDriveBase driveBase, TrcPidDrive pidDrive)
     {
+        final String moduleName = getClass().getSimpleName();
+
         this.driveBase = driveBase;
         this.pidDrive = pidDrive;
         event = new TrcEvent(moduleName);

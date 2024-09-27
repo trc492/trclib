@@ -36,7 +36,6 @@ import trclib.robotcore.TrcRobot;
  */
 public class CmdPurePursuitDrive implements TrcRobot.RobotCommand
 {
-    private static final String moduleName = CmdPurePursuitDrive.class.getSimpleName();
     private static final double DEF_FOLLOWING_DISTANCE = 6.0;
     private static final double DEF_POS_TOLERANCE = 2.0;
     private static final double DEF_TURN_TOLERANCE = 1.0;
@@ -61,6 +60,8 @@ public class CmdPurePursuitDrive implements TrcRobot.RobotCommand
         TrcPidController.PidCoefficients xPosPidCoeff, TrcPidController.PidCoefficients yPosPidCoeff,
         TrcPidController.PidCoefficients turnPidCoeff, TrcPidController.PidCoefficients velPidCoeff)
     {
+        final String moduleName = getClass().getSimpleName();
+
         purePursuitDrive = new TrcPurePursuitDrive(
             moduleName, driveBase, followingDistance, posTolerance, turnTolerance,
             xPosPidCoeff, yPosPidCoeff, turnPidCoeff, velPidCoeff);
