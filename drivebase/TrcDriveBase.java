@@ -29,6 +29,7 @@ import org.apache.commons.math3.linear.RealVector;
 import java.util.Arrays;
 import java.util.Stack;
 
+import trclib.dataprocessor.TrcWrapValueConverter;
 import trclib.robotcore.TrcDbgTrace;
 import trclib.robotcore.TrcEvent;
 import trclib.robotcore.TrcExclusiveSubsystem;
@@ -263,6 +264,7 @@ public abstract class TrcDriveBase implements TrcExclusiveSubsystem
     private OdometryType odometryType = OdometryType.MotorOdometry;
     private TrcOdometryWheels odometryWheels = null;
     private TrcDriveBaseOdometry absoluteOdometry = null;
+    private TrcWrapValueConverter absOdoHeadingWrapConverter = null;
     protected MotorPowerMapper motorPowerMapper = null;
     private double sensitivity = DEF_SENSITIVITY;
 
@@ -867,6 +869,10 @@ public abstract class TrcDriveBase implements TrcExclusiveSubsystem
             else if (absoluteOdometry != null)
             {
                 absoluteOdometry.reset();
+                if (absOdoHeadingWrapConverter != null)
+                {
+                    absOdoHeadingWrapConverter.resetConverter();
+                }
             }
             else
             {
@@ -933,6 +939,7 @@ public abstract class TrcDriveBase implements TrcExclusiveSubsystem
             setMotorOdometryEnabled(true, resetHardware);
             this.odometryWheels = null;
             this.absoluteOdometry = null;
+            this.absOdoHeadingWrapConverter = null;
             this.odometryType = OdometryType.MotorOdometry;
         }
     }   //setDriveBaseOdometry
@@ -950,6 +957,7 @@ public abstract class TrcDriveBase implements TrcExclusiveSubsystem
             setMotorOdometryEnabled(false, false);
             this.odometryWheels = odometryWheels;
             this.absoluteOdometry = null;
+            this.absOdoHeadingWrapConverter = null;
             this.odometryType = OdometryType.OdometryWheels;
         }
     }   //setDriveBaseOdometry
@@ -958,8 +966,11 @@ public abstract class TrcDriveBase implements TrcExclusiveSubsystem
      * This method sets the given odometry device as the drive base's odometry device overriding the built-in odometry.
      *
      * @param absoluteOdometry specifies the drive base absolute odometry device.
+     * @param headingWrapRangeLow specifies the low value of the heading wrap range, can be null if no wrapping.
+     * @param headingWrapRangeHigh specifies the high value of the heading wrap range, can be null if no wrapping.
      */
-    public void setDriveBaseOdometry(TrcDriveBaseOdometry absoluteOdometry)
+    public void setDriveBaseOdometry(
+        TrcDriveBaseOdometry absoluteOdometry, Double headingWrapRangeLow, Double headingWrapRangeHigh)
     {
         synchronized (odometry)
         {
@@ -967,6 +978,17 @@ public abstract class TrcDriveBase implements TrcExclusiveSubsystem
             setMotorOdometryEnabled(false, false);
             this.odometryWheels = null;
             this.absoluteOdometry = absoluteOdometry;
+            if (headingWrapRangeLow != null && headingWrapRangeHigh != null)
+            {
+                absOdoHeadingWrapConverter = new TrcWrapValueConverter(
+                    moduleName + ".absOdoHeadingWrap", ()->{return odometry.position.angle;},
+                    headingWrapRangeLow, headingWrapRangeHigh);
+                absOdoHeadingWrapConverter.setTaskEnabled(true);
+            }
+            else
+            {
+                absOdoHeadingWrapConverter = null;
+            }
             this.odometryType = OdometryType.AbsoluteOdometry;
         }
     }   //setDriveBaseOdometry
