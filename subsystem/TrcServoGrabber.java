@@ -575,10 +575,10 @@ public class TrcServoGrabber implements TrcExclusiveSubsystem
      * This method cancels the auto-assist operation and to clean up. It is called by the user for canceling the
      * operation.
      */
-    public void cancelAutoAssist()
+    public void cancel()
     {
         finishAction(false);
-    }   //cancelAutoAssist
+    }   //cancel
 
     /**
      * This method returns the sensor value read from the analog sensor.
