@@ -31,6 +31,12 @@ import trclib.pathdrive.TrcPose2D;
 public interface TrcDriveBaseOdometry
 {
     /**
+     * This method is called once at the beginning of the INPUT_TASK loop. Odometry device can update their cache
+     * at this time.
+     */
+    void updateCache();
+
+    /**
      * This method resets the DriveBase position.
      */
     void reset();

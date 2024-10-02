@@ -106,7 +106,7 @@ public abstract class TrcDriveBase implements TrcExclusiveSubsystem
     {
         MotorOdometry,
         OdometryWheels,
-        AbsoluteOdometry    //e.g. SparkFun OTOS
+        AbsoluteOdometry    //e.g. SparkFun OTOS or GoBilda Pinpoint Odometry
     }   //enum OdometryType
 
     /**
@@ -1976,6 +1976,7 @@ public abstract class TrcDriveBase implements TrcExclusiveSubsystem
             }
             else if (absoluteOdometry != null)
             {
+                absoluteOdometry.updateCache();
                 TrcPose2D currPos = absoluteOdometry.getPosition();
                 odometry.position.x = currPos.x;
                 odometry.position.y = currPos.y;
