@@ -1582,11 +1582,14 @@ public abstract class TrcMotor implements TrcMotorController, TrcExclusiveSubsys
             // Perform soft limit check.
             // If motor controller supports soft limits, softLowerLimit and softUpperLimit will be null and therefore
             // a no-op.
-            double currPos = getPosition();
-            if (value < 0.0 && softLowerLimit != null && currPos <= softLowerLimit ||
-                value > 0.0 && softUpperLimit != null && currPos >= softUpperLimit)
+            if (softLowerLimit != null || softUpperLimit != null)
             {
-                value = 0.0;
+                double currPos = getPosition();
+                if (value < 0.0 && softLowerLimit != null && currPos <= softLowerLimit ||
+                    value > 0.0 && softUpperLimit != null && currPos >= softUpperLimit)
+                {
+                    value = 0.0;
+                }
             }
 
             // Hold target for velocity and current control modes.
