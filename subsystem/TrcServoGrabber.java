@@ -52,6 +52,7 @@ public class TrcServoGrabber implements TrcExclusiveSubsystem
         private Double triggerThreshold = null;
         private Double hasObjectThreshold = null;
         private TrcEvent.Callback triggerCallback;
+        private boolean noGrab = false;
         private double openPos = 0.0;
         private double openTime = 0.5;
         private double closePos = 1.0;
@@ -71,6 +72,7 @@ public class TrcServoGrabber implements TrcExclusiveSubsystem
                    ",triggerThreshold=" + triggerThreshold +
                    ",hasObjThreshold=" + hasObjectThreshold +
                    ",triggerCallback=" + (triggerCallback != null) +
+                   ",noGrab=" + noGrab +
                    ",openPos=" + openPos +
                    ",openTime=" + openTime +
                    ",closePos=" + closePos +
@@ -97,17 +99,21 @@ public class TrcServoGrabber implements TrcExclusiveSubsystem
          * @param triggerThreshold specifies the trigger threshold value.
          * @param hasObjectThreshold specifies the threshold value to detect object possession.
          * @param triggerCallback specifies trigger callback, can be null if not provided.
+         * @param noGrab specifies true to tell sensor trigger not to grab the object. This parameter is only
+         *        applicable if triggerCallback is not null. This is useful for trigger callback to do object
+         *        validation so it can decide if it needs to grab that object.
          * @return this parameter object.
          */
         public Params setSensorTrigger(
             TrcTrigger trigger, boolean inverted, Double triggerThreshold, Double hasObjectThreshold,
-            TrcEvent.Callback triggerCallback)
+            TrcEvent.Callback triggerCallback, boolean noGrab)
         {
             this.sensorTrigger = trigger;
             this.triggerInverted = inverted;
             this.triggerThreshold = triggerThreshold;
             this.hasObjectThreshold = hasObjectThreshold;
             this.triggerCallback = triggerCallback;
+            this.noGrab = triggerCallback != null && noGrab;
             return this;
         }   //setSensorTrigger
 
@@ -139,13 +145,15 @@ public class TrcServoGrabber implements TrcExclusiveSubsystem
         String owner;
         TrcEvent completionEvent;
         TrcEvent callbackEvent;
+        boolean noGrab;
         double timeout;
 
-        ActionParams(String owner, TrcEvent completionEvent, TrcEvent callbackEvent, double timeout)
+        ActionParams(String owner, TrcEvent completionEvent, TrcEvent callbackEvent, boolean noGrab, double timeout)
         {
             this.owner = owner;
             this.completionEvent = completionEvent;
             this.callbackEvent = callbackEvent;
+            this.noGrab = noGrab;
             this.timeout = timeout;
         }   //ActionParams
 
@@ -155,6 +163,7 @@ public class TrcServoGrabber implements TrcExclusiveSubsystem
             return "(owner=" + owner +
                    ",completionEvent=" + completionEvent +
                    ",callbackEvent=" + callbackEvent +
+                   ",noGrab=" + noGrab +
                    ",timeout=" + timeout + ")";
         }   //toString
 
@@ -467,7 +476,10 @@ public class TrcServoGrabber implements TrcExclusiveSubsystem
         if (objectInProximity())
         {
             tracer.traceDebug(instanceName, "Triggered: grab the object.");
-            close(actionParams.owner, null, false);
+            if (!actionParams.noGrab)
+            {
+                close(actionParams.owner, null, false);
+            }
             finishAction(true);
         }
     }   //grabTriggerCallback
@@ -559,7 +571,7 @@ public class TrcServoGrabber implements TrcExclusiveSubsystem
                 callbackEvent = new TrcEvent(instanceName + ".callback");
                 callbackEvent.setCallback(params.triggerCallback, null);
             }
-            actionParams = new ActionParams(owner, event, callbackEvent, timeout);
+            actionParams = new ActionParams(owner, event, callbackEvent, params.noGrab, timeout);
             if (delay > 0.0)
             {
                 timer.set(delay, this::enableAction, actionParams);
