@@ -25,10 +25,13 @@ package trclib.vision;
 import static org.opencv.imgproc.Imgproc.FONT_HERSHEY_SIMPLEX;
 
 import org.opencv.core.Mat;
+import org.opencv.core.MatOfPoint;
 import org.opencv.core.Point;
 import org.opencv.core.Rect;
 import org.opencv.core.Scalar;
 import org.opencv.imgproc.Imgproc;
+
+import java.util.Collections;
 
 /**
  * This interface implements the standard methods for an OpenCV pipeline.
@@ -116,10 +119,27 @@ public interface TrcOpenCvPipeline<O>
     {
         for (TrcOpenCvDetector.DetectedObject<?> object : detectedObjects)
         {
-            Rect objRect = object.getObjectRect();
-            Imgproc.rectangle(image, objRect, color, thickness);
+            Point[] vertices = object.getRotatedRectVertices();
+            Rect objRect = null;
+
+            if (vertices != null)
+            {
+                MatOfPoint points = new MatOfPoint(vertices);
+                Imgproc.drawContours(image, Collections.singletonList(points), -1, color, thickness);
+            }
+            else
+            {
+                objRect = object.getObjectRect();
+                Imgproc.rectangle(image, objRect, color, thickness);
+            }
+
             if (label != null)
             {
+                if (objRect == null)
+                {
+                    objRect = object.getObjectRect();
+                }
+
                 Imgproc.putText(
                     image, label, new Point(objRect.x, objRect.y + objRect.height), FONT_HERSHEY_SIMPLEX, fontScale,
                     color, thickness);

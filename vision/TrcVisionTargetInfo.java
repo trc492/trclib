@@ -75,6 +75,13 @@ public class TrcVisionTargetInfo<O extends TrcVisionTargetInfo.ObjectInfo>
          */
         Double getObjectDepth();
 
+        /**
+         * This method returns the rotated rect vertices of the detected object.
+         *
+         * @return rotated rect vertices.
+         */
+        Point[] getRotatedRectVertices();
+
     }   //interface ObjectInfo
 
     public O detectedObj;

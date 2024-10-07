@@ -24,6 +24,7 @@ package trclib.vision;
 
 import org.opencv.core.Mat;
 import org.opencv.core.MatOfRect;
+import org.opencv.core.Point;
 import org.opencv.core.Rect;
 import org.opencv.objdetect.CascadeClassifier;
 
@@ -108,6 +109,17 @@ public abstract class TrcOpenCvFaceDetector extends TrcOpenCvDetector
             // OpenCvFace detection does not provide detected object depth, let caller use homography to calculate it.
             return null;
         }   //getObjectDepth
+
+        /**
+         * This method returns the rotated rect vertices of the detected object (not supported).
+         *
+         * @return rotated rect vertices.
+         */
+        @Override
+        public Point[] getRotatedRectVertices()
+        {
+            return null;
+        }   //getRotatedRectVertices
 
     }   //class DetectedObject
 

@@ -30,6 +30,7 @@ import org.opencv.core.MatOfPoint;
 import org.opencv.core.MatOfPoint2f;
 import org.opencv.core.Point;
 import org.opencv.core.Rect;
+import org.opencv.core.RotatedRect;
 import org.opencv.core.Scalar;
 import org.opencv.core.Size;
 import org.opencv.imgproc.Imgproc;
@@ -53,6 +54,8 @@ public class TrcOpenCvColorBlobPipeline implements TrcOpenCvPipeline<TrcOpenCvDe
      */
     public static class DetectedObject extends TrcOpenCvDetector.DetectedObject<MatOfPoint>
     {
+        public final RotatedRect rotatedRect;
+
         /**
          * Constructor: Creates an instance of the object.
          *
@@ -62,6 +65,7 @@ public class TrcOpenCvColorBlobPipeline implements TrcOpenCvPipeline<TrcOpenCvDe
         public DetectedObject(String label, MatOfPoint contour)
         {
             super(label, contour);
+            rotatedRect = Imgproc.minAreaRect(new MatOfPoint2f(contour.toArray()));
         }   //DetectedObject
 
         /**
@@ -123,6 +127,19 @@ public class TrcOpenCvColorBlobPipeline implements TrcOpenCvPipeline<TrcOpenCvDe
             // ColorBlob detection does not provide detected object depth, let caller use homography to calculate it.
             return null;
         }   //getObjectDepth
+
+        /**
+         * This method returns the rotated rect vertices of the detected object.
+         *
+         * @return rotated rect vertices.
+         */
+        @Override
+        public Point[] getRotatedRectVertices()
+        {
+            Point[] vertices = new Point[4];
+            rotatedRect.points(vertices);
+            return vertices;
+        }   //getRotatedRectVertices
 
     }   //class DetectedObject
 
