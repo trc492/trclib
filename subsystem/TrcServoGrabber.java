@@ -51,7 +51,8 @@ public class TrcServoGrabber implements TrcExclusiveSubsystem
         private boolean triggerInverted = false;
         private Double triggerThreshold = null;
         private Double hasObjectThreshold = null;
-        private TrcEvent.Callback triggerCallback;
+        private TrcEvent.Callback triggerCallback = null;
+        private Object triggerCallbackContext = null;
         private boolean noGrab = false;
         private double openPos = 0.0;
         private double openTime = 0.5;
@@ -72,6 +73,7 @@ public class TrcServoGrabber implements TrcExclusiveSubsystem
                    ",triggerThreshold=" + triggerThreshold +
                    ",hasObjThreshold=" + hasObjectThreshold +
                    ",triggerCallback=" + (triggerCallback != null) +
+                   ",callbackContext=" + triggerCallbackContext +
                    ",noGrab=" + noGrab +
                    ",openPos=" + openPos +
                    ",openTime=" + openTime +
@@ -99,6 +101,7 @@ public class TrcServoGrabber implements TrcExclusiveSubsystem
          * @param triggerThreshold specifies the trigger threshold value.
          * @param hasObjectThreshold specifies the threshold value to detect object possession.
          * @param triggerCallback specifies trigger callback, can be null if not provided.
+         * @param callbackContext specifies the trigger callback context that get passed back to the callback method.
          * @param noGrab specifies true to tell sensor trigger not to grab the object. This parameter is only
          *        applicable if triggerCallback is not null. This is useful for trigger callback to do object
          *        validation so it can decide if it needs to grab that object.
@@ -106,13 +109,14 @@ public class TrcServoGrabber implements TrcExclusiveSubsystem
          */
         public Params setSensorTrigger(
             TrcTrigger trigger, boolean inverted, Double triggerThreshold, Double hasObjectThreshold,
-            TrcEvent.Callback triggerCallback, boolean noGrab)
+            TrcEvent.Callback triggerCallback, Object callbackContext, boolean noGrab)
         {
             this.sensorTrigger = trigger;
             this.triggerInverted = inverted;
             this.triggerThreshold = triggerThreshold;
             this.hasObjectThreshold = hasObjectThreshold;
             this.triggerCallback = triggerCallback;
+            this.triggerCallbackContext = callbackContext;
             this.noGrab = triggerCallback != null && noGrab;
             return this;
         }   //setSensorTrigger
@@ -569,7 +573,7 @@ public class TrcServoGrabber implements TrcExclusiveSubsystem
             if (params.triggerCallback != null)
             {
                 callbackEvent = new TrcEvent(instanceName + ".callback");
-                callbackEvent.setCallback(params.triggerCallback, null);
+                callbackEvent.setCallback(params.triggerCallback, params.triggerCallbackContext);
             }
             actionParams = new ActionParams(owner, event, callbackEvent, params.noGrab, timeout);
             if (delay > 0.0)
