@@ -51,9 +51,6 @@ public class TrcServoGrabber implements TrcExclusiveSubsystem
         private boolean triggerInverted = false;
         private Double triggerThreshold = null;
         private Double hasObjectThreshold = null;
-        private TrcEvent.Callback triggerCallback = null;
-        private Object triggerCallbackContext = null;
-        private boolean noGrab = false;
         private double openPos = 0.0;
         private double openTime = 0.5;
         private double closePos = 1.0;
@@ -72,9 +69,6 @@ public class TrcServoGrabber implements TrcExclusiveSubsystem
                    ",triggerInverted=" + triggerInverted +
                    ",triggerThreshold=" + triggerThreshold +
                    ",hasObjThreshold=" + hasObjectThreshold +
-                   ",triggerCallback=" + (triggerCallback != null) +
-                   ",callbackContext=" + triggerCallbackContext +
-                   ",noGrab=" + noGrab +
                    ",openPos=" + openPos +
                    ",openTime=" + openTime +
                    ",closePos=" + closePos +
@@ -100,24 +94,15 @@ public class TrcServoGrabber implements TrcExclusiveSubsystem
          * @param inverted specifies true to invert the trigger, false otherwise.
          * @param triggerThreshold specifies the trigger threshold value.
          * @param hasObjectThreshold specifies the threshold value to detect object possession.
-         * @param triggerCallback specifies trigger callback, can be null if not provided.
-         * @param callbackContext specifies the trigger callback context that get passed back to the callback method.
-         * @param noGrab specifies true to tell sensor trigger not to grab the object. This parameter is only
-         *        applicable if triggerCallback is not null. This is useful for trigger callback to do object
-         *        validation so it can decide if it needs to grab that object.
          * @return this parameter object.
          */
         public Params setSensorTrigger(
-            TrcTrigger trigger, boolean inverted, Double triggerThreshold, Double hasObjectThreshold,
-            TrcEvent.Callback triggerCallback, Object callbackContext, boolean noGrab)
+            TrcTrigger trigger, boolean inverted, Double triggerThreshold, Double hasObjectThreshold)
         {
             this.sensorTrigger = trigger;
             this.triggerInverted = inverted;
             this.triggerThreshold = triggerThreshold;
             this.hasObjectThreshold = hasObjectThreshold;
-            this.triggerCallback = triggerCallback;
-            this.triggerCallbackContext = callbackContext;
-            this.noGrab = triggerCallback != null && noGrab;
             return this;
         }   //setSensorTrigger
 
@@ -148,17 +133,15 @@ public class TrcServoGrabber implements TrcExclusiveSubsystem
     {
         String owner;
         TrcEvent completionEvent;
-        TrcEvent callbackEvent;
-        boolean noGrab;
         double timeout;
+        TrcEvent callbackEvent;
 
-        ActionParams(String owner, TrcEvent completionEvent, TrcEvent callbackEvent, boolean noGrab, double timeout)
+        ActionParams(String owner, TrcEvent completionEvent, double timeout, TrcEvent callbackEvent)
         {
             this.owner = owner;
             this.completionEvent = completionEvent;
-            this.callbackEvent = callbackEvent;
-            this.noGrab = noGrab;
             this.timeout = timeout;
+            this.callbackEvent = callbackEvent;
         }   //ActionParams
 
         @Override
@@ -166,9 +149,8 @@ public class TrcServoGrabber implements TrcExclusiveSubsystem
         {
             return "(owner=" + owner +
                    ",completionEvent=" + completionEvent +
-                   ",callbackEvent=" + callbackEvent +
-                   ",noGrab=" + noGrab +
-                   ",timeout=" + timeout + ")";
+                   ",timeout=" + timeout +
+                   ",callbackEvent=" + callbackEvent + ")";
         }   //toString
 
     }   //class ActionParams
@@ -424,7 +406,7 @@ public class TrcServoGrabber implements TrcExclusiveSubsystem
                 "FinishAction(completed=" + completed +
                 "): grabberClosed=" + grabberClosed +
                 ", hasObject=" + hasObject() +
-                ", params=" + actionParams);
+                ", actionParams=" + actionParams);
 
             if (actionParams.completionEvent != null)
             {
@@ -479,9 +461,11 @@ public class TrcServoGrabber implements TrcExclusiveSubsystem
     {
         if (objectInProximity())
         {
-            tracer.traceDebug(instanceName, "Triggered: grab the object.");
-            if (!actionParams.noGrab)
+            tracer.traceDebug(instanceName, "Triggered: callbackEvent=" + actionParams.callbackEvent);
+            // If callback is provided, callback is responsible for grabbing the object.
+            if (actionParams.callbackEvent == null)
             {
+                // There is no callback, grab the object ourselves.
                 close(actionParams.owner, null, false);
             }
             finishAction(true);
@@ -500,7 +484,7 @@ public class TrcServoGrabber implements TrcExclusiveSubsystem
     {
         ActionParams ap = (ActionParams) context;
         boolean inProximity = objectInProximity();
-        boolean grabbedObject = false;
+        boolean finished = false;
 
         tracer.traceDebug(
             instanceName,
@@ -509,13 +493,13 @@ public class TrcServoGrabber implements TrcExclusiveSubsystem
             ", params=" + ap);
         if (inProximity)
         {
-            if (!grabberClosed)
+            if (!grabberClosed && ap.callbackEvent == null)
             {
-                // Grabber is open but the object is near by, grab it.
+                // Grabber is open, the object is near by and there is no callback, grab the object.
                 tracer.traceDebug(instanceName, "Object already in proximity, grab it!");
                 close(ap.owner, null, false);
             }
-            grabbedObject = true;
+            finished = true;
         }
         else if (grabberClosed)
         {
@@ -524,9 +508,9 @@ public class TrcServoGrabber implements TrcExclusiveSubsystem
             open(ap.owner, null, false);
         }
 
-        if (grabbedObject)
+        if (finished)
         {
-            // Already grabbed an object, finish the action.
+            // Either already grabbed an object or object is in proximity and we have a callback, finish the action.
             tracer.traceDebug(instanceName, "Already has object, finish the operation.");
             finishAction(true);
         }
@@ -553,9 +537,13 @@ public class TrcServoGrabber implements TrcExclusiveSubsystem
      * @param delay specifies the delay time in seconds before executing the action.
      * @param event specifies the event to signal when object is detected in the intake.
      * @param timeout specifies a timeout value at which point it will give up and signal completion. The caller
-     *                must call hasObject() to figure out if it has given up.
+     *        must call hasObject() to figure out if it has given up.
+     * @param triggerCallback specifies the method to call when a trigger occurred, can be null if not provided.
+     * @param callbackContext specifies the context object to be passed back to the callback, can be null if none.
      */
-    public void enableAutoAssist(String owner, double delay, TrcEvent event, double timeout)
+    public void enableAutoAssist(
+        String owner, double delay, TrcEvent event, double timeout, TrcEvent.Callback triggerCallback,
+        Object callbackContext)
     {
         if (params.sensorTrigger == null)
         {
@@ -570,12 +558,12 @@ public class TrcServoGrabber implements TrcExclusiveSubsystem
             finishAction(false);
             // If there is a triggerCallback, set it up to callback on the same thread of this caller.
             TrcEvent callbackEvent = null;
-            if (params.triggerCallback != null)
+            if (triggerCallback != null)
             {
                 callbackEvent = new TrcEvent(instanceName + ".callback");
-                callbackEvent.setCallback(params.triggerCallback, params.triggerCallbackContext);
+                callbackEvent.setCallback(triggerCallback, callbackContext);
             }
-            actionParams = new ActionParams(owner, event, callbackEvent, params.noGrab, timeout);
+            actionParams = new ActionParams(owner, event, timeout, callbackEvent);
             if (delay > 0.0)
             {
                 timer.set(delay, this::enableAction, actionParams);
@@ -585,6 +573,22 @@ public class TrcServoGrabber implements TrcExclusiveSubsystem
                 enableAction(actionParams);
             }
         }
+    }   //enableAutoAssist
+
+    /**
+     * This method enables auto-assist grabbing. It allows the caller to start monitoring the trigger sensor for
+     * the object in the vicinity. If the object is within grasp, it will automatically grab the object. If an
+     * event is provided, it will also signal the event when the operation is completed.
+     *
+     * @param owner specifies the owner ID to check if the caller has ownership of the grabber subsystem.
+     * @param delay specifies the delay time in seconds before executing the action.
+     * @param event specifies the event to signal when object is detected in the intake.
+     * @param timeout specifies a timeout value at which point it will give up and signal completion. The caller
+     *        must call hasObject() to figure out if it has given up.
+     */
+    public void enableAutoAssist(String owner, double delay, TrcEvent event, double timeout)
+    {
+        enableAutoAssist(owner, delay, event, timeout, null,  null);
     }   //enableAutoAssist
 
     /**
