@@ -457,7 +457,7 @@ public class TrcServoGrabber implements TrcExclusiveSubsystem
      *
      * @param context not used.
      */
-    private void grabTriggerCallback(Object context)
+    private void proximityTriggerCallback(Object context)
     {
         if (objectInProximity())
         {
@@ -470,7 +470,7 @@ public class TrcServoGrabber implements TrcExclusiveSubsystem
             }
             finishAction(true);
         }
-    }   //grabTriggerCallback
+    }   //proximityTriggerCallback
 
     /**
      * This method enables auto-assist grabbing which is to close the grabber if it was open and the object is in
@@ -518,7 +518,7 @@ public class TrcServoGrabber implements TrcExclusiveSubsystem
         {
             // Arm the sensor trigger as long as AutoAssist is enabled.
             tracer.traceDebug(instanceName, "Arm sensor trigger.");
-            params.sensorTrigger.enableTrigger(TriggerMode.OnBoth, this::grabTriggerCallback);
+            params.sensorTrigger.enableTrigger(TriggerMode.OnBoth, this::proximityTriggerCallback);
             if (ap.timeout > 0.0)
             {
                 // Set a timeout and cancel auto-assist if timeout has expired.
