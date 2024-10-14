@@ -440,7 +440,7 @@ public class TrcServoGrabber implements TrcExclusiveSubsystem
     }   //finishAction
 
     /**
-     * This method cancels the auto-assist operation and to clean up. It is called by enableAutoAssist to cancel a
+     * This method cancels the auto-assist operation and to clean up. It is called by autoAssistGrab to cancel a
      * previous operation or if the auto-assist has set a timeout and it has expired. Auto-assist will not be canceled
      * even if the sensor trigger caused it to grab an object. If a timeout is not set, auto-assist remains enabled
      * and can auto grab an object over and over again until the user calls this method to cancel the operation.
@@ -457,9 +457,9 @@ public class TrcServoGrabber implements TrcExclusiveSubsystem
      *
      * @param context not used.
      */
-    private void proximityTriggerCallback(Object context)
+    private void sensorTriggerCallback(Object context)
     {
-        if (objectInProximity())
+        if (sensorTriggered())
         {
             tracer.traceDebug(instanceName, "Triggered: callbackEvent=" + actionParams.callbackEvent);
             // If callback is provided, callback is responsible for grabbing the object.
@@ -470,7 +470,7 @@ public class TrcServoGrabber implements TrcExclusiveSubsystem
             }
             finishAction(true);
         }
-    }   //proximityTriggerCallback
+    }   //sensorTriggerCallback
 
     /**
      * This method enables auto-assist grabbing which is to close the grabber if it was open and the object is in
@@ -483,20 +483,20 @@ public class TrcServoGrabber implements TrcExclusiveSubsystem
     private void enableAction(Object context)
     {
         ActionParams ap = (ActionParams) context;
-        boolean inProximity = objectInProximity();
+        boolean triggered = sensorTriggered();
         boolean finished = false;
 
         tracer.traceDebug(
             instanceName,
-            "EnableAutoAssist: grabberClosed=" + grabberClosed +
-            ", inProximity=" + inProximity +
+            "AutoAssistGrab: grabberClosed=" + grabberClosed +
+            ", sensorTriggered=" + triggered +
             ", params=" + ap);
-        if (inProximity)
+        if (triggered)
         {
             if (!grabberClosed && ap.callbackEvent == null)
             {
-                // Grabber is open, the object is near by and there is no callback, grab the object.
-                tracer.traceDebug(instanceName, "Object already in proximity, grab it!");
+                // Grabber is open, the object is detected and there is no callback, grab the object.
+                tracer.traceDebug(instanceName, "Object already detected, grab it!");
                 close(ap.owner, null, false);
             }
             finished = true;
@@ -510,7 +510,7 @@ public class TrcServoGrabber implements TrcExclusiveSubsystem
 
         if (finished)
         {
-            // Either already grabbed an object or object is in proximity and we have a callback, finish the action.
+            // Either already grabbed an object or object is detected and we have a callback, finish the action.
             tracer.traceDebug(instanceName, "Already has object, finish the operation.");
             finishAction(true);
         }
@@ -518,7 +518,7 @@ public class TrcServoGrabber implements TrcExclusiveSubsystem
         {
             // Arm the sensor trigger as long as AutoAssist is enabled.
             tracer.traceDebug(instanceName, "Arm sensor trigger.");
-            params.sensorTrigger.enableTrigger(TriggerMode.OnBoth, this::proximityTriggerCallback);
+            params.sensorTrigger.enableTrigger(TriggerMode.OnBoth, this::sensorTriggerCallback);
             if (ap.timeout > 0.0)
             {
                 // Set a timeout and cancel auto-assist if timeout has expired.
@@ -541,7 +541,7 @@ public class TrcServoGrabber implements TrcExclusiveSubsystem
      * @param triggerCallback specifies the method to call when a trigger occurred, can be null if not provided.
      * @param callbackContext specifies the context object to be passed back to the callback, can be null if none.
      */
-    public void enableAutoAssist(
+    public void autoAssistGrab(
         String owner, double delay, TrcEvent event, double timeout, TrcEvent.Callback triggerCallback,
         Object callbackContext)
     {
@@ -573,7 +573,7 @@ public class TrcServoGrabber implements TrcExclusiveSubsystem
                 enableAction(actionParams);
             }
         }
-    }   //enableAutoAssist
+    }   //autoAssistGrab
 
     /**
      * This method enables auto-assist grabbing. It allows the caller to start monitoring the trigger sensor for
@@ -586,10 +586,10 @@ public class TrcServoGrabber implements TrcExclusiveSubsystem
      * @param timeout specifies a timeout value at which point it will give up and signal completion. The caller
      *        must call hasObject() to figure out if it has given up.
      */
-    public void enableAutoAssist(String owner, double delay, TrcEvent event, double timeout)
+    public void autoAssistGrab(String owner, double delay, TrcEvent event, double timeout)
     {
-        enableAutoAssist(owner, delay, event, timeout, null,  null);
-    }   //enableAutoAssist
+        autoAssistGrab(owner, delay, event, timeout, null,  null);
+    }   //autoAssistGrab
 
     /**
      * This method cancels the auto-assist operation and to clean up. It is called by the user for canceling the
@@ -622,33 +622,33 @@ public class TrcServoGrabber implements TrcExclusiveSubsystem
 
     /**
      *
-     * This method checks if object is detected in the proximity.
+     * This method checks if the sensor has detected the object.
      *
-     * @return true if object is detected in the proximity, false otherwise.
+     * @return true if object is detected, false otherwise.
      */
-    public boolean objectInProximity()
+    public boolean sensorTriggered()
     {
-        boolean inProximity = false;
+        boolean triggered = false;
 
         if (params.sensorTrigger != null)
         {
             if (params.hasObjectThreshold != null)
             {
-                inProximity = getSensorValue() > params.hasObjectThreshold;
+                triggered = getSensorValue() > params.hasObjectThreshold;
             }
             else
             {
-                inProximity = getSensorState();
+                triggered = getSensorState();
             }
 
             if (params.triggerInverted)
             {
-                inProximity = !inProximity;
+                triggered = !triggered;
             }
         }
 
-        return inProximity;
-    }   //objectInProximity
+        return triggered;
+    }   //sensorTriggered
 
     /**
      * This method checks if the grabber has the object.
@@ -657,7 +657,7 @@ public class TrcServoGrabber implements TrcExclusiveSubsystem
      */
     public boolean hasObject()
     {
-        return grabberClosed && objectInProximity();
+        return grabberClosed && sensorTriggered();
     }   //hasObject
 
     /**
