@@ -31,6 +31,7 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 import java.util.Objects;
 
 import trclib.dataprocessor.TrcUtil;
@@ -96,7 +97,7 @@ public class TrcPose2D
     @Override
     public String toString()
     {
-        return "(x=" + x + ",y=" + y + ",angle=" + angle + ")";
+        return String.format(Locale.US, "(x=%.3f,y=%.3f,angle=%.3f", x, y, angle);
     }   //toString
 
     /**

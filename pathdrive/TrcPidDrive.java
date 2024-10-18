@@ -116,7 +116,6 @@ public class TrcPidDrive
     private boolean maintainHeading = false;
     private boolean canceled = false;
     private String owner = null;
-    private TrcPose2D savedPoseForTurnOnly = null;
     private TrcPose2D absTargetPose;
 
     /**
@@ -684,7 +683,6 @@ public class TrcPidDrive
                     // error. So we need to preserve the X and Y odometry before the turn and restore them afterwards.
                     //
                     xTarget = yTarget = 0.0;
-                    savedPoseForTurnOnly = driveBase.getFieldPosition();
                 }
                 else
                 {
@@ -1288,17 +1286,6 @@ public class TrcPidDrive
         if (active && driveBase.validateOwnership(owner))
         {
             stopPid(owner);
-            if (savedPoseForTurnOnly != null)
-            {
-                //
-                // We are aborting a turn-only operation. Let's restore the X and Y odometry we saved earlier.
-                //
-                TrcPose2D pose = driveBase.getFieldPosition();
-                pose.x = savedPoseForTurnOnly.x;
-                pose.y = savedPoseForTurnOnly.y;
-                driveBase.setFieldPosition(pose);
-                savedPoseForTurnOnly = null;
-            }
             canceled = true;
             if (notifyEvent != null)
             {
@@ -1446,18 +1433,6 @@ public class TrcPidDrive
             if (expired || stalled || !holdTarget)
             {
                 stopPid(owner);
-
-                if (savedPoseForTurnOnly != null)
-                {
-                    //
-                    // We are done with a turn-only operation. Let's restore the X and Y odometry we saved earlier.
-                    //
-                    TrcPose2D pose = driveBase.getFieldPosition();
-                    pose.x = savedPoseForTurnOnly.x;
-                    pose.y = savedPoseForTurnOnly.y;
-                    driveBase.setFieldPosition(pose);
-                    savedPoseForTurnOnly = null;
-                }
             }
             // If we come here, both onTarget and holdTarget are true.
             // We will stop the drive base but not stopping PID.

@@ -981,7 +981,7 @@ public abstract class TrcDriveBase implements TrcExclusiveSubsystem
             if (headingWrapRangeLow != null && headingWrapRangeHigh != null)
             {
                 absOdoHeadingWrapConverter = new TrcWrapValueConverter(
-                    moduleName + ".absOdoHeadingWrap", ()->{return odometry.position.angle;},
+                    moduleName + ".absOdoHeadingWrap", ()->{return absoluteOdometry.getPosition().angle;},
                     headingWrapRangeLow, headingWrapRangeHigh);
                 absOdoHeadingWrapConverter.setTaskEnabled(true);
             }
@@ -1980,7 +1980,8 @@ public abstract class TrcDriveBase implements TrcExclusiveSubsystem
                 TrcPose2D currPos = absoluteOdometry.getPosition();
                 odometry.position.x = currPos.x;
                 odometry.position.y = currPos.y;
-                odometry.position.angle = currPos.angle;
+                odometry.position.angle =
+                    absOdoHeadingWrapConverter != null? absOdoHeadingWrapConverter.getContinuousValue(): currPos.angle;
                 TrcPose2D currVel = absoluteOdometry.getVelocity();
                 odometry.velocity.x = currVel.x;
                 odometry.velocity.y = currVel.y;
