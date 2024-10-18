@@ -99,7 +99,7 @@ public abstract class TrcGobildaIndicatorLight extends TrcPriorityIndicator<TrcG
         @Override
         public String toString()
         {
-            return "{" + name + ":" + ledColor + "}";
+            return name;
         }   //toString
 
     }   //class Pattern
