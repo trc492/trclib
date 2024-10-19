@@ -31,7 +31,7 @@ public abstract class TrcGobildaIndicatorLight extends TrcPriorityIndicator<TrcG
     public enum Color
     {
         Off(0.0),
-        Red(0.277),
+        Red(0.280),
         Orange(0.333),
         Yellow(0.388),
         Sage(0.444),
