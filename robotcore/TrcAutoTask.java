@@ -100,6 +100,15 @@ public abstract class TrcAutoTask<T>
     }   //toString
 
     /**
+     * This method cancels an in progress auto task operation if any.
+     */
+    public void cancel()
+    {
+        tracer.traceInfo(instanceName, "Canceling operation.");
+        stopAutoTask(false);
+    }   //cancel
+
+    /**
      * This method is called by the subclass to start the auto task.
      *
      * @param startState specifies the state to start the state machine.

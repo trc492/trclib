@@ -97,7 +97,7 @@ public class TrcPose2D
     @Override
     public String toString()
     {
-        return String.format(Locale.US, "(x=%.3f,y=%.3f,angle=%.3f", x, y, angle);
+        return String.format(Locale.US, "(x=%.3f,y=%.3f,angle=%.3f)", x, y, angle);
     }   //toString
 
     /**
