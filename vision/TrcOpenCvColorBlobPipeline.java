@@ -228,9 +228,11 @@ public class TrcOpenCvColorBlobPipeline implements TrcOpenCvPipeline<TrcOpenCvDe
     private double[] colorThresholds;
     private final FilterContourParams filterContourParams;
     private final boolean externalContourOnly;
+    private final boolean doWatershed;
     private final Mat colorConversionOutput = new Mat();
     private final Mat colorThresholdOutput = new Mat();
     private final Mat morphologyOutput = new Mat();
+    private final Mat watershedOutput = new Mat();
     private final Mat hierarchy = new Mat();
     private final Mat[] intermediateMats;
     private Point[] horizontalLine = null;
@@ -256,10 +258,11 @@ public class TrcOpenCvColorBlobPipeline implements TrcOpenCvPipeline<TrcOpenCvDe
      * @param filterContourParams specifies the parameters for filtering contours, can be null if not provided.
      * @param externalContourOnly specifies true for finding external contours only, false otherwise (not applicable
      *        if filterContourParams is null).
+     * @param doWatershed specifies true to apply Watershed processing, false otherwise.
      */
     public TrcOpenCvColorBlobPipeline(
         String instanceName, Integer colorConversion, double[] colorThresholds, FilterContourParams filterContourParams,
-        boolean externalContourOnly)
+        boolean externalContourOnly, boolean doWatershed)
     {
         if (colorThresholds == null || colorThresholds.length != 6)
         {
@@ -272,11 +275,13 @@ public class TrcOpenCvColorBlobPipeline implements TrcOpenCvPipeline<TrcOpenCvDe
         this.colorThresholds = colorThresholds;
         this.filterContourParams = filterContourParams;
         this.externalContourOnly = externalContourOnly;
-        intermediateMats = new Mat[4];
+        this.doWatershed = doWatershed;
+        intermediateMats = new Mat[5];
         intermediateMats[0] = null;
         intermediateMats[1] = colorConversionOutput;
         intermediateMats[2] = colorThresholdOutput;
         intermediateMats[3] = morphologyOutput;
+        intermediateMats[4] = watershedOutput;
     }   //TrcOpenCvColorBlobPipeline
 
     /**
@@ -452,6 +457,12 @@ public class TrcOpenCvColorBlobPipeline implements TrcOpenCvPipeline<TrcOpenCvDe
         {
             filterContours(contoursOutput, filterContourParams, filterContoursOutput);
             contoursOutput = filterContoursOutput;
+        }
+        // Do Watershed if enabled.
+        if (doWatershed && !contoursOutput.isEmpty())
+        {
+//            Imgproc.watershed(intermediateMats[0], contoursOutput, watershedOutput);
+//            input = watershedOutput;
         }
         if (performanceMetrics != null) performanceMetrics.logProcessingTime(startTime);
 
@@ -648,5 +659,36 @@ public class TrcOpenCvColorBlobPipeline implements TrcOpenCvPipeline<TrcOpenCvDe
             output.add(contour);
         }
     }   //filterContours
+
+    /**
+     * This method applies the Watershed algorithm to isolate overlapping objects from the background and each other.
+     *
+     * @param input The image used to create the watershed.
+     * @param contours The contours used to create the watershed.
+     * @param output The image where the output is stored.
+     */
+    private void watershed(Mat input, List<MatOfPoint> contours, Mat output)
+    {
+        final Mat markers = new Mat(input.size(), CvType.CV_32SC1, new Scalar(0.0));
+        Mat temp = new Mat(input.size(), CvType.CV_8UC3, new Scalar(0.0, 0.0, 0.0));
+
+        temp.convertTo(input, CvType.CV_8UC3);
+        try
+        {
+            for (int i = 0; i < contours.size(); i++)
+            {
+                Imgproc.drawContours(
+                    markers, contours, i, Scalar.all((i + 1) * (255/contours.size())),-1);
+            }
+//            Imgproc.circle(markers, new Point(5, 5), 3, Scalar.all(255), -1, Core.LINE_8, 0);
+            Imgproc.watershed(input, markers);
+            markers.convertTo(output, CvType.CV_8UC1);
+            Core.bitwise_not(output, output);
+        }
+        finally
+        {
+            markers.release();
+        }
+    }   //watershed
 
 }  //class TrcOpenCvColorBlobPipeline
