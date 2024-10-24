@@ -556,6 +556,10 @@ public abstract class TrcDriveBase implements TrcExclusiveSubsystem
             }
             resetOdometry();
             odometry.setPositionAs(pose);
+            if (absoluteOdometry != null)
+            {
+                absoluteOdometry.setPosition(pose);
+            }
         }
     }   //setFieldPosition
 
