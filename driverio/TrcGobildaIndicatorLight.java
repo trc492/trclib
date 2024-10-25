@@ -30,17 +30,26 @@ public abstract class TrcGobildaIndicatorLight extends TrcPriorityIndicator<TrcG
 {
     public enum Color
     {
-        Off(0.0),
+        Black(0.0),
         Red(0.280),
-        Orange(0.333),
-        Yellow(0.388),
-        Sage(0.444),
-        Green(0.5),
-        Azure(0.555),
+        Orange(0.313),
+        Yellow(0.340),
+        Sage(0.420),
+        Green(0.500),
+        Cyan(0.555),
         Blue(0.611),
         Indigo(0.666),
         Violet(0.722),
         White(1.0);
+//        Black(0, 0, 0),
+//        Red(255, 0, 0),
+//        Green(0, 255, 0),
+//        Orange(255, 127, 0),
+//        Yellow(255, 255, 0),
+//        Blue(0, 0, 255),
+//        Violet(255, 0, 255),
+//        Cyan(0, 255, 255),
+//        White(255, 255, 255);
 
         public final double value;
 
@@ -53,6 +62,13 @@ public abstract class TrcGobildaIndicatorLight extends TrcPriorityIndicator<TrcG
         {
             this.value = value;
         }   //Color
+
+//        Color(int red, int green, int blue)
+//        {
+//            float[] hsvValues = {0.0f, 0.0f, 0.0f};
+//            android.graphics.Color.RGBToHSV(red & 0xff, green & 0xff, blue & 0xff, hsvValues);
+//            this.value = hsvValues[0]/360.0;
+//        }   //Color
 
         /**
          * This method looks up the enum member that matches the given value.
