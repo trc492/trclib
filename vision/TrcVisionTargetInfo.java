@@ -26,6 +26,8 @@ package trclib.vision;
 import org.opencv.core.Point;
 import org.opencv.core.Rect;
 
+import java.util.Locale;
+
 import trclib.pathdrive.TrcPose2D;
 import trclib.dataprocessor.TrcUtil;
 
@@ -167,12 +169,11 @@ public class TrcVisionTargetInfo<O extends TrcVisionTargetInfo.ObjectInfo>
     @Override
     public String toString()
     {
-        return "(Obj=" + detectedObj +
-               ",rect=" + objRect +
-               ",area=" + objArea +
-               ",pose=" + objPose +
-               ",width=" + (objWidth != null? objWidth: 0.0) +
-               ",depth=" + (objDepth != null? objDepth: 0.0) + ")";
+        return String.format(
+            Locale.US,
+            "pose=%s,rect=%s,bottomMidPoint(%d,%d),area=%.0f,width=%.1f,depth=%.1f",
+            objPose, objRect, (objRect.x + objRect.y)/2, objRect.y + objRect.height, objArea,
+            objWidth != null? objWidth: 0.0, objDepth != null? objDepth: 0.0);
     }   //toString
 
 }   //class TrcVisionTargetInfo

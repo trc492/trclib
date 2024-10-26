@@ -23,6 +23,7 @@
 package trclib.vision;
 
 import static org.opencv.imgproc.Imgproc.FONT_HERSHEY_SIMPLEX;
+import static org.opencv.imgproc.Imgproc.MARKER_CROSS;
 
 import org.opencv.core.Mat;
 import org.opencv.core.MatOfPoint;
@@ -140,6 +141,8 @@ public interface TrcOpenCvPipeline<O>
                     objRect = object.getObjectRect();
                 }
 
+                Imgproc.drawMarker(
+                    image, new Point((objRect.x + objRect.y)/2.0, objRect.y + objRect.height), color, MARKER_CROSS);
                 Imgproc.putText(
                     image, label, new Point(objRect.x, objRect.y + objRect.height), FONT_HERSHEY_SIMPLEX, fontScale,
                     color, thickness);
