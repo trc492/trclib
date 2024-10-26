@@ -260,7 +260,7 @@ public class TrcMotorGrabber implements TrcExclusiveSubsystem
      * @param delay specifies the time in seconds to delay before setting the power, 0.0 if no delay.
      * @param duration specifies the duration in seconds to run the motor and turns it off afterwards, 0.0 if not
      *        turning off.
-     * @param event specifies the event to signal when the motor operation is completed
+     * @param event specifies the event to signal when the motor operation is completed.
      */
     public void intake(String owner, double delay, double duration, TrcEvent event)
     {
@@ -274,7 +274,7 @@ public class TrcMotorGrabber implements TrcExclusiveSubsystem
      * @param owner specifies the owner ID to check if the caller has ownership of the subsystem.
      * @param duration specifies the duration in seconds to run the motor and turns it off afterwards, 0.0 if not
      *        turning off.
-     * @param event specifies the event to signal when the motor operation is completed
+     * @param event specifies the event to signal when the motor operation is completed.
      */
     public void intake(String owner, double duration, TrcEvent event)
     {
@@ -287,7 +287,7 @@ public class TrcMotorGrabber implements TrcExclusiveSubsystem
      *
      * @param duration specifies the duration in seconds to run the motor and turns it off afterwards, 0.0 if not
      *        turning off.
-     * @param event specifies the event to signal when the motor operation is completed
+     * @param event specifies the event to signal when the motor operation is completed.
      */
     public void intake(double duration, TrcEvent event)
     {
@@ -310,7 +310,7 @@ public class TrcMotorGrabber implements TrcExclusiveSubsystem
      * @param delay specifies the time in seconds to delay before setting the power, 0.0 if no delay.
      * @param duration specifies the duration in seconds to run the motor and turns it off afterwards, 0.0 if not
      *        turning off.
-     * @param event specifies the event to signal when the motor operation is completed
+     * @param event specifies the event to signal when the motor operation is completed.
      */
     public void eject(String owner, double delay, double duration, TrcEvent event)
     {
@@ -324,7 +324,7 @@ public class TrcMotorGrabber implements TrcExclusiveSubsystem
      * @param owner specifies the owner ID to check if the caller has ownership of the subsystem.
      * @param duration specifies the duration in seconds to run the motor and turns it off afterwards, 0.0 if not
      *        turning off.
-     * @param event specifies the event to signal when the motor operation is completed
+     * @param event specifies the event to signal when the motor operation is completed.
      */
     public void eject(String owner, double duration, TrcEvent event)
     {
@@ -337,7 +337,7 @@ public class TrcMotorGrabber implements TrcExclusiveSubsystem
      *
      * @param duration specifies the duration in seconds to run the motor and turns it off afterwards, 0.0 if not
      *        turning off.
-     * @param event specifies the event to signal when the motor operation is completed
+     * @param event specifies the event to signal when the motor operation is completed.
      */
     public void eject(double duration, TrcEvent event)
     {
