@@ -172,7 +172,7 @@ public class TrcVisionTargetInfo<O extends TrcVisionTargetInfo.ObjectInfo>
         return String.format(
             Locale.US,
             "pose=%s,rect=%s,bottomMidPoint(%d,%d),area=%.0f,width=%.1f,depth=%.1f",
-            objPose, objRect, (objRect.x + objRect.y)/2, objRect.y + objRect.height, objArea,
+            objPose, objRect, objRect.x + objRect.width/2, objRect.y + objRect.height, objArea,
             objWidth != null? objWidth: 0.0, objDepth != null? objDepth: 0.0);
     }   //toString
 

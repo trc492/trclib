@@ -219,8 +219,8 @@ public class TrcOpenCvColorBlobPipeline implements TrcOpenCvPipeline<TrcOpenCvDe
 
     private static final Scalar ANNOTATE_RECT_COLOR = new Scalar(0, 255, 0, 255);
     private static final Scalar ANNOTATE_RECT_WHITE = new Scalar(255, 255, 255, 255);
-    private static final int ANNOTATE_RECT_THICKNESS = 3;
-    private static final double ANNOTATE_FONT_SCALE = 0.3;
+    private static final int ANNOTATE_RECT_THICKNESS = 2;
+    private static final double ANNOTATE_FONT_SCALE = 0.6;
 
     public final TrcDbgTrace tracer;
     private final String instanceName;
@@ -440,8 +440,8 @@ public class TrcOpenCvColorBlobPipeline implements TrcOpenCvPipeline<TrcOpenCvDe
         // Do Watershed if enabled.
         if (doWatershed && !contoursOutput.isEmpty())
         {
-//            Imgproc.watershed(intermediateMats[0], contoursOutput, watershedOutput);
-//            input = watershedOutput;
+            watershed(intermediateMats[0], contoursOutput, watershedOutput);
+            input = watershedOutput;
         }
         if (performanceMetrics != null) performanceMetrics.logProcessingTime(startTime);
 
@@ -637,9 +637,9 @@ public class TrcOpenCvColorBlobPipeline implements TrcOpenCvPipeline<TrcOpenCvDe
     /**
      * This method applies the Watershed algorithm to isolate overlapping objects from the background and each other.
      *
-     * @param input The image used to create the watershed.
-     * @param contours The contours used to create the watershed.
-     * @param output The image where the output is stored.
+     * @param input specifies the image used to create the watershed.
+     * @param contours specifies the contours used to create the watershed.
+     * @param output specifies the image where the output is stored.
      */
     private void watershed(Mat input, List<MatOfPoint> contours, Mat output)
     {
@@ -652,9 +652,9 @@ public class TrcOpenCvColorBlobPipeline implements TrcOpenCvPipeline<TrcOpenCvDe
             for (int i = 0; i < contours.size(); i++)
             {
                 Imgproc.drawContours(
-                    markers, contours, i, Scalar.all((i + 1) * (255/contours.size())),-1);
+                    markers, contours, i, Scalar.all((i + 1) * (255.0/contours.size())), -1);
             }
-//            Imgproc.circle(markers, new Point(5, 5), 3, Scalar.all(255), -1, Core.LINE_8, 0);
+            Imgproc.circle(markers, new Point(5, 5), 3, Scalar.all(255), -1, Imgproc.LINE_8, 0);
             Imgproc.watershed(input, markers);
             markers.convertTo(output, CvType.CV_8UC1);
             Core.bitwise_not(output, output);

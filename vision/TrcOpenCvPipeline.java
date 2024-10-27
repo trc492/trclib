@@ -142,7 +142,7 @@ public interface TrcOpenCvPipeline<O>
                 }
 
                 Imgproc.drawMarker(
-                    image, new Point((objRect.x + objRect.y)/2.0, objRect.y + objRect.height), color, MARKER_CROSS);
+                    image, new Point(objRect.x + objRect.width/2.0, objRect.y + objRect.height), color, MARKER_CROSS);
                 Imgproc.putText(
                     image, label, new Point(objRect.x, objRect.y + objRect.height), FONT_HERSHEY_SIMPLEX, fontScale,
                     color, thickness);
