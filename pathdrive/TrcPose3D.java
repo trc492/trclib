@@ -226,8 +226,7 @@ public class TrcPose3D
      */
     public TrcPose2D toPose2D()
     {
-        // TrcPose2D has a positive clockwise angle but TrcPose3D has a positive counter clockwise yaw.
-        return new TrcPose2D(x, y, -yaw);
+        return new TrcPose2D(x, y, yaw);
     }   //toPose2D
 
     /**
