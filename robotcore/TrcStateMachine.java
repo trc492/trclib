@@ -242,7 +242,6 @@ public class TrcStateMachine<T>
         //
         if (!eventList.contains(event))
         {
-            event.clear();
             eventList.add(event);
         }
     }   //addEvent
@@ -255,11 +254,12 @@ public class TrcStateMachine<T>
      * has expired even though the required event(s) have not been signaled.
      *
      * @param nextState specifies the next state when the state machine becomes ready.
+     * @param clearEvents specifies true to clear all events.
      * @param waitForAllEvents specifies true if all events must be signaled for the state machine to go ready.
      *                         If false, any signaled event will cause the state machine to go ready.
      * @param timeout specifies a timeout value. A zero value means there is no timeout.
      */
-    public void waitForEvents(T nextState, boolean waitForAllEvents, double timeout)
+    public void waitForEvents(T nextState, boolean clearEvents, boolean waitForAllEvents, double timeout)
     {
         this.nextState = nextState;
         this.expiredTime = timeout;
@@ -269,7 +269,10 @@ public class TrcStateMachine<T>
         }
         this.waitForAllEvents = waitForAllEvents;
         ready = false;
-        clearAllEvents();
+        if (clearEvents)
+        {
+            clearAllEvents();
+        }
     }   //waitForEvents
 
     /**
@@ -279,12 +282,44 @@ public class TrcStateMachine<T>
      * given next state.
      *
      * @param nextState specifies the next state when the state machine becomes ready.
+     * @param clearEvents specifies true to clear all events.
+     * @param waitForAllEvents specifies true if all events must be signaled for the state machine to go ready.
+     *                         If false, any signaled event will cause the state machine to go ready.
+     */
+    public void waitForEvents(T nextState, boolean clearEvents, boolean waitForAllEvents)
+    {
+        waitForEvents(nextState, clearEvents, waitForAllEvents, 0.0);
+    }   //waitForEvents
+
+    /**
+     * This method puts the state machine into not ready mode and starts monitoring the events in the list. If
+     * any event on the list is signaled, the state machine will be put back to ready mode and it will automatically
+     * advance to the given next state. If timeout is non-zero, the state machine will be put back to ready mode
+     * after timeout has expired even though the required event(s) have not been signaled.
+     *
+     * @param nextState specifies the next state when the state machine becomes ready.
+     * @param waitForAllEvents specifies true if all events must be signaled for the state machine to go ready.
+     *                         If false, any signaled event will cause the state machine to go ready.
+     * @param timeout specifies a timeout value. A zero value means there is no timeout.
+     */
+    public void waitForEvents(T nextState, boolean waitForAllEvents, double timeout)
+    {
+        waitForEvents(nextState, true, waitForAllEvents, timeout);
+    }   //waitForEvents
+
+    /**
+     * This method puts the state machine into not ready mode and starts monitoring the events in the list. If
+     * any event on the list is signaled, the state machine will be put back to ready mode and it will automatically
+     * advance to the given next state. If timeout is non-zero, the state machine will be put back to ready mode
+     * after timeout has expired even though the required event(s) have not been signaled.
+     *
+     * @param nextState specifies the next state when the state machine becomes ready.
      * @param waitForAllEvents specifies true if all events must be signaled for the state machine to go ready.
      *                         If false, any signaled event will cause the state machine to go ready.
      */
     public void waitForEvents(T nextState, boolean waitForAllEvents)
     {
-        waitForEvents(nextState, waitForAllEvents, 0.0);
+        waitForEvents(nextState, true, waitForAllEvents, 0.0);
     }   //waitForEvents
 
     /**
@@ -298,7 +333,7 @@ public class TrcStateMachine<T>
      */
     public void waitForEvents(T nextState, double timeout)
     {
-        waitForEvents(nextState, false, timeout);
+        waitForEvents(nextState, true, false, timeout);
     }   //waitForEvents
 
     /**
@@ -310,8 +345,26 @@ public class TrcStateMachine<T>
      */
     public void waitForEvents(T nextState)
     {
-        waitForEvents(nextState, false, 0.0);
+        waitForEvents(nextState, true, false, 0.0);
     }   //waitForEvents
+
+    /**
+     * This method puts the state machine into not ready mode and starts monitoring a single event. If the event
+     * is signaled, the state machine will be put back to ready mode and it will automatically advance to the given
+     * next state. If timeout is non-zero, the state machine will be put back to ready mode after timeout has expired
+     * even though the required event have not been signaled.
+     *
+     * @param event specifies the event to wait for.
+     * @param nextState specifies the next state when the state machine becomes ready.
+     * @param clearEvent specifies true to clear the event.
+     * @param timeout specifies a timeout value. A zero value means there is no timeout.
+     */
+    public void waitForSingleEvent(TrcEvent event, T nextState, boolean clearEvent, double timeout)
+    {
+        eventList.clear();
+        addEvent(event);
+        waitForEvents(nextState, clearEvent, false, timeout);
+    }   //waitForSingleEvent
 
     /**
      * This method puts the state machine into not ready mode and starts monitoring a single event. If the event
@@ -327,7 +380,7 @@ public class TrcStateMachine<T>
     {
         eventList.clear();
         addEvent(event);
-        waitForEvents(nextState, false, timeout);
+        waitForEvents(nextState, true, false, timeout);
     }   //waitForSingleEvent
 
     /**
@@ -341,7 +394,9 @@ public class TrcStateMachine<T>
      */
     public void waitForSingleEvent(TrcEvent event, T nextState)
     {
-        waitForSingleEvent(event, nextState, 0.0);
+        eventList.clear();
+        addEvent(event);
+        waitForEvents(nextState, true, false, 0.0);
     }   //waitForSingleEvent
 
     /**
