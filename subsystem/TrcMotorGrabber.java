@@ -53,6 +53,7 @@ public class TrcMotorGrabber implements TrcExclusiveSubsystem
         private double intakePower = 0.0;
         private double ejectPower = 0.0;
         private double retainPower = 0.0;
+        private double finishDelay = 0.0;
 
         /**
          * This method returns the string form of all the parameters.
@@ -68,7 +69,8 @@ public class TrcMotorGrabber implements TrcExclusiveSubsystem
                    ",triggerThreshold=" + triggerThreshold +
                    ",intakePower=" + intakePower +
                    ",ejectPower=" + ejectPower +
-                   ",retainPower=" + retainPower;
+                   ",retainPower=" + retainPower +
+                   ",finishDelay=" + finishDelay;
         }   //toString
 
         /**
@@ -105,13 +107,17 @@ public class TrcMotorGrabber implements TrcExclusiveSubsystem
          * @param intakePower specifies the power level for intaking the object.
          * @param ejectPower specifies the power level for ejecting the object.
          * @param retainPower specifies the power level for retaining the object.
+         * @param finishDelay specifies the delay in seconds between sensor trigger and finishing the operation, can
+         *        be 0.0 for no delay. This is useful to make sure the grabber has a good grasp of the object before
+         *        we turn off the motor.
          * @return this parameter object.
          */
-        public Params setPowerParams(double intakePower, double ejectPower, double retainPower)
+        public Params setPowerParams(double intakePower, double ejectPower, double retainPower, double finishDelay)
         {
             this.intakePower = intakePower;
             this.ejectPower = ejectPower;
             this.retainPower = retainPower;
+            this.finishDelay = finishDelay;
             return this;
         }   //setPowerParams
 
@@ -372,7 +378,8 @@ public class TrcMotorGrabber implements TrcExclusiveSubsystem
             if (completed)
             {
                 params.motor.setPower(
-                    actionParams.intakeAction && gotObject? params.retainPower: 0.0);
+                    actionParams.owner, 0.0, actionParams.intakeAction && gotObject? params.retainPower: 0.0,
+                    0.0, null);
             }
             else
             {
@@ -425,7 +432,14 @@ public class TrcMotorGrabber implements TrcExclusiveSubsystem
     private void sensorTriggerCallback(Object context)
     {
         tracer.traceDebug(instanceName, "Triggered: callbackEvent=%s", actionParams.callbackEvent);
-        finishAction(true);
+        if (params.finishDelay > 0.0)
+        {
+            timer.set(params.finishDelay, (c)-> finishAction(true));
+        }
+        else
+        {
+            finishAction(true);
+        }
     }   //sensorTriggerCallback
 
     /**
