@@ -456,9 +456,14 @@ public class TrcOpenCvColorBlobPipeline implements TrcOpenCvPipeline<TrcOpenCvDe
             if (annotateEnabled)
             {
                 Mat output = getIntermediateOutput(intermediateStep);
+                int imageRows = output.rows();
+                int imageCols = output.cols();
                 Scalar color = intermediateStep == 0? ANNOTATE_RECT_COLOR: ANNOTATE_RECT_WHITE;
                 annotateFrame(
                     output, instanceName, detectedObjects, color, ANNOTATE_RECT_THICKNESS, ANNOTATE_FONT_SCALE);
+                Imgproc.drawMarker(
+                    output, new Point(imageCols/2.0, imageRows/2.0), color, Imgproc.MARKER_CROSS,
+                    Math.max(imageRows, imageCols), ANNOTATE_RECT_THICKNESS);
             }
 
             detectedObjectsUpdate.set(detectedObjects);
