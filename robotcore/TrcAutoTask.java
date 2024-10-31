@@ -104,7 +104,7 @@ public abstract class TrcAutoTask<T>
      */
     public void cancel()
     {
-        tracer.traceInfo(instanceName, "Canceling operation.");
+        tracer.traceInfo(instanceName, "Canceling auto task operation.");
         stopAutoTask(false);
     }   //cancel
 
