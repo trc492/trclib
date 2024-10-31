@@ -383,7 +383,7 @@ public class TrcMotorGrabber implements TrcExclusiveSubsystem
             }
             else
             {
-                // Operation was canceled, cancel servo operation to release ownership if any.
+                // Operation was canceled, cancel operation to release ownership if any.
                 params.motor.cancel();
                 params.motor.stop();
             }

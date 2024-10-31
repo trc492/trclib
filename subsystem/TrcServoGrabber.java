@@ -339,7 +339,7 @@ public class TrcServoGrabber implements TrcExclusiveSubsystem
             params.sensorTrigger.disableTrigger();
             if (!completed)
             {
-                // Operation was canceled, cancel servo operation to release ownership if any.
+                // Operation was canceled, cancel operation to release ownership if any.
                 params.servo.cancel(actionParams.owner);
             }
 
