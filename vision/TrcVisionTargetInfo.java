@@ -99,13 +99,13 @@ public class TrcVisionTargetInfo<O extends TrcVisionTargetInfo.ObjectInfo>
      * @param detectedObj specifies the detected object.
      * @param homographyMapper specifies the homography mapper, can be null if not provided in which case
      *        distanceFromCamera, targetWidth and horizontalAngle will not be determined.
-     * @param objHeightOffset specifies the object height offset above the floor, used by homography. Can be zero if
+     * @param objGroundOffset specifies the object ground offset above the floor, used by homography. Can be zero if
      *        homographyMapper is null.
      * @param cameraHeight specifies the height of the camera above the floor, used by homography. Can be zero if
      *        homographyMapper is null.
      */
     public TrcVisionTargetInfo(
-        O detectedObj, TrcHomographyMapper homographyMapper, double objHeightOffset, double cameraHeight)
+        O detectedObj, TrcHomographyMapper homographyMapper, double objGroundOffset, double cameraHeight)
     {
         this.detectedObj = detectedObj;
         this.objRect = detectedObj.getObjectRect();
@@ -130,17 +130,17 @@ public class TrcVisionTargetInfo<O extends TrcVisionTargetInfo.ObjectInfo>
             double yDistanceFromCamera = (bottomLeft.y + bottomRight.y)/2.0;
             double horiAngleRadian = Math.atan2(xDistanceFromCamera, yDistanceFromCamera);
             double horizontalAngle = Math.toDegrees(horiAngleRadian);
-            if (objHeightOffset > 0.0)
+            if (objGroundOffset > 0.0)
             {
                 // If object is elevated off the ground, the object distance would be further than it actually is.
                 // Therefore, we need to calculate the distance adjustment to be subtracted from the Homography
                 // reported distance. Imagine the camera is the sun casting a shadow on the object to the ground.
                 // The shadow length is the distance adjustment.
                 //
-                //  cameraHeight / homographyDistance = objHeightOffset / adjustment
-                //  adjustment = objHeightOffset * homographyDistance / cameraHeight
+                //  cameraHeight / homographyDistance = objGroundOffset / adjustment
+                //  adjustment = objGroundOffset * homographyDistance / cameraHeight
                 double adjustment =
-                    objHeightOffset*TrcUtil.magnitude(xDistanceFromCamera, yDistanceFromCamera)/cameraHeight;
+                    objGroundOffset*TrcUtil.magnitude(xDistanceFromCamera, yDistanceFromCamera)/cameraHeight;
                 xDistanceFromCamera -= adjustment * Math.sin(horiAngleRadian);
                 yDistanceFromCamera -= adjustment * Math.cos(horiAngleRadian);
             }
