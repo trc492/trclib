@@ -110,13 +110,14 @@ public interface TrcOpenCvPipeline<O>
      * @param image specifies the frame to be rendered to the video output.
      * @param label specifies the text label to be annotated on the detected object, can be null if not provided.
      * @param detectedObjects specifies the detected objects.
-     * @param color specifies the color of the annotated rectangle.
+     * @param rectColor specifies the color of the annotated rectangle.
      * @param thickness specifies the thickness of the annotated rectangle.
+     * @param textColor specifies the color of the annotated text.
      * @param fontScale specifies the scale factor that is multiplied by the font-specific base size.
      */
     default void annotateFrame(
-        Mat image, String label, TrcOpenCvDetector.DetectedObject<?>[] detectedObjects, Scalar color, int thickness,
-        double fontScale)
+        Mat image, String label, TrcOpenCvDetector.DetectedObject<?>[] detectedObjects, Scalar rectColor, int thickness,
+        Scalar textColor, double fontScale)
     {
         for (TrcOpenCvDetector.DetectedObject<?> object : detectedObjects)
         {
@@ -126,12 +127,12 @@ public interface TrcOpenCvPipeline<O>
             if (vertices != null)
             {
                 MatOfPoint points = new MatOfPoint(vertices);
-                Imgproc.drawContours(image, Collections.singletonList(points), -1, color, thickness);
+                Imgproc.drawContours(image, Collections.singletonList(points), -1, rectColor, thickness);
             }
             else
             {
                 objRect = object.getObjectRect();
-                Imgproc.rectangle(image, objRect, color, thickness);
+                Imgproc.rectangle(image, objRect, rectColor, thickness);
             }
 
             if (label != null)
@@ -142,10 +143,11 @@ public interface TrcOpenCvPipeline<O>
                 }
 
                 Imgproc.drawMarker(
-                    image, new Point(objRect.x + objRect.width/2.0, objRect.y + objRect.height), color, MARKER_CROSS);
+                    image, new Point(objRect.x + objRect.width/2.0, objRect.y + objRect.height), rectColor,
+                    MARKER_CROSS);
                 Imgproc.putText(
-                    image, label, new Point(objRect.x, objRect.y + objRect.height), FONT_HERSHEY_SIMPLEX, fontScale,
-                    color, thickness);
+                    image, label, new Point(objRect.x, objRect.y), FONT_HERSHEY_SIMPLEX, fontScale, textColor,
+                    thickness);
             }
         }
     }   //annotatedFrame
