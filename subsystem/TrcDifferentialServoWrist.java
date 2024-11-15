@@ -22,6 +22,10 @@
 
 package trclib.subsystem;
 
+import androidx.annotation.NonNull;
+
+import java.util.Arrays;
+
 import trclib.dataprocessor.TrcUtil;
 import trclib.motor.TrcServo;
 import trclib.robotcore.TrcDbgTrace;
@@ -37,6 +41,64 @@ import trclib.timer.TrcTimer;
  */
 public class TrcDifferentialServoWrist implements TrcExclusiveSubsystem
 {
+    /**
+     * This class contains all the parameters of the Differential Servo Wrist.
+     */
+    public static class Params
+    {
+        private TrcServo servo1 = null, servo2 = null;
+        private double presetTolerance = 0.0;
+        private double[] tiltPosPresets = null;
+        private double[] rotatePosPresets = null;
+
+        /**
+         * This method returns the string format of the Params info.
+         *
+         * @return string format of the params info.
+         */
+        @NonNull
+        @Override
+        public String toString()
+        {
+            return "servo1=" + servo1 +
+                   ",servo2=" + servo2 +
+                   ",presetTolerance=" + presetTolerance +
+                   ",tiltPosPresets=" + (tiltPosPresets != null? Arrays.toString(tiltPosPresets): "null") +
+                   ",rotatePosPresets=" + (rotatePosPresets != null? Arrays.toString(rotatePosPresets): "null");
+        }   //toString
+
+        /**
+         * This methods sets the parameters of servo 1.
+         *
+         * @param servo1 specifies the servo1 object.
+         * @param servo2 specifies the servo2 object.
+         * @return this object for chaining.
+         */
+        public Params setServos(TrcServo servo1, TrcServo servo2)
+        {
+            this.servo1 = servo1;
+            this.servo2 = servo2;
+            return this;
+        }   //setServo1
+
+        /**
+         * This method sets the position preset parameters for both tilt and rotate.
+         *
+         * @param presetTolerance specifies the preset tolerance.
+         * @param tiltPosPresets specifies the tilt position preset array.
+         * @param rotatePosPresets specifies the rotate position preset array.
+         * @return this object for chaining.
+         */
+        public Params setPosPresets(double presetTolerance, double[] tiltPosPresets, double[] rotatePosPresets)
+        {
+            this.presetTolerance = presetTolerance;
+            this.tiltPosPresets = tiltPosPresets;
+            this.rotatePosPresets = rotatePosPresets;
+            return this;
+        }   //setPosPresets
+
+    }   //class Params
+
     /**
      * Specifies the operation types.
      */
@@ -84,7 +146,7 @@ public class TrcDifferentialServoWrist implements TrcExclusiveSubsystem
 
     public final TrcDbgTrace tracer;
     private final String instanceName;
-    private final TrcServo servo1, servo2;
+    private final Params wristParams;
     private final TrcTimer timer;
     private ActionParams actionParams = null;
     private double tiltPower = 0.0;
@@ -94,15 +156,13 @@ public class TrcDifferentialServoWrist implements TrcExclusiveSubsystem
      * Constructor: Create an instance of the object.
      *
      * @param instanceName specifies the instance name.
-     * @param servo1 specifies the servo 1 object.
-     * @param servo2 specifies the servo 2 object.
+     * @param params specifies the wrist parameters.
      */
-    public TrcDifferentialServoWrist(String instanceName, TrcServo servo1, TrcServo servo2)
+    public TrcDifferentialServoWrist(String instanceName, Params params)
     {
         this.tracer = new TrcDbgTrace();
         this.instanceName = instanceName;
-        this.servo1 = servo1;
-        this.servo2 = servo2;
+        this.wristParams = params;
         this.timer = new TrcTimer(instanceName);
     }   //TrcDifferentialServoWrist
 
@@ -132,8 +192,8 @@ public class TrcDifferentialServoWrist implements TrcExclusiveSubsystem
             if (!completed)
             {
                 timer.cancel();
-                servo1.cancel(actionParams.owner);
-                servo2.cancel(actionParams.owner);
+                wristParams.servo1.cancel(actionParams.owner);
+                wristParams.servo2.cancel(actionParams.owner);
             }
 
             if (actionParams.event != null)
@@ -194,22 +254,22 @@ public class TrcDifferentialServoWrist implements TrcExclusiveSubsystem
                 tiltPower /= mag;
                 rotatePower /= mag;
             }
-            servo1.setPower(tiltPower + rotatePower);
-            servo2.setPower(tiltPower - rotatePower);
+            double servo1Power = tiltPower + rotatePower;
+            double servo2Power = tiltPower - rotatePower;
+            wristParams.servo1.setPower(servo1Power);
+            wristParams.servo2.setPower(servo2Power);
+            tracer.traceDebug(instanceName, "setPower(servo1=%.3f, servo2=%.3f)", servo1Power, servo2Power);
             finish(true);
         }
         else if (actionParams.operation == Operation.SetPosition)
         {
             double tiltPos = actionParams.tiltValue;
             double rotatePos = actionParams.rotateValue;
-            double mag = TrcUtil.magnitude(tiltPos, rotatePos);
-            if (mag > 1.0)
-            {
-                tiltPos /= mag;
-                rotatePos /= mag;
-            }
-            servo1.setPosition(tiltPos + rotatePos);
-            servo2.setPosition(tiltPos - rotatePos);
+            double servo1Pos = tiltPos + rotatePos;
+            double servo2Pos = tiltPos - rotatePos;
+            wristParams.servo1.setPosition(servo1Pos);
+            wristParams.servo2.setPosition(servo2Pos);
+            tracer.traceDebug(instanceName, "setPosition(servo1=%.3f, servo2=%.3f)", servo1Pos, servo2Pos);
             if (actionParams.timeout > 0.0)
             {
                 timer.set(actionParams.timeout, this::actionTimedOut);
@@ -430,7 +490,7 @@ public class TrcDifferentialServoWrist implements TrcExclusiveSubsystem
      */
     public double getTiltPosition()
     {
-        return (servo1.getPosition() + servo2.getPosition()) / 2.0;
+        return (wristParams.servo1.getPosition() + wristParams.servo2.getPosition()) / 2.0;
     }   //getRotatePosition
 
     /**
@@ -442,7 +502,367 @@ public class TrcDifferentialServoWrist implements TrcExclusiveSubsystem
      */
     public double getRotatePosition()
     {
-        return (servo1.getPosition() - servo2.getPosition()) / 2.0;
+        return (wristParams.servo1.getPosition() - wristParams.servo2.getPosition()) / 2.0;
     }   //getRotatePosition
+
+    //
+    // Presets.
+    //
+
+    /**
+     * This method checks if the tilt preset index is within the preset table.
+     *
+     * @param index specifies the preset table index to check.
+     * @return true if there is a preset table and the index is within the table.
+     */
+    public boolean validateTiltPresetIndex(int index)
+    {
+        return wristParams.tiltPosPresets != null && index >= 0 && index < wristParams.tiltPosPresets.length;
+    }   //validateTiltPresetIndex
+
+    /**
+     * This method checks if the rotate preset index is within the preset table.
+     *
+     * @param index specifies the preset table index to check.
+     * @return true if there is a preset table and the index is within the table.
+     */
+    public boolean validateRotatePresetIndex(int index)
+    {
+        return wristParams.rotatePosPresets != null && index >= 0 && index < wristParams.rotatePosPresets.length;
+    }   //validateRotatePresetIndex
+
+    /**
+     * This method returns the tilt preset value at the specified index.
+     *
+     * @param index specifies the index into the preset table.
+     * @return preset value.
+     */
+    public double getTiltPresetValue(int index)
+    {
+        return wristParams.tiltPosPresets[index];
+    }   //getTiltPresetValue
+
+    /**
+     * This method returns the rotate preset value at the specified index.
+     *
+     * @param index specifies the index into the preset table.
+     * @return preset value.
+     */
+    public double getRotatePresetValue(int index)
+    {
+        return wristParams.rotatePosPresets[index];
+    }   //getRotatePresetValue
+
+    /**
+     * This method sets the wrist to the specified tilt preset position.
+     *
+     * @param owner specifies the owner ID to check if the caller has ownership of the subsystem.
+     * @param delay specifies delay time in seconds before setting position, can be zero if no delay.
+     * @param presetIndex specifies the index to the preset position array.
+     * @param event specifies the event to signal when target is reached, can be null if not provided.
+     * @param timeout specifies a maximum time value the operation should be completed in seconds.
+     */
+    public void setTiltPresetPosition(String owner, double delay, int presetIndex, TrcEvent event, double timeout)
+    {
+        if (validateTiltPresetIndex(presetIndex))
+        {
+            setPosition(owner, delay, wristParams.tiltPosPresets[presetIndex], getRotatePosition(), event, timeout);
+        }
+    }   //setTiltPresetPosition
+
+    /**
+     * This method sets the wrist to the specified tilt preset position.
+     *
+     * @param delay specifies delay time in seconds before setting position, can be zero if no delay.
+     * @param presetIndex specifies the index to the preset position array.
+     * @param event specifies the event to signal when target is reached, can be null if not provided.
+     * @param timeout specifies a maximum time value the operation should be completed in seconds.
+     */
+    public void setTiltPresetPosition(double delay, int presetIndex, TrcEvent event, double timeout)
+    {
+        setTiltPresetPosition(null, delay, presetIndex, event, timeout);
+    }   //setTiltPresetPosition
+
+    /**
+     * This method sets the wrist to the specified tilt preset position.
+     *
+     * @param presetIndex specifies the index to the preset position array.
+     * @param event specifies the event to signal when target is reached, can be null if not provided.
+     * @param timeout specifies a maximum time value the operation should be completed in seconds.
+     */
+    public void setTiltPresetPosition(int presetIndex, TrcEvent event, double timeout)
+    {
+        setTiltPresetPosition(null, 0.0, presetIndex, event, timeout);
+    }   //setTiltPresetPosition
+
+    /**
+     * This method sets the wrist to the specified tilt preset position.
+     *
+     * @param presetIndex specifies the index to the preset position array.
+     */
+    public void setTiltPresetPosition(int presetIndex)
+    {
+        setTiltPresetPosition(null, 0.0, presetIndex, null, 0.0);
+    }   //setTiltPresetPosition
+
+    /**
+     * This method sets the wrist to the specified rotate preset position.
+     *
+     * @param owner specifies the owner ID to check if the caller has ownership of the subsystem.
+     * @param delay specifies delay time in seconds before setting position, can be zero if no delay.
+     * @param presetIndex specifies the index to the preset position array.
+     * @param event specifies the event to signal when target is reached, can be null if not provided.
+     * @param timeout specifies a maximum time value the operation should be completed in seconds.
+     */
+    public void setRotatePresetPosition(String owner, double delay, int presetIndex, TrcEvent event, double timeout)
+    {
+        if (validateRotatePresetIndex(presetIndex))
+        {
+            setPosition(owner, delay, getTiltPosition(), wristParams.rotatePosPresets[presetIndex], event, timeout);
+        }
+    }   //setRotatePresetPosition
+
+    /**
+     * This method sets the wrist to the specified rotate preset position.
+     *
+     * @param delay specifies delay time in seconds before setting position, can be zero if no delay.
+     * @param presetIndex specifies the index to the preset position array.
+     * @param event specifies the event to signal when target is reached, can be null if not provided.
+     * @param timeout specifies a maximum time value the operation should be completed in seconds.
+     */
+    public void setRotatePresetPosition(double delay, int presetIndex, TrcEvent event, double timeout)
+    {
+        setRotatePresetPosition(null, delay, presetIndex, event, timeout);
+    }   //setRotatePresetPosition
+
+    /**
+     * This method sets the wrist to the specified rotate preset position.
+     *
+     * @param presetIndex specifies the index to the preset position array.
+     * @param event specifies the event to signal when target is reached, can be null if not provided.
+     * @param timeout specifies a maximum time value the operation should be completed in seconds.
+     */
+    public void setRotatePresetPosition(int presetIndex, TrcEvent event, double timeout)
+    {
+        setRotatePresetPosition(null, 0.0, presetIndex, event, timeout);
+    }   //setRotatePresetPosition
+
+    /**
+     * This method sets the wrist to the specified rotate preset position.
+     *
+     * @param presetIndex specifies the index to the preset position array.
+     */
+    public void setRotatePresetPosition(int presetIndex)
+    {
+        setRotatePresetPosition(null, 0.0, presetIndex, null, 0.0);
+    }   //setRotatePresetPosition
+
+    /**
+     * This method determines the next preset index up from the current preset value.
+     *
+     * @return next preset index up, -1 if there is no preset table.
+     */
+    public int nextTiltPresetIndexUp()
+    {
+        int index = -1;
+
+        if (wristParams.tiltPosPresets != null)
+        {
+            double currValue = (getTiltPosition()) + wristParams.presetTolerance;
+
+            for (int i = 0; i < wristParams.tiltPosPresets.length; i++)
+            {
+                if (wristParams.tiltPosPresets[i] > currValue)
+                {
+                    index = i;
+                    break;
+                }
+            }
+
+            if (index == -1)
+            {
+                index = wristParams.tiltPosPresets.length - 1;
+            }
+        }
+
+        return index;
+    }   //nextTiltPresetIndexUp
+
+    /**
+     * This method determines the next preset index down from the current value.
+     *
+     * @return next preset index down, -1 if there is no preset table.
+     */
+    public int nextTiltPresetIndexDown()
+    {
+        int index = -1;
+
+        if (wristParams.tiltPosPresets != null)
+        {
+            double currValue = (getTiltPosition()) - wristParams.presetTolerance;
+
+            for (int i = wristParams.tiltPosPresets.length - 1; i >= 0; i--)
+            {
+                if (wristParams.tiltPosPresets[i] < currValue)
+                {
+                    index = i;
+                    break;
+                }
+            }
+
+            if (index == -1)
+            {
+                index = 0;
+            }
+        }
+
+        return index;
+    }   //nextTiltPresetIndexDown
+
+    /**
+     * This method determines the next preset index up from the current preset value.
+     *
+     * @return next preset index up, -1 if there is no preset table.
+     */
+    public int nextRotatePresetIndexUp()
+    {
+        int index = -1;
+
+        if (wristParams.rotatePosPresets != null)
+        {
+            double currValue = (getTiltPosition()) + wristParams.presetTolerance;
+
+            for (int i = 0; i < wristParams.rotatePosPresets.length; i++)
+            {
+                if (wristParams.rotatePosPresets[i] > currValue)
+                {
+                    index = i;
+                    break;
+                }
+            }
+
+            if (index == -1)
+            {
+                index = wristParams.rotatePosPresets.length - 1;
+            }
+        }
+
+        return index;
+    }   //nextRotatePresetIndexUp
+
+    /**
+     * This method determines the next preset index down from the current value.
+     *
+     * @return next preset index down, -1 if there is no preset table.
+     */
+    public int nextRotatePresetIndexDown()
+    {
+        int index = -1;
+
+        if (wristParams.rotatePosPresets != null)
+        {
+            double currValue = (getTiltPosition()) - wristParams.presetTolerance;
+
+            for (int i = wristParams.rotatePosPresets.length - 1; i >= 0; i--)
+            {
+                if (wristParams.rotatePosPresets[i] < currValue)
+                {
+                    index = i;
+                    break;
+                }
+            }
+
+            if (index == -1)
+            {
+                index = 0;
+            }
+        }
+
+        return index;
+    }   //nextRotatePresetIndexDown
+
+    /**
+     * This method sets the wrist to the next tilt preset position up or down from the current position.
+     *
+     * @param owner specifies the owner ID that will acquire ownership before setting the preset position and will
+     *        automatically release ownership when the motor movement is completed, can be null if no ownership
+     *        is required.
+     * @param presetUp specifies true to move to next preset up, false to move to next preset down.
+     */
+    private void setNextTiltPresetPosition(String owner, boolean presetUp)
+    {
+        int index = presetUp? nextTiltPresetIndexUp(): nextTiltPresetIndexDown();
+
+        if (index != -1)
+        {
+            setTiltPresetPosition(owner, 0.0, index, null, 0.0);
+        }
+    }   //setNextTiltPresetPosition
+
+    /**
+     * This method sets the wrist to the next tilt preset position up from the current position.
+     *
+     * @param owner specifies the owner ID that will acquire ownership before setting the preset position and will
+     *        automatically release ownership when the motor movement is completed, can be null if no ownership
+     *        is required.
+     */
+    public void tiltPresetPositionUp(String owner)
+    {
+        setNextTiltPresetPosition(owner, true);
+    }   //tiltPresetPositionUp
+
+    /**
+     * This method sets the wrist to the next tilt preset position down from the current position.
+     *
+     * @param owner specifies the owner ID that will acquire ownership before setting the preset position and will
+     *        automatically release ownership when the motor movement is completed, can be null if no ownership
+     *        is required.
+     */
+    public void tiltPresetPositionDown(String owner)
+    {
+        setNextTiltPresetPosition(owner, false);
+    }   //tiltPresetPositionDown
+
+    /**
+     * This method sets the wrist to the next rotate preset position up or down from the current position.
+     *
+     * @param owner specifies the owner ID that will acquire ownership before setting the preset position and will
+     *        automatically release ownership when the motor movement is completed, can be null if no ownership
+     *        is required.
+     * @param presetUp specifies true to move to next preset up, false to move to next preset down.
+     */
+    private void setNextRotatePresetPosition(String owner, boolean presetUp)
+    {
+        int index = presetUp? nextRotatePresetIndexUp(): nextRotatePresetIndexDown();
+
+        if (index != -1)
+        {
+            setRotatePresetPosition(owner, 0.0, index, null, 0.0);
+        }
+    }   //setNextRotatePresetPosition
+
+    /**
+     * This method sets the wrist to the next rotate preset position up from the current position.
+     *
+     * @param owner specifies the owner ID that will acquire ownership before setting the preset position and will
+     *        automatically release ownership when the motor movement is completed, can be null if no ownership
+     *        is required.
+     */
+    public void rotatePresetPositionUp(String owner)
+    {
+        setNextRotatePresetPosition(owner, true);
+    }   //rotatePresetPositionUp
+
+    /**
+     * This method sets the wrist to the next rotate preset position down from the current position.
+     *
+     * @param owner specifies the owner ID that will acquire ownership before setting the preset position and will
+     *        automatically release ownership when the motor movement is completed, can be null if no ownership
+     *        is required.
+     */
+    public void rotatePresetPositionDown(String owner)
+    {
+        setNextRotatePresetPosition(owner, false);
+    }   //rotatePresetPositionDown
 
 }   //class TrcDifferentialServoWrist
