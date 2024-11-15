@@ -254,8 +254,8 @@ public class TrcDifferentialServoWrist implements TrcExclusiveSubsystem
                 tiltPower /= mag;
                 rotatePower /= mag;
             }
-            double servo1Power = tiltPower + rotatePower;
-            double servo2Power = tiltPower - rotatePower;
+            double servo1Power = tiltPower - rotatePower;
+            double servo2Power = tiltPower + rotatePower;
             wristParams.servo1.setPower(servo1Power);
             wristParams.servo2.setPower(servo2Power);
             tracer.traceDebug(instanceName, "setPower(servo1=%.3f, servo2=%.3f)", servo1Power, servo2Power);
@@ -265,8 +265,8 @@ public class TrcDifferentialServoWrist implements TrcExclusiveSubsystem
         {
             double tiltPos = actionParams.tiltValue;
             double rotatePos = actionParams.rotateValue;
-            double servo1Pos = tiltPos + rotatePos;
-            double servo2Pos = tiltPos - rotatePos;
+            double servo1Pos = tiltPos - rotatePos;
+            double servo2Pos = tiltPos + rotatePos;
             wristParams.servo1.setPosition(servo1Pos);
             wristParams.servo2.setPosition(servo2Pos);
             tracer.traceDebug(instanceName, "setPosition(servo1=%.3f, servo2=%.3f)", servo1Pos, servo2Pos);

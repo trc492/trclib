@@ -23,6 +23,7 @@
 package trclib.motor;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 
 import trclib.dataprocessor.TrcUtil;
 import trclib.robotcore.TrcDbgTrace;
@@ -68,6 +69,92 @@ public abstract class TrcServo implements TrcExclusiveSubsystem
      * @return logical position of the servo in the range of [0.0, 1.0].
      */
     public abstract double getLogicalPosition();
+
+    public static class Params
+    {
+        public double physicalMin = DEF_PHYSICAL_MIN;
+        public double physicalMax = DEF_PHYSICAL_MAX;
+        public double logicalMin = DEF_LOGICAL_MIN;
+        public double logicalMax = DEF_LOGICAL_MAX;
+        public Double maxStepRate = null;
+        public double presetTolerance = 0.0;
+        public double[] posPresets = null;
+
+        /**
+         * This method returns the string format of the servoParams info.
+         *
+         * @return string format of the servo param info.
+         */
+        public String toString()
+        {
+            return "phyMin=" + physicalMin +
+                   ",phyMax=" + physicalMax +
+                   ",logMin=" + logicalMin +
+                   ",logMax=" + logicalMax +
+                   ",maxStepRate=" + maxStepRate +
+                   ",presetTolerance=" + presetTolerance +
+                   ",posPreset=" + Arrays.toString(posPresets);
+        }   //toString
+
+        /**
+         * This method sets the physical range of the servo motor. This is typically used to set a 180-degree servo to
+         * have a range of 0.0 to 180.0 instead of the logical range of 0.0 to 1.0. By default physical range is set
+         * to the range of 0.0 to 1.0, same as logical range. The physical range is used for map physical position
+         * units to logical position unit between 0.0 to 1.0.
+         *
+         * @param physicalMin specifies the minimum value of the physical range.
+         * @param physicalMax specifies the maximum value of the physical range.
+         * @return this object for chaining.
+         */
+        public Params setPhysicalPosRange(double physicalMin, double physicalMax)
+        {
+            this.physicalMin = physicalMin;
+            this.physicalMax = physicalMax;
+            return this;
+        }   //setPhysicalPosRange
+
+        /**
+         * This method sets the logical range of the servo motor. This is typically used to limit the logical range
+         * of the servo to less than the 0.0 to 1.0 range. For example, one may limit the logical range to 0.2 to 0.8.
+         *
+         * @param logicalMin specifies the minimum value of the logical range.
+         * @param logicalMax specifies the maximum value of the logical range.
+         * @return this object for chaining.
+         */
+        public Params setLogicalPosRange(double logicalMin, double logicalMax)
+        {
+            this.logicalMin = logicalMin;
+            this.logicalMax = logicalMax;
+            return this;
+        }   //setLogicalPosRange
+
+        /**
+         * This method sets the maximum stepping rate of the servo. This enables setPower to speed control the servo.
+         *
+         * @param maxStepRate specifies the maximum stepping rate (physicalPos/sec).
+         * @return this object for chaining.
+         */
+        public Params setMaxStepRate(double maxStepRate)
+        {
+            this.maxStepRate = maxStepRate;
+            return this;
+        }   //setMaxStepRate
+
+        /**
+         * This method sets an array of preset positions for the servo.
+         *
+         * @param tolerance specifies the preset tolerance.
+         * @param posPresets specifies an array of preset positions in scaled unit.
+         * @return this object for chaining.
+         */
+        public Params setPosPresets(double tolerance, double... posPresets)
+        {
+            this.presetTolerance = tolerance;
+            this.posPresets = posPresets;
+            return this;
+        }   //setPosPresets
+
+    }   //class Params
 
     private enum ActionType
     {
@@ -137,14 +224,24 @@ public abstract class TrcServo implements TrcExclusiveSubsystem
     private final TrcTimer timer;
     private final TrcTaskMgr.TaskObject servoTaskObj;
 
-    private double physicalMin = DEF_PHYSICAL_MIN;
-    private double physicalMax = DEF_PHYSICAL_MAX;
-    private double logicalMin = DEF_LOGICAL_MIN;
-    private double logicalMax = DEF_LOGICAL_MAX;
-    private Double maxStepRate = null;
+    private Params servoParams;
     private double currPower = 0.0;
-    private double presetTolerance = 0.0;
-    private double[] posPresets = null;
+
+    /**
+     * Constructor: Creates an instance of the object.
+     *
+     * @param instanceName specifies the instance name of the servo.
+     * @param params specifies the parameters of the servo.
+     */
+    public TrcServo(String instanceName, Params params)
+    {
+        this.tracer = new TrcDbgTrace();
+        this.instanceName = instanceName;
+        this.servoParams = params != null? params: new Params();
+        timer = new TrcTimer(instanceName);
+        servoTaskObj = TrcTaskMgr.createTask(instanceName + ".servoTask", this::servoTask);
+        TrcTaskMgr.createTask(instanceName + ".stopTask", this::stopTask).registerTask(TrcTaskMgr.TaskType.STOP_TASK);
+    }   //TrcServo
 
     /**
      * Constructor: Creates an instance of the object.
@@ -153,11 +250,7 @@ public abstract class TrcServo implements TrcExclusiveSubsystem
      */
     public TrcServo(String instanceName)
     {
-        this.tracer = new TrcDbgTrace();
-        this.instanceName = instanceName;
-        timer = new TrcTimer(instanceName);
-        servoTaskObj = TrcTaskMgr.createTask(instanceName + ".servoTask", this::servoTask);
-        TrcTaskMgr.createTask(instanceName + ".stopTask", this::stopTask).registerTask(TrcTaskMgr.TaskType.STOP_TASK);
+        this(instanceName, null);
     }   //TrcServo
 
     /**
@@ -170,6 +263,16 @@ public abstract class TrcServo implements TrcExclusiveSubsystem
     {
         return instanceName;
     }   //toString
+
+    /**
+     * This method returns the servo parameters.
+     *
+     * @return servo parameters.
+     */
+    public Params getServoParams()
+    {
+        return servoParams;
+    }   //getServoParams
 
     /**
      * This method sets the logical range of the servo motor. This is typically used to limit the logical range
@@ -185,8 +288,7 @@ public abstract class TrcServo implements TrcExclusiveSubsystem
             throw new IllegalArgumentException("max must be greater than min.");
         }
 
-        this.logicalMin = logicalMin;
-        this.logicalMax = logicalMax;
+        servoParams.setLogicalPosRange(logicalMin, logicalMax);
     }   //setLogicalPosRange
 
     /**
@@ -205,8 +307,7 @@ public abstract class TrcServo implements TrcExclusiveSubsystem
             throw new IllegalArgumentException("max must be greater than min.");
         }
 
-        this.physicalMin = physicalMin;
-        this.physicalMax = physicalMax;
+        servoParams.setPhysicalPosRange(physicalMin, physicalMax);
     }   //setPhysicalPosRange
 
     /**
@@ -218,8 +319,10 @@ public abstract class TrcServo implements TrcExclusiveSubsystem
      */
     public double toLogicalPosition(double physicalPosition)
     {
-        physicalPosition = TrcUtil.clipRange(physicalPosition, physicalMin, physicalMax);
-        return TrcUtil.scaleRange(physicalPosition, physicalMin, physicalMax, logicalMin, logicalMax);
+        physicalPosition = TrcUtil.clipRange(physicalPosition, servoParams.physicalMin, servoParams.physicalMax);
+        return TrcUtil.scaleRange(
+            physicalPosition, servoParams.physicalMin, servoParams.physicalMax, servoParams.logicalMin,
+            servoParams.logicalMax);
     }   //toLogicalPosition
 
     /**
@@ -233,8 +336,10 @@ public abstract class TrcServo implements TrcExclusiveSubsystem
      */
     public double toPhysicalPosition(double logicalPosition)
     {
-        logicalPosition = TrcUtil.clipRange(logicalPosition, logicalMin, logicalMax);
-        return TrcUtil.scaleRange(logicalPosition, logicalMin, logicalMax, physicalMin, physicalMax);
+        logicalPosition = TrcUtil.clipRange(logicalPosition, servoParams.logicalMin, servoParams.logicalMax);
+        return TrcUtil.scaleRange(
+            logicalPosition, servoParams.logicalMin, servoParams.logicalMax, servoParams.physicalMin,
+            servoParams.physicalMax);
     }   //toPhysicalPosition
 
     /**
@@ -245,7 +350,7 @@ public abstract class TrcServo implements TrcExclusiveSubsystem
     public void setMaxStepRate(double maxStepRate)
     {
         tracer.traceDebug(instanceName, "maxStepRate=" + maxStepRate);
-        this.maxStepRate = maxStepRate;
+        servoParams.setMaxStepRate(maxStepRate);
     }   //setMaxStepRate
 
     /**
@@ -628,8 +733,9 @@ public abstract class TrcServo implements TrcExclusiveSubsystem
             {
                 // Not already in stepping mode, do a setPosition to the direction according to the sign of the power
                 // and the step rate according to the magnitude of the power.
-                actionParams.targetPosition = actionParams.power > 0.0 ? physicalMax : physicalMin;
-                actionParams.currStepRate = Math.abs(actionParams.power)*maxStepRate;
+                actionParams.targetPosition =
+                    actionParams.power > 0.0 ? servoParams.physicalMax : servoParams.physicalMin;
+                actionParams.currStepRate = Math.abs(actionParams.power) * servoParams.maxStepRate;
                 actionParams.currPosition = getPosition();
                 actionParams.prevTime = null;
                 setTaskEnabled(true);
@@ -637,8 +743,9 @@ public abstract class TrcServo implements TrcExclusiveSubsystem
             else if (actionParams.power != 0.0)
             {
                 // We are already in stepping mode, just change the stepping parameters.
-                actionParams.targetPosition = actionParams.power > 0.0 ? physicalMax : physicalMin;
-                actionParams.currStepRate = Math.abs(actionParams.power)*maxStepRate;
+                actionParams.targetPosition =
+                    actionParams.power > 0.0 ? servoParams.physicalMax : servoParams.physicalMin;
+                actionParams.currStepRate = Math.abs(actionParams.power) * servoParams.maxStepRate;
             }
             else
             {
@@ -660,7 +767,7 @@ public abstract class TrcServo implements TrcExclusiveSubsystem
     public void setPower(String owner, double delay, double power)
     {
         tracer.traceDebug(instanceName, "owner=" + owner + ", delay=" + delay + ", power=" + power);
-        if (maxStepRate == null)
+        if (servoParams.maxStepRate == null)
         {
             throw new IllegalStateException("Maximum stepping rate is not set.");
         }
@@ -816,8 +923,7 @@ public abstract class TrcServo implements TrcExclusiveSubsystem
      */
     public void setPosPresets(double tolerance, double... posPresets)
     {
-        this.presetTolerance = tolerance;
-        this.posPresets = posPresets;
+        servoParams.setPosPresets(tolerance, posPresets);
     }   //setPosPresets
 
     /**
@@ -828,7 +934,7 @@ public abstract class TrcServo implements TrcExclusiveSubsystem
      */
     public boolean validatePresetIndex(int index)
     {
-        return posPresets != null && index >= 0 && index < posPresets.length;
+        return servoParams.posPresets != null && index >= 0 && index < servoParams.posPresets.length;
     }   //validatePresetIndex
 
     /**
@@ -839,7 +945,7 @@ public abstract class TrcServo implements TrcExclusiveSubsystem
      */
     public double getPresetPosition(int index)
     {
-        return posPresets[index];
+        return servoParams.posPresets[index];
     }   //getPresetPosition
 
     /**
@@ -858,7 +964,7 @@ public abstract class TrcServo implements TrcExclusiveSubsystem
     {
         if (validatePresetIndex(presetIndex))
         {
-            setPosition(owner, delay, posPresets[presetIndex], event, timeout);
+            setPosition(owner, delay, servoParams.posPresets[presetIndex], event, timeout);
         }
     }   //setPresetPosition
 
@@ -932,16 +1038,16 @@ public abstract class TrcServo implements TrcExclusiveSubsystem
     {
         int index = -1;
 
-        if (posPresets != null)
+        if (servoParams.posPresets != null)
         {
             double currPos = getPosition();
 
-            for (int i = 0; i < posPresets.length; i++)
+            for (int i = 0; i < servoParams.posPresets.length; i++)
             {
-                if (posPresets[i] > currPos)
+                if (servoParams.posPresets[i] > currPos)
                 {
                     index = i;
-                    if (Math.abs(currPos - posPresets[i]) <= presetTolerance)
+                    if (Math.abs(currPos - servoParams.posPresets[i]) <= servoParams.presetTolerance)
                     {
                         index++;
                     }
@@ -951,7 +1057,7 @@ public abstract class TrcServo implements TrcExclusiveSubsystem
 
             if (index == -1)
             {
-                index = posPresets.length - 1;
+                index = servoParams.posPresets.length - 1;
             }
         }
 
@@ -967,16 +1073,16 @@ public abstract class TrcServo implements TrcExclusiveSubsystem
     {
         int index = -1;
 
-        if (posPresets != null)
+        if (servoParams.posPresets != null)
         {
             double currPos = getPosition();
 
-            for (int i = posPresets.length - 1; i >= 0; i--)
+            for (int i = servoParams.posPresets.length - 1; i >= 0; i--)
             {
-                if (posPresets[i] < currPos)
+                if (servoParams.posPresets[i] < currPos)
                 {
                     index = i;
-                    if (Math.abs(currPos - posPresets[i]) <= presetTolerance)
+                    if (Math.abs(currPos - servoParams.posPresets[i]) <= servoParams.presetTolerance)
                     {
                         index--;
                     }
