@@ -72,10 +72,10 @@ public abstract class TrcServo implements TrcExclusiveSubsystem
 
     public static class Params
     {
-        public double physicalMin = DEF_PHYSICAL_MIN;
-        public double physicalMax = DEF_PHYSICAL_MAX;
         public double logicalMin = DEF_LOGICAL_MIN;
         public double logicalMax = DEF_LOGICAL_MAX;
+        public double physicalMin = DEF_PHYSICAL_MIN;
+        public double physicalMax = DEF_PHYSICAL_MAX;
         public Double maxStepRate = null;
         public double presetTolerance = 0.0;
         public double[] posPresets = null;
@@ -87,14 +87,29 @@ public abstract class TrcServo implements TrcExclusiveSubsystem
          */
         public String toString()
         {
-            return "phyMin=" + physicalMin +
-                   ",phyMax=" + physicalMax +
-                   ",logMin=" + logicalMin +
+            return "logMin=" + logicalMin +
                    ",logMax=" + logicalMax +
+                   ",phyMin=" + physicalMin +
+                   ",phyMax=" + physicalMax +
                    ",maxStepRate=" + maxStepRate +
                    ",presetTolerance=" + presetTolerance +
                    ",posPreset=" + Arrays.toString(posPresets);
         }   //toString
+
+        /**
+         * This method sets the logical range of the servo motor. This is typically used to limit the logical range
+         * of the servo to less than the 0.0 to 1.0 range. For example, one may limit the logical range to 0.2 to 0.8.
+         *
+         * @param logicalMin specifies the minimum value of the logical range.
+         * @param logicalMax specifies the maximum value of the logical range.
+         * @return this object for chaining.
+         */
+        public Params setLogicalPosRange(double logicalMin, double logicalMax)
+        {
+            this.logicalMin = logicalMin;
+            this.logicalMax = logicalMax;
+            return this;
+        }   //setLogicalPosRange
 
         /**
          * This method sets the physical range of the servo motor. This is typically used to set a 180-degree servo to
@@ -112,21 +127,6 @@ public abstract class TrcServo implements TrcExclusiveSubsystem
             this.physicalMax = physicalMax;
             return this;
         }   //setPhysicalPosRange
-
-        /**
-         * This method sets the logical range of the servo motor. This is typically used to limit the logical range
-         * of the servo to less than the 0.0 to 1.0 range. For example, one may limit the logical range to 0.2 to 0.8.
-         *
-         * @param logicalMin specifies the minimum value of the logical range.
-         * @param logicalMax specifies the maximum value of the logical range.
-         * @return this object for chaining.
-         */
-        public Params setLogicalPosRange(double logicalMin, double logicalMax)
-        {
-            this.logicalMin = logicalMin;
-            this.logicalMax = logicalMax;
-            return this;
-        }   //setLogicalPosRange
 
         /**
          * This method sets the maximum stepping rate of the servo. This enables setPower to speed control the servo.
@@ -167,12 +167,28 @@ public abstract class TrcServo implements TrcExclusiveSubsystem
     {
         ActionType actionType = null;
         double power = 0.0;
+        double minPos = 0.0;
+        double maxPos = 0.0;
         double currPosition = 0.0;
         double targetPosition = 0.0;
         double currStepRate = 0.0;
         TrcEvent completionEvent = null;
         double timeout = 0.0;
         Double prevTime = null;
+
+        @Override
+        public String toString()
+        {
+            return "(action=" + actionType +
+                   ",power=" + power +
+                   ",minPos=" + minPos +
+                   ",maxPos=" + maxPos +
+                   ",currPos=" + currPosition +
+                   ",targetPos=" + targetPosition +
+                   ",currStepRate=" + currStepRate +
+                   ",event=" + completionEvent +
+                   ",timeout=" + timeout;
+        }   //toString
 
         void setPositionParams(double targetPos, TrcEvent completionEvent, double timeout)
         {
@@ -190,31 +206,22 @@ public abstract class TrcServo implements TrcExclusiveSubsystem
             this.completionEvent = completionEvent;
         }   //setPositionWithStepRateParams
 
-        void setPowerParams(double power)
+        void setPowerParams(double power, double minPos, double maxPos)
         {
             this.actionType = ActionType.SetPower;
             this.power = power;
+            this.minPos = minPos;
+            this.maxPos = maxPos;
             this.targetPosition = 0.0;
             this.currStepRate = 0.0;
         }   //setPowerParams
 
-        @Override
-        public String toString()
-        {
-            return "(action=" + actionType +
-            ", power=" + power +
-            ", currPos=" + currPosition +
-            ", targetPos=" + targetPosition +
-            ", currStepRate=" + currStepRate +
-            ", event=" + completionEvent +
-            ", timeout=" + timeout;
-        }   //toString
     }   //class ActionParams
 
-    private static final double DEF_PHYSICAL_MIN    = 0.0;
-    private static final double DEF_PHYSICAL_MAX    = 1.0;
     private static final double DEF_LOGICAL_MIN     = 0.0;
     private static final double DEF_LOGICAL_MAX     = 1.0;
+    private static final double DEF_PHYSICAL_MIN    = 0.0;
+    private static final double DEF_PHYSICAL_MAX    = 1.0;
     protected static TrcElapsedTimer servoSetPosElapsedTimer = null;
     private final ArrayList<TrcServo> followers = new ArrayList<>();
     private final ActionParams actionParams = new ActionParams();
@@ -265,16 +272,6 @@ public abstract class TrcServo implements TrcExclusiveSubsystem
     }   //toString
 
     /**
-     * This method returns the servo parameters.
-     *
-     * @return servo parameters.
-     */
-    public Params getServoParams()
-    {
-        return servoParams;
-    }   //getServoParams
-
-    /**
      * This method sets the logical range of the servo motor. This is typically used to limit the logical range
      * of the servo to less than the 0.0 to 1.0 range. For example, one may limit the logical range to 0.2 to 0.8.
      *
@@ -311,6 +308,17 @@ public abstract class TrcServo implements TrcExclusiveSubsystem
     }   //setPhysicalPosRange
 
     /**
+     * This method sets the maximum stepping rate of the servo. This enables setPower to speed control the servo.
+     *
+     * @param maxStepRate specifies the maximum stepping rate (physicalPos/sec).
+     */
+    public void setMaxStepRate(double maxStepRate)
+    {
+        tracer.traceDebug(instanceName, "maxStepRate=" + maxStepRate);
+        servoParams.setMaxStepRate(maxStepRate);
+    }   //setMaxStepRate
+
+    /**
      * This method is called to convert a physical position to a logical position. It will make sure the physical
      * position is within the physical range and scale it to the logical range.
      *
@@ -341,17 +349,6 @@ public abstract class TrcServo implements TrcExclusiveSubsystem
             logicalPosition, servoParams.logicalMin, servoParams.logicalMax, servoParams.physicalMin,
             servoParams.physicalMax);
     }   //toPhysicalPosition
-
-    /**
-     * This method sets the maximum stepping rate of the servo. This enables setPower to speed control the servo.
-     *
-     * @param maxStepRate specifies the maximum stepping rate (physicalPos/sec).
-     */
-    public void setMaxStepRate(double maxStepRate)
-    {
-        tracer.traceDebug(instanceName, "maxStepRate=" + maxStepRate);
-        servoParams.setMaxStepRate(maxStepRate);
-    }   //setMaxStepRate
 
     /**
      * This method adds a following servo to the followers list.
@@ -643,7 +640,7 @@ public abstract class TrcServo implements TrcExclusiveSubsystem
      * the speed to get there.
      *
      * @param owner specifies the owner ID to check if the caller has ownership of the subsystem.
-     * @param delay speciifes the delay in seconds before setting the position of the servo, can be zero if no delay.
+     * @param delay specifies the delay in seconds before setting the position of the servo, can be zero if no delay.
      * @param position specifies the target position.
      * @param stepRate specifies the stepping rate to get there (physicalPos/sec).
      * @param completionEvent specifies an event object to signal when the servo reaches the position..
@@ -733,8 +730,7 @@ public abstract class TrcServo implements TrcExclusiveSubsystem
             {
                 // Not already in stepping mode, do a setPosition to the direction according to the sign of the power
                 // and the step rate according to the magnitude of the power.
-                actionParams.targetPosition =
-                    actionParams.power > 0.0 ? servoParams.physicalMax : servoParams.physicalMin;
+                actionParams.targetPosition = actionParams.power > 0.0 ? actionParams.maxPos : actionParams.minPos;
                 actionParams.currStepRate = Math.abs(actionParams.power) * servoParams.maxStepRate;
                 actionParams.currPosition = getPosition();
                 actionParams.prevTime = null;
@@ -744,7 +740,7 @@ public abstract class TrcServo implements TrcExclusiveSubsystem
             {
                 // We are already in stepping mode, just change the stepping parameters.
                 actionParams.targetPosition =
-                    actionParams.power > 0.0 ? servoParams.physicalMax : servoParams.physicalMin;
+                    actionParams.power > 0.0 ? actionParams.maxPos : actionParams.minPos;
                 actionParams.currStepRate = Math.abs(actionParams.power) * servoParams.maxStepRate;
             }
             else
@@ -761,12 +757,16 @@ public abstract class TrcServo implements TrcExclusiveSubsystem
      * This method speed controls the servo with stepping.
      *
      * @param owner specifies the owner ID to check if the caller has ownership of the subsystem.
-     * @param delay speciifes the delay in seconds before setting the power of the servo, can be zero if no delay.
+     * @param delay specifies the delay in seconds before setting the power of the servo, can be zero if no delay.
      * @param power specifies how fast the servo will turn.
+     * @param minPos specifies the minimum position the servo can move to.
+     * @param maxPos specifies the maximum position the servo can move to.
      */
-    public void setPower(String owner, double delay, double power)
+    public void setPower(String owner, double delay, double power, double minPos, double maxPos)
     {
-        tracer.traceDebug(instanceName, "owner=" + owner + ", delay=" + delay + ", power=" + power);
+        tracer.traceDebug(
+            instanceName, "owner=%s,delay=%.3f,power=%.3f,minPos=%.3f,maxPos=%.3f",
+            owner, delay, power, minPos, maxPos);
         if (servoParams.maxStepRate == null)
         {
             throw new IllegalStateException("Maximum stepping rate is not set.");
@@ -774,7 +774,7 @@ public abstract class TrcServo implements TrcExclusiveSubsystem
 
         if (validateOwnership(owner) && power != currPower)
         {
-            actionParams.setPowerParams(power);
+            actionParams.setPowerParams(power, minPos, maxPos);
             if (delay > 0.0)
             {
                 timer.set(delay, this::performSetPower, null);
@@ -789,12 +789,49 @@ public abstract class TrcServo implements TrcExclusiveSubsystem
     /**
      * This method speed controls the servo with stepping.
      *
-     * @param delay speciifes the delay in seconds before setting the power of the servo, can be zero if no delay.
+     * @param owner specifies the owner ID to check if the caller has ownership of the subsystem.
+     * @param delay specifies the delay in seconds before setting the power of the servo, can be zero if no delay.
+     * @param power specifies how fast the servo will turn.
+     */
+    public void setPower(String owner, double delay, double power)
+    {
+        setPower(owner, delay, power, servoParams.physicalMin, servoParams.physicalMax);
+    }   //setPower
+
+    /**
+     * This method speed controls the servo with stepping.
+     *
+     * @param delay specifies the delay in seconds before setting the power of the servo, can be zero if no delay.
+     * @param power specifies how fast the servo will turn.
+     * @param minPos specifies the minimum position the servo can move to.
+     * @param maxPos specifies the maximum position the servo can move to.
+     */
+    public void setPower(double delay, double power, double minPos, double maxPos)
+    {
+        setPower(null, delay, power, minPos, maxPos);
+    }   //setPower
+
+    /**
+     * This method speed controls the servo with stepping.
+     *
+     * @param delay specifies the delay in seconds before setting the power of the servo, can be zero if no delay.
      * @param power specifies how fast the servo will turn.
      */
     public void setPower(double delay, double power)
     {
-        setPower(null, delay, power);
+        setPower(null, delay, power, servoParams.physicalMin, servoParams.physicalMax);
+    }   //setPower
+
+    /**
+     * This method speed controls the servo with stepping.
+     *
+     * @param power specifies how fast the servo will turn.
+     * @param minPos specifies the minimum position the servo can move to.
+     * @param maxPos specifies the maximum position the servo can move to.
+     */
+    public void setPower(double power, double minPos, double maxPos)
+    {
+        setPower(null, 0.0, power, minPos, maxPos);
     }   //setPower
 
     /**
@@ -804,7 +841,7 @@ public abstract class TrcServo implements TrcExclusiveSubsystem
      */
     public void setPower(double power)
     {
-        setPower(null, 0.0, power);
+        setPower(null, 0.0, power, servoParams.physicalMin, servoParams.physicalMax);
     }   //setPower
 
     /**

@@ -290,7 +290,7 @@ public class TrcDifferentialServoWrist implements TrcExclusiveSubsystem
      */
     private void actionTimedOut(Object context)
     {
-        tracer.traceDebug(instanceName, "actionParams=" + actionParams);
+        tracer.traceDebug(instanceName, "actionParams=%s", actionParams);
         finish(true);
     }   //actionTimedOut
 
@@ -490,7 +490,7 @@ public class TrcDifferentialServoWrist implements TrcExclusiveSubsystem
      */
     public double getTiltPosition()
     {
-        return (wristParams.servo1.getPosition() + wristParams.servo2.getPosition()) / 2.0;
+        return (wristParams.servo2.getPosition() + wristParams.servo1.getPosition()) / 2.0;
     }   //getRotatePosition
 
     /**
@@ -502,7 +502,7 @@ public class TrcDifferentialServoWrist implements TrcExclusiveSubsystem
      */
     public double getRotatePosition()
     {
-        return (wristParams.servo1.getPosition() - wristParams.servo2.getPosition()) / 2.0;
+        return (wristParams.servo2.getPosition() - wristParams.servo1.getPosition()) / 2.0;
     }   //getRotatePosition
 
     //
@@ -730,7 +730,7 @@ public class TrcDifferentialServoWrist implements TrcExclusiveSubsystem
 
         if (wristParams.rotatePosPresets != null)
         {
-            double currValue = (getTiltPosition()) + wristParams.presetTolerance;
+            double currValue = (getRotatePosition()) + wristParams.presetTolerance;
 
             for (int i = 0; i < wristParams.rotatePosPresets.length; i++)
             {
@@ -761,7 +761,7 @@ public class TrcDifferentialServoWrist implements TrcExclusiveSubsystem
 
         if (wristParams.rotatePosPresets != null)
         {
-            double currValue = (getTiltPosition()) - wristParams.presetTolerance;
+            double currValue = (getRotatePosition()) - wristParams.presetTolerance;
 
             for (int i = wristParams.rotatePosPresets.length - 1; i >= 0; i--)
             {
