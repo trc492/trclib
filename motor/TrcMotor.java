@@ -127,6 +127,27 @@ public abstract class TrcMotor implements TrcMotorController, TrcExclusiveSubsys
     }   //class ExternalSensors
 
     /**
+     * This class encapsulates a follower motor with the associated scale factor.
+     */
+    protected class FollowerMotor
+    {
+        TrcMotor motor;
+        double valueScale;
+
+        /**
+         * Constructor: Create an instance of the object.
+         *
+         * @param motor specifies the follower motor.
+         * @param scale specifies the value scale for the follower motor, 1.0 by default.
+         */
+        FollowerMotor(TrcMotor motor, double scale)
+        {
+            this.motor = motor;
+            this.valueScale = scale;
+        }   //FollowerMotor
+    }   //class FollowerMotor
+
+    /**
      * Some actuators are non-linear. The load may vary depending on the position. For example, raising an arm
      * against gravity will have the maximum load when the arm is horizontal and zero load when vertical. This
      * caused problem when applying PID control on this kind of actuator because PID controller is only good at
@@ -208,7 +229,7 @@ public abstract class TrcMotor implements TrcMotorController, TrcExclusiveSubsys
     protected static TrcElapsedTimer motorSetPositionElapsedTimer;
     protected static TrcElapsedTimer motorSetCurrentElapsedTimer;
 
-    private final ArrayList<TrcMotor> followingMotorsList = new ArrayList<>();
+    private final ArrayList<FollowerMotor> followingMotorsList = new ArrayList<>();
     private final TaskParams taskParams = new TaskParams();
 
     public final TrcDbgTrace tracer;
@@ -489,17 +510,35 @@ public abstract class TrcMotor implements TrcMotorController, TrcExclusiveSubsys
      * given motor to add it to the follower list of the motor it wants to follow.
      *
      * @param motor specifies the motor that will follow this motor.
+     * @param scale specifies the value scale for the follower motor, 1.0 by default.
      */
-    private void addFollower(TrcMotor motor)
+    private void addFollower(TrcMotor motor, double scale)
     {
         synchronized (followingMotorsList)
         {
-            if (!followingMotorsList.contains(motor))
+            for (FollowerMotor follower: followingMotorsList)
             {
-                followingMotorsList.add(motor);
+                if (motor == follower.motor)
+                {
+                    return;
+                }
             }
+            followingMotorsList.add(new FollowerMotor(motor, scale));
         }
     }   //addFollower
+
+    /**
+     * This method sets this motor to follow another motor.
+     *
+     * @param motor specifies the motor to follow.
+     * @param inverted specifies true if this motor is inverted from the motor it is following, false otherwise.
+     * @param scale specifies the value scale for the follower motor, 1.0 by default.
+     */
+    public void follow(TrcMotor motor, boolean inverted, double scale)
+    {
+        motor.addFollower(this, scale);
+        setMotorInverted(motor.isMotorInverted() ^ inverted);
+    }   //follow
 
     /**
      * This method sets this motor to follow another motor.
@@ -510,8 +549,7 @@ public abstract class TrcMotor implements TrcMotorController, TrcExclusiveSubsys
     @Override
     public void follow(TrcMotor motor, boolean inverted)
     {
-        motor.addFollower(this);
-        setMotorInverted(motor.isMotorInverted() ^ inverted);
+        follow(motor, inverted, 1.0);
     }   //follow
 
     /**
@@ -522,7 +560,7 @@ public abstract class TrcMotor implements TrcMotorController, TrcExclusiveSubsys
      * @param index specifies the follower index.
      * @return follower.
      */
-    protected TrcMotor getFollower(ArrayList<TrcMotor> followerList, int index)
+    protected TrcMotor getFollower(ArrayList<FollowerMotor> followerList, int index)
     {
         TrcMotor follower = null;
 
@@ -530,7 +568,7 @@ public abstract class TrcMotor implements TrcMotorController, TrcExclusiveSubsys
         {
             if (index < followerList.size())
             {
-                follower = followerList.get(index);
+                follower = followerList.get(index).motor;
             }
         }
 
@@ -1178,10 +1216,10 @@ public abstract class TrcMotor implements TrcMotorController, TrcExclusiveSubsys
             // Take care of motor followers.
             synchronized (followingMotorsList)
             {
-                for (TrcMotor follower : followingMotorsList)
+                for (FollowerMotor follower : followingMotorsList)
                 {
                     if (motorSetPowerElapsedTimer != null) motorSetPowerElapsedTimer.recordStartTime();
-                    follower.setMotorPower(currMotorPower);
+                    follower.motor.setMotorPower(currMotorPower * follower.valueScale);
                     if (motorSetPowerElapsedTimer != null) motorSetPowerElapsedTimer.recordEndTime();
                 }
             }
@@ -2926,7 +2964,7 @@ public abstract class TrcMotor implements TrcMotorController, TrcExclusiveSubsys
                                     // Get the power of the master motor.
                                     double power = getPower(false);
 
-                                    for (TrcMotor follower : followingMotorsList)
+                                    for (FollowerMotor follower : followingMotorsList)
                                     {
                                         switch (taskParams.currControlMode)
                                         {
@@ -2936,8 +2974,8 @@ public abstract class TrcMotor implements TrcMotorController, TrcExclusiveSubsys
                                                 // So, instead of calling setMotorVelocity, we call
                                                 // setControllerMotorVelocity which has optimization to not sending
                                                 // same velocity if it hasn't change.
-                                                follower.setControllerMotorVelocity(
-                                                    taskParams.motorValue, controllerFeedforward);
+                                                follower.motor.setControllerMotorVelocity(
+                                                    taskParams.motorValue * follower.valueScale, controllerFeedforward);
                                                 break;
 
                                             case Position:
@@ -2951,7 +2989,8 @@ public abstract class TrcMotor implements TrcMotorController, TrcExclusiveSubsys
                                                 // linked so you don't need to synchronize them. The motors are
                                                 // just sharing the load. In this case, all the followers should
                                                 // just mimic the power output of the master.
-                                                follower.setControllerMotorPower(power, true);
+                                                follower.motor.setControllerMotorPower(
+                                                    power * follower.valueScale, true);
                                                 break;
 
                                             case Current:
@@ -2960,7 +2999,8 @@ public abstract class TrcMotor implements TrcMotorController, TrcExclusiveSubsys
                                                 // So, instead of calling setMotorCurrent, we call
                                                 // setControllerMotorCurrent which has optimization to not sending
                                                 // same current if it hasn't change.
-                                                follower.setControllerMotorCurrent(taskParams.motorValue);
+                                                follower.motor.setControllerMotorCurrent(
+                                                    taskParams.motorValue * follower.valueScale);
                                                 break;
 
                                             default:
