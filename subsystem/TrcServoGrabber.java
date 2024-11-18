@@ -396,6 +396,10 @@ public class TrcServoGrabber implements TrcExclusiveSubsystem
                 params.servo.setPosition(actionParams.owner, 0.0, params.closePos, null, 0.0);
                 finishAction(true);
             }
+            else
+            {
+                actionParams.callbackEvent.signal();
+            }
         }
     }   //sensorTriggerCallback
 
