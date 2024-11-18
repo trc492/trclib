@@ -392,12 +392,14 @@ public class TrcServoGrabber implements TrcExclusiveSubsystem
             // If callback is provided, callback is responsible for grabbing the object.
             if (actionParams.callbackEvent == null)
             {
-                // There is no callback, grab the object ourselves.
+                // There is no callback, grab the object ourselves and finish the operation.
                 params.servo.setPosition(actionParams.owner, 0.0, params.closePos, null, 0.0);
                 finishAction(true);
             }
             else
             {
+                // There is a callback, signal the callback. It is the responsibility of the caller to finish the
+                // operation by calling cancel.
                 actionParams.callbackEvent.signal();
             }
         }
