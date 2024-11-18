@@ -394,8 +394,8 @@ public class TrcServoGrabber implements TrcExclusiveSubsystem
             {
                 // There is no callback, grab the object ourselves.
                 params.servo.setPosition(actionParams.owner, 0.0, params.closePos, null, 0.0);
+                finishAction(true);
             }
-            finishAction(true);
         }
     }   //sensorTriggerCallback
 
@@ -465,6 +465,8 @@ public class TrcServoGrabber implements TrcExclusiveSubsystem
      * @param timeout specifies a timeout value at which point it will give up and signal completion. The caller
      *        must call hasObject() to figure out if it has given up.
      * @param triggerCallback specifies the method to call when a trigger occurred, can be null if not provided.
+     *        If triggerCallback is provided, it is the responsibility of triggerCallback to close the grabber to
+     *        grab the object and to cancel the operation. In other words, autoGrab mode will not end automatically.
      * @param callbackContext specifies the context object to be passed back to the callback, can be null if none.
      */
     public void autoGrab(
