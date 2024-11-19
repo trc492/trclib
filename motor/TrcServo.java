@@ -29,6 +29,7 @@ import trclib.dataprocessor.TrcUtil;
 import trclib.robotcore.TrcDbgTrace;
 import trclib.robotcore.TrcEvent;
 import trclib.robotcore.TrcExclusiveSubsystem;
+import trclib.robotcore.TrcPresets;
 import trclib.robotcore.TrcRobot;
 import trclib.robotcore.TrcTaskMgr;
 import trclib.timer.TrcElapsedTimer;
@@ -228,10 +229,11 @@ public abstract class TrcServo implements TrcExclusiveSubsystem
 
     public final TrcDbgTrace tracer;
     private final String instanceName;
+    private final Params servoParams;
     private final TrcTimer timer;
     private final TrcTaskMgr.TaskObject servoTaskObj;
 
-    private Params servoParams;
+    private TrcPresets posPresets = null;
     private double currPower = 0.0;
 
     /**
@@ -248,6 +250,10 @@ public abstract class TrcServo implements TrcExclusiveSubsystem
         timer = new TrcTimer(instanceName);
         servoTaskObj = TrcTaskMgr.createTask(instanceName + ".servoTask", this::servoTask);
         TrcTaskMgr.createTask(instanceName + ".stopTask", this::stopTask).registerTask(TrcTaskMgr.TaskType.STOP_TASK);
+        if (params != null && params.posPresets != null)
+        {
+            setPosPresets(params.presetTolerance, params.posPresets);
+        }
     }   //TrcServo
 
     /**
@@ -956,34 +962,12 @@ public abstract class TrcServo implements TrcExclusiveSubsystem
      * This method sets an array of preset positions for the motor.
      *
      * @param tolerance specifies the preset tolerance.
-     * @param posPresets specifies an array of preset positions in scaled unit.
+     * @param presets specifies an array of preset positions in scaled unit.
      */
-    public void setPosPresets(double tolerance, double... posPresets)
+    public void setPosPresets(double tolerance, double... presets)
     {
-        servoParams.setPosPresets(tolerance, posPresets);
+        posPresets = new TrcPresets(instanceName + ".posPresets", tolerance, presets);
     }   //setPosPresets
-
-    /**
-     * This method checks if the preset index is within the preset table.
-     *
-     * @param index specifies the preset table index to check.
-     * @return true if there is a preset table and the index is within the table.
-     */
-    public boolean validatePresetIndex(int index)
-    {
-        return servoParams.posPresets != null && index >= 0 && index < servoParams.posPresets.length;
-    }   //validatePresetIndex
-
-    /**
-     * This method returns the preset position at the specified index.
-     *
-     * @param index specifies the index into the preset position table.
-     * @return preset position.
-     */
-    public double getPresetPosition(int index)
-    {
-        return servoParams.posPresets[index];
-    }   //getPresetPosition
 
     /**
      * This method sets the servo to the specified preset position.
@@ -999,142 +983,11 @@ public abstract class TrcServo implements TrcExclusiveSubsystem
     public void setPresetPosition(
         String owner, double delay, int presetIndex, TrcEvent event, double timeout)
     {
-        if (validatePresetIndex(presetIndex))
+        if (posPresets != null && posPresets.validatePresetIndex(presetIndex))
         {
-            setPosition(owner, delay, servoParams.posPresets[presetIndex], event, timeout);
+            setPosition(owner, delay, posPresets.getPresetValue(presetIndex), event, timeout);
         }
     }   //setPresetPosition
-
-    /**
-     * This method sets the servo to the specified preset position.
-     *
-     * @param delay specifies delay time in seconds before setting position, can be zero if no delay.
-     * @param preset specifies the index to the preset position array.
-     * @param event specifies the event to signal when done, can be null if not provided.
-     * @param timeout specifies a timeout value in seconds. If the operation is not completed without the specified
-     *        timeout, the operation will be canceled and the event will be signaled. If no timeout is specified, it
-     *        should be set to zero.
-     */
-    public void setPresetPosition(double delay, int preset, TrcEvent event, double timeout)
-    {
-        setPresetPosition(null, delay, preset, event, timeout);
-    }   //setPresetPosition
-
-    /**
-     * This method sets the servo to the specified preset position.
-     *
-     * @param preset specifies the index to the preset position array.
-     * @param event specifies the event to signal when done, can be null if not provided.
-     * @param timeout specifies a timeout value in seconds. If the operation is not completed without the specified
-     *        timeout, the operation will be canceled and the event will be signaled. If no timeout is specified, it
-     *        should be set to zero.
-     */
-    public void setPresetPosition(int preset, TrcEvent event, double timeout)
-    {
-        setPresetPosition(null, 0.0, preset, event, timeout);
-    }   //setPresetPosition
-
-    /**
-     * This method sets the servo to the specified preset position.
-     *
-     * @param preset specifies the index to the preset position array.
-     * @param event specifies the event to signal when done, can be null if not provided.
-     */
-    public void setPresetPosition(int preset, TrcEvent event)
-    {
-        setPresetPosition(null, 0.0, preset, event, 0.0);
-    }   //setPresetPosition
-
-    /**
-     * This method sets the servo to the specified preset position.
-     *
-     * @param delay specifies delay time in seconds before setting position, can be zero if no delay.
-     * @param preset specifies the index to the preset position array.
-     */
-    public void setPresetPosition(double delay, int preset)
-    {
-        setPresetPosition(null, delay, preset, null, 0.0);
-    }   //setPresetPosition
-
-    /**
-     * This method sets the servo to the specified preset position.
-     *
-     * @param preset specifies the index to the preset position array.
-     */
-    public void setPresetPosition(int preset)
-    {
-        setPresetPosition(null, 0.0, preset, null, 0.0);
-    }   //setPresetPosition
-
-    /**
-     * This method determines the next preset index up from the current position.
-     *
-     * @return next preset index up, -1 if there is no preset table.
-     */
-    public int nextPresetIndexUp()
-    {
-        int index = -1;
-
-        if (servoParams.posPresets != null)
-        {
-            double currPos = getPosition();
-
-            for (int i = 0; i < servoParams.posPresets.length; i++)
-            {
-                if (servoParams.posPresets[i] > currPos)
-                {
-                    index = i;
-                    if (Math.abs(currPos - servoParams.posPresets[i]) <= servoParams.presetTolerance)
-                    {
-                        index++;
-                    }
-                    break;
-                }
-            }
-
-            if (index == -1)
-            {
-                index = servoParams.posPresets.length - 1;
-            }
-        }
-
-        return index;
-    }   //nextPresetIndexUp
-
-    /**
-     * This method determines the next preset index down from the current position.
-     *
-     * @return next preset index down, -1 if there is no preset table.
-     */
-    public int nextPresetIndexDown()
-    {
-        int index = -1;
-
-        if (servoParams.posPresets != null)
-        {
-            double currPos = getPosition();
-
-            for (int i = servoParams.posPresets.length - 1; i >= 0; i--)
-            {
-                if (servoParams.posPresets[i] < currPos)
-                {
-                    index = i;
-                    if (Math.abs(currPos - servoParams.posPresets[i]) <= servoParams.presetTolerance)
-                    {
-                        index--;
-                    }
-                    break;
-                }
-            }
-
-            if (index == -1)
-            {
-                index = 0;
-            }
-        }
-
-        return index;
-    }   //nextPresetIndexDown
 
     /**
      * This method sets the actuator to the next preset position up or down from the current position.
@@ -1146,11 +999,15 @@ public abstract class TrcServo implements TrcExclusiveSubsystem
      */
     private void setNextPresetPosition(String owner, boolean presetUp)
     {
-        int index = presetUp? nextPresetIndexUp(): nextPresetIndexDown();
-
-        if (index != -1)
+        if (posPresets != null)
         {
-            setPresetPosition(owner, 0.0, index, null, 0.0);
+            double currValue = getPosition();
+            int index = presetUp? posPresets.nextPresetIndexUp(currValue): posPresets.nextPresetIndexDown(currValue);
+
+            if (index != -1)
+            {
+                setPresetPosition(owner, 0.0, index, null, 0.0);
+            }
         }
     }   //setNextPresetPosition
 
