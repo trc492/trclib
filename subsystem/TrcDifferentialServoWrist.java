@@ -317,7 +317,19 @@ public class TrcDifferentialServoWrist implements TrcExclusiveSubsystem
         double servo2Pos = wristParams.servo2.getPosition();
         double tiltPos = getTiltPosition(servo1Pos, servo2Pos);
         double rotatePos = getRotatePosition(servo1Pos, servo2Pos);
-
+        // Because of the nature of Differential Wrist, it has two DOFs (tilt and rotate) that interact with each
+        // other. When implemented using regular servos which have a movement range restriction (e.g. 180-degree
+        // servos), the position of one DOF will impose movement restriction on the other DOF. For example, if both
+        // tilt and rotate has a max movement range of -90 degrees to +90 degrees, when tilt is at one extreme limit
+        // (e.g. +90 degree), the servos cannot move further past that limit. It means rotate will be stuck at zero
+        // degree. If the tilt is at +45 degrees, it has a headroom of 45 degrees before it will hit the 90-degree
+        // limit and therefore, rotate has a range of -45 to 45 degrees. If you try to rotate beyond the 45-degree
+        // restriction, tilt will be forced to move. In other words, rotating the wrist may make the wrist tilt
+        // position to change unexpectedly. This is not desirable. To solve this dilemma, we decided to prioritize
+        // tilt position over rotate position. It means we impose no restriction on tilt position but rotate position
+        // will be restricted to the headroom range imposed by tilt position. If the wrist is at 0-degree, rotate
+        // will have full rotate range (-90 to +90). Tilting the wrist in either direction will decrease the headroom
+        // and thus restricting rotation to a smaller range.
         tracer.traceInfo(
             instanceName, "tiltPos=" + tiltPos + ",rotatePos=" + rotatePos + ",actionParams=" + actionParams);
         if (actionParams.operation == Operation.SetPower)
@@ -338,11 +350,13 @@ public class TrcDifferentialServoWrist implements TrcExclusiveSubsystem
             double headroom = maxHeadroom - Math.abs(tiltOffset);
             if (tiltPower != 0.0)
             {
+                // Don't restrict the range if we are tilting the wrist.
                 wristParams.servo1.setPower(servo1Power, -maxHeadroom, maxHeadroom);
                 wristParams.servo2.setPower(servo2Power, -maxHeadroom, maxHeadroom);
             }
             else
             {
+                // Restrict the range if we are just rotating.
                 wristParams.servo1.setPower(servo1Power, tiltOffset - headroom, tiltOffset + headroom);
                 wristParams.servo2.setPower(servo2Power, tiltOffset - headroom, tiltOffset + headroom);
             }
@@ -358,6 +372,7 @@ public class TrcDifferentialServoWrist implements TrcExclusiveSubsystem
             double targetTiltPos = actionParams.tiltValue;
             double headroom =
                 wristParams.physicalPosRange / 2.0 - Math.abs(targetTiltPos - wristParams.tiltPosOffset);
+            // Restricting rotate position according to tilt position.
             double targetRotatePos = TrcUtil.clipRange(
                 actionParams.rotateValue,
                 -headroom + wristParams.rotatePosOffset,
