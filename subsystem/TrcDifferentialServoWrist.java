@@ -51,9 +51,13 @@ public class TrcDifferentialServoWrist implements TrcExclusiveSubsystem
         private double logicalMin = 0.0;
         private double logicalMax = 1.0;
         private double physicalPosRange = 1.0;
-        private double tiltPosOffset = 0.5;
-        private double rotatePosOffset = 0.5;
+        private double tiltPosOffset = 0.0;
+        private double rotatePosOffset = 0.0;
         private double maxStepRate = 0.0;
+        private double tiltPosLowLimit = 0.0;
+        private double tiltPosHighLimit = 1.0;
+        private double rotatePosLowLimit = 0.0;
+        private double rotatePosHighLimit = 1.0;
         private double presetTolerance = 0.0;
         private double[] tiltPosPresets = null;
         private double[] rotatePosPresets = null;
@@ -75,6 +79,10 @@ public class TrcDifferentialServoWrist implements TrcExclusiveSubsystem
                    ",tiltOffset=" + tiltPosOffset +
                    ",rotateOffset=" + rotatePosOffset +
                    ",maxStepRate=" + maxStepRate +
+                   ",tiltPosLowLimit=" + tiltPosLowLimit +
+                   ",tiltPosHighLimit=" + tiltPosHighLimit +
+                   ",rotatePosLowLimit=" + rotatePosLowLimit +
+                   ",rotatePosHighLimit=" + rotatePosHighLimit +
                    ",presetTolerance=" + presetTolerance +
                    ",tiltPosPresets=" + (tiltPosPresets != null? Arrays.toString(tiltPosPresets): "null") +
                    ",rotatePosPresets=" + (rotatePosPresets != null? Arrays.toString(rotatePosPresets): "null");
@@ -132,6 +140,25 @@ public class TrcDifferentialServoWrist implements TrcExclusiveSubsystem
             this.maxStepRate = maxStepRate;
             return this;
         }   //setMaxStepRate
+
+        /**
+         * This method sets the tilt and rotate position limits.
+         *
+         * @param tiltPosLowLimit specifies the tilt position low limit in physical unit.
+         * @param tiltPosHighLimit specifies the tilt position high limit in physical unit.
+         * @param rotatePosLowLimit specifies the rotate position low limit in physical unit.
+         * @param rotatePosHighLimit specifies the rotate position high limit in physical unit.
+         * @return this object for chaining.
+         */
+        public Params setPositionLimits(
+            double tiltPosLowLimit, double tiltPosHighLimit, double rotatePosLowLimit, double rotatePosHighLimit)
+        {
+            this.tiltPosLowLimit = tiltPosLowLimit;
+            this.tiltPosHighLimit = tiltPosHighLimit;
+            this.rotatePosLowLimit = rotatePosLowLimit;
+            this.rotatePosHighLimit = rotatePosHighLimit;
+            return this;
+        }   //setPositionLimits
 
         /**
          * This method sets the position preset parameters for both tilt and rotate.
@@ -313,10 +340,10 @@ public class TrcDifferentialServoWrist implements TrcExclusiveSubsystem
     private void performAction(Object context)
     {
         ActionParams actionParams = (ActionParams) context;
-        double servo1Pos = wristParams.servo1.getPosition();
-        double servo2Pos = wristParams.servo2.getPosition();
-        double tiltPos = getTiltPosition(servo1Pos, servo2Pos);
-        double rotatePos = getRotatePosition(servo1Pos, servo2Pos);
+        double currServo1Pos = wristParams.servo1.getPosition();
+        double currServo2Pos = wristParams.servo2.getPosition();
+        double currTiltPos = getTiltPosition(currServo1Pos, currServo2Pos);
+        double currRotatePos = getRotatePosition(currServo1Pos, currServo2Pos);
         // Because of the nature of Differential Wrist, it has two DOFs (tilt and rotate) that interact with each
         // other. When implemented using regular servos which have a movement range restriction (e.g. 180-degree
         // servos), the position of one DOF will impose movement restriction on the other DOF. For example, if both
@@ -331,11 +358,19 @@ public class TrcDifferentialServoWrist implements TrcExclusiveSubsystem
         // will have full rotate range (-90 to +90). Tilting the wrist in either direction will decrease the headroom
         // and thus restricting rotation to a smaller range.
         tracer.traceInfo(
-            instanceName, "tiltPos=" + tiltPos + ",rotatePos=" + rotatePos + ",actionParams=" + actionParams);
+            instanceName,
+            "currTiltPos=" + currTiltPos + ",currRotatePos=" + currRotatePos + ",actionParams=" + actionParams);
         if (actionParams.operation == Operation.SetPower)
         {
-            tiltPower = actionParams.tiltValue;
-            rotatePower = actionParams.rotateValue;
+            // If going outside the limits, stop it.
+            tiltPower =
+                tiltPower > 0.0 && currTiltPos > wristParams.tiltPosHighLimit ||
+                tiltPower < 0.0 && currTiltPos < wristParams.tiltPosLowLimit?
+                    0.0: actionParams.tiltValue;
+            rotatePower =
+                rotatePower > 0.0 && currRotatePos > wristParams.rotatePosHighLimit ||
+                rotatePower < 0.0 && currRotatePos < wristParams.rotatePosLowLimit?
+                    0.0: actionParams.rotateValue;
             double mag = TrcUtil.magnitude(tiltPower, rotatePower);
             if (mag > 1.0)
             {
@@ -345,9 +380,9 @@ public class TrcDifferentialServoWrist implements TrcExclusiveSubsystem
 
             double servo1Power = tiltPower + rotatePower;
             double servo2Power = tiltPower - rotatePower;
-            double tiltOffset = tiltPos - wristParams.tiltPosOffset;
+            double currTiltOffset = currTiltPos - wristParams.tiltPosOffset;
             double maxHeadroom = wristParams.physicalPosRange / 2.0;
-            double headroom = maxHeadroom - Math.abs(tiltOffset);
+            double headroom = maxHeadroom - Math.abs(currTiltOffset);
             if (tiltPower != 0.0)
             {
                 // Don't restrict the range if we are tilting the wrist.
@@ -357,26 +392,28 @@ public class TrcDifferentialServoWrist implements TrcExclusiveSubsystem
             else
             {
                 // Restrict the range if we are just rotating.
-                wristParams.servo1.setPower(servo1Power, tiltOffset - headroom, tiltOffset + headroom);
-                wristParams.servo2.setPower(servo2Power, tiltOffset - headroom, tiltOffset + headroom);
+                wristParams.servo1.setPower(servo1Power, currTiltOffset - headroom, currTiltOffset + headroom);
+                wristParams.servo2.setPower(servo2Power, currTiltOffset - headroom, currTiltOffset + headroom);
             }
             tracer.traceDebug(
                 instanceName,
-                "setPower(tiltPwr=%.3f,rotatePwr=%.3f,servo1Pwr=%.3f,servo2Pwr=%.3f,tiltOffset=%.3f,headroom=%.3f," +
-                "servo1Pos=%.3f,servo2Pos=%.3f)",
-                tiltPower, rotatePower, servo1Power, servo2Power, tiltOffset, headroom, servo1Pos, servo2Pos);
+                "setPower(tiltPwr=%.3f,rotatePwr=%.3f,servo1Pwr=%.3f,servo2Pwr=%.3f,currTiltOffset=%.3f," +
+                "headroom=%.3f,currServo1Pos=%.3f,currServo2Pos=%.3f)",
+                tiltPower, rotatePower, servo1Power, servo2Power, currTiltOffset, headroom, currServo1Pos,
+                currServo2Pos);
             finish(true);
         }
         else if (actionParams.operation == Operation.SetPosition)
         {
-            double targetTiltPos = actionParams.tiltValue;
+            double targetTiltPos = TrcUtil.clipRange(
+                actionParams.tiltValue, wristParams.tiltPosLowLimit, wristParams.tiltPosHighLimit);
+            double targetRotatePos = TrcUtil.clipRange(
+                actionParams.rotateValue, wristParams.rotatePosLowLimit, wristParams.rotatePosHighLimit);
             double headroom =
                 wristParams.physicalPosRange / 2.0 - Math.abs(targetTiltPos - wristParams.tiltPosOffset);
-            // Restricting rotate position according to tilt position.
-            double targetRotatePos = TrcUtil.clipRange(
-                actionParams.rotateValue,
-                -headroom + wristParams.rotatePosOffset,
-                headroom + wristParams.rotatePosOffset);
+            // Restricting rotate position further according to tilt position.
+            targetRotatePos = TrcUtil.clipRange(
+                targetRotatePos, -headroom + wristParams.rotatePosOffset, headroom + wristParams.rotatePosOffset);
             double servo1TargetPos = getServo1Position(targetTiltPos, targetRotatePos);
             double servo2TargetPos = getServo2Position(targetTiltPos, targetRotatePos);
             wristParams.servo1.setPosition(servo1TargetPos);
