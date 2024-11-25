@@ -364,12 +364,12 @@ public class TrcDifferentialServoWrist implements TrcExclusiveSubsystem
         {
             // If going outside the limits, stop it.
             tiltPower =
-                tiltPower > 0.0 && currTiltPos > wristParams.tiltPosHighLimit ||
-                tiltPower < 0.0 && currTiltPos < wristParams.tiltPosLowLimit?
+                actionParams.tiltValue > 0.0 && currTiltPos > wristParams.tiltPosHighLimit ||
+                actionParams.tiltValue < 0.0 && currTiltPos < wristParams.tiltPosLowLimit?
                     0.0: actionParams.tiltValue;
             rotatePower =
-                rotatePower > 0.0 && currRotatePos > wristParams.rotatePosHighLimit ||
-                rotatePower < 0.0 && currRotatePos < wristParams.rotatePosLowLimit?
+                actionParams.rotateValue > 0.0 && currRotatePos > wristParams.rotatePosHighLimit ||
+                actionParams.rotateValue < 0.0 && currRotatePos < wristParams.rotatePosLowLimit?
                     0.0: actionParams.rotateValue;
             double mag = TrcUtil.magnitude(tiltPower, rotatePower);
             if (mag > 1.0)
