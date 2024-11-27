@@ -473,17 +473,18 @@ public class TrcServoGrabber implements TrcExclusiveSubsystem
      * @param callbackContext specifies the context object to be passed back to the callback, can be null if none.
      * @return true if rearm is successful, false otherwise.
      */
-    public boolean armCallback(TrcEvent.Callback triggerCallback, Object callbackContext)
+    public boolean armTriggerCallback(TrcEvent.Callback triggerCallback, Object callbackContext)
     {
         boolean success = false;
 
+        tracer.traceDebug(instanceName, "actionParams=%s", actionParams);
         if (actionParams != null && actionParams.callbackEvent != null)
         {
             actionParams.callbackEvent.setCallback(triggerCallback, callbackContext);
         }
 
         return success;
-    }   //armCallback
+    }   //armTriggerCallback
 
     /**
      * This method enables auto grabbing. It allows the caller to start monitoring the trigger sensor for the object
