@@ -461,6 +461,31 @@ public class TrcServoGrabber implements TrcExclusiveSubsystem
     }   //performAction
 
     /**
+     * This method arms the trigger callback. This is useful in the trigger callback handler that if it decided
+     * the trigger is a false trigger, it can ignore the trigger and re-arm the trigger callback. Note that this
+     * is intended to be called from the trigger callback handler to re-arm the trigger callback. If it is called
+     * somewhere else and there was no pending auto operation or no callback, this call will fail and will return
+     * false.
+     *
+     * @param triggerCallback specifies the method to call when a trigger occurred, can be null if not provided.
+     *        If triggerCallback is provided, it is the responsibility of triggerCallback to close the grabber to
+     *        grab the object and to cancel the operation. In other words, autoGrab mode will not end automatically.
+     * @param callbackContext specifies the context object to be passed back to the callback, can be null if none.
+     * @return true if rearm is successful, false otherwise.
+     */
+    public boolean armCallback(TrcEvent.Callback triggerCallback, Object callbackContext)
+    {
+        boolean success = false;
+
+        if (actionParams != null && actionParams.callbackEvent != null)
+        {
+            actionParams.callbackEvent.setCallback(triggerCallback, callbackContext);
+        }
+
+        return success;
+    }   //armCallback
+
+    /**
      * This method enables auto grabbing. It allows the caller to start monitoring the trigger sensor for the object
      * in the vicinity. If the object is within grasp, it will automatically grab the object. If an event is
      * provided, it will also signal the event when the operation is completed.
