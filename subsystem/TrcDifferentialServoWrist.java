@@ -22,8 +22,6 @@
 
 package trclib.subsystem;
 
-import androidx.annotation.NonNull;
-
 import java.util.Arrays;
 
 import trclib.dataprocessor.TrcUtil;
@@ -67,7 +65,6 @@ public class TrcDifferentialServoWrist implements TrcExclusiveSubsystem
          *
          * @return string format of the params info.
          */
-        @NonNull
         @Override
         public String toString()
         {
