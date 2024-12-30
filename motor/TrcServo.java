@@ -464,7 +464,8 @@ public abstract class TrcServo implements TrcExclusiveSubsystem
      */
     public double getPosition()
     {
-        return toPhysicalPosition(getLogicalPosition());
+        double logicalPos = prevLogicalPos != null? prevLogicalPos: getLogicalPosition();
+        return toPhysicalPosition(logicalPos);
     }   //getPosition
 
     /**
