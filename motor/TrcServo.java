@@ -235,6 +235,7 @@ public abstract class TrcServo implements TrcExclusiveSubsystem
 
     private TrcPresets posPresets = null;
     private double currPower = 0.0;
+    private Double prevLogicalPos = null;
 
     /**
      * Constructor: Creates an instance of the object.
@@ -475,16 +476,16 @@ public abstract class TrcServo implements TrcExclusiveSubsystem
     {
         synchronized (actionParams)
         {
-            double prevLogicalPos = getLogicalPosition();
             double logicalPos =
                 toLogicalPosition(
                     actionParams.actionType == ActionType.SetPosition ?
                         actionParams.targetPosition : actionParams.currPosition);
 
             tracer.traceDebug(instanceName, "actionParams=" + actionParams + ", logicalPos=" + logicalPos);
-            if (logicalPos != prevLogicalPos)
+            if (prevLogicalPos == null || logicalPos != prevLogicalPos)
             {
                 setLogicalPosition(logicalPos);
+                prevLogicalPos = logicalPos;
                 synchronized (followers)
                 {
                     for (TrcServo servo : followers)
