@@ -39,6 +39,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
 
+import trclib.dataprocessor.TrcUtil;
 import trclib.pathdrive.TrcPose2D;
 import trclib.robotcore.TrcDbgTrace;
 import trclib.timer.TrcTimer;
@@ -55,6 +56,8 @@ public class TrcOpenCvColorBlobPipeline implements TrcOpenCvPipeline<TrcOpenCvDe
     public static class DetectedObject extends TrcOpenCvDetector.DetectedObject<MatOfPoint>
     {
         public final RotatedRect rotatedRect;
+        public final Point[] vertices = new Point[4];
+        public final double pixelWidth, pixelHeight, rotatedAngle;
 
         /**
          * Constructor: Creates an instance of the object.
@@ -66,6 +69,23 @@ public class TrcOpenCvColorBlobPipeline implements TrcOpenCvPipeline<TrcOpenCvDe
         {
             super(label, contour);
             rotatedRect = Imgproc.minAreaRect(new MatOfPoint2f(contour.toArray()));
+            rotatedRect.points(vertices);
+            double side1 = TrcUtil.magnitude(vertices[1].x - vertices[0].x, vertices[1].y - vertices[0].y);
+            double side2 = TrcUtil.magnitude(vertices[2].x - vertices[1].x, vertices[2].y - vertices[1].y);
+            if (side1 > side2)
+            {
+                pixelWidth = side1;
+                pixelHeight = side2;
+                rotatedAngle = Math.toDegrees(Math.atan(
+                    (vertices[1].y - vertices[0].y) / (vertices[1].x - vertices[0].x)));
+            }
+            else
+            {
+                pixelWidth = side2;
+                pixelHeight = side1;
+                rotatedAngle = Math.toDegrees(Math.atan(
+                    (vertices[2].y - vertices[1].y) / (vertices[2].x - vertices[1].x)));
+            }
         }   //DetectedObject
 
         /**
@@ -91,6 +111,39 @@ public class TrcOpenCvColorBlobPipeline implements TrcOpenCvPipeline<TrcOpenCvDe
             // OpenCv returns the actual area of the object, not just the bounding box.
             return Imgproc.contourArea(object);
         }   //getObjectArea
+
+        /**
+         * This method returns the object's pixel width.
+         *
+         * @return object pixel width, null if not supported.
+         */
+        @Override
+        public Double getPixelWidth()
+        {
+            return pixelWidth;
+        }   //getPixelWidth
+
+        /**
+         * This method returns the object's pixel height.
+         *
+         * @return object pixel height, null if not supported.
+         */
+        @Override
+        public Double getPixelHeight()
+        {
+            return pixelHeight;
+        }   //getPixelHeight
+
+        /**
+         * This method returns the object's rotated rectangle angle.
+         *
+         * @return rotated rectangle angle.
+         */
+        @Override
+        public Double getRotatedAngle()
+        {
+            return rotatedAngle;
+        }   //getRotatedAngle
 
         /**
          * This method returns the pose of the detected object relative to the camera.
@@ -136,8 +189,6 @@ public class TrcOpenCvColorBlobPipeline implements TrcOpenCvPipeline<TrcOpenCvDe
         @Override
         public Point[] getRotatedRectVertices()
         {
-            Point[] vertices = new Point[4];
-            rotatedRect.points(vertices);
             return vertices;
         }   //getRotatedRectVertices
 

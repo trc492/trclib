@@ -27,6 +27,7 @@ import org.opencv.core.Mat;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
+import java.util.Locale;
 
 import trclib.robotcore.TrcDbgTrace;
 
@@ -65,7 +66,9 @@ public abstract class TrcOpenCvDetector implements TrcVisionProcessor<Mat, TrcOp
         @Override
         public String toString()
         {
-            return "label=" + label + ", Rect=" + getObjectRect() + ", area=" + getObjectArea();
+            return String.format(
+                Locale.US, "label=%s,boundingRect=%s,area=%.1f,rotatedRect=(%.1f,%.1f,%.1f)",
+                label, getObjectRect(), getObjectArea(), getPixelWidth(), getPixelHeight(), getRotatedAngle());
         }   //toString
 
     }   //class DetectedObject

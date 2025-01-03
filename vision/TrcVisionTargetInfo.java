@@ -57,6 +57,27 @@ public class TrcVisionTargetInfo<O extends TrcVisionTargetInfo.ObjectInfo>
         double getObjectArea();
 
         /**
+         * This method returns the object's pixel width.
+         *
+         * @return object pixel width, null if not supported.
+         */
+        Double getPixelWidth();
+
+        /**
+         * This method returns the object's pixel height.
+         *
+         * @return object pixel height, null if not supported.
+         */
+        Double getPixelHeight();
+
+        /**
+         * This method returns the object's rotated rectangle angle.
+         *
+         * @return rotated rectangle angle.
+         */
+        Double getRotatedAngle();
+
+        /**
          * This method returns the projected 2D pose on the ground of the detected object relative to the camera.
          *
          * @return pose of the detected object relative to camera.
@@ -64,14 +85,14 @@ public class TrcVisionTargetInfo<O extends TrcVisionTargetInfo.ObjectInfo>
         TrcPose2D getObjectPose();
 
         /**
-         * This method returns the objects real world width.
+         * This method returns the object's real world width.
          *
          * @return object real world width, null if not supported.
          */
         Double getObjectWidth();
 
         /**
-         * This method returns the objects real world depth.
+         * This method returns the object's real world depth.
          *
          * @return object real world depth, null if not supported.
          */
@@ -89,6 +110,9 @@ public class TrcVisionTargetInfo<O extends TrcVisionTargetInfo.ObjectInfo>
     public O detectedObj;
     public Rect objRect;
     public double objArea;
+    public Double objPixelWidth;
+    public Double objPixelHeight;
+    public Double objRotatedAngle;
     public TrcPose2D objPose;
     public Double objWidth;
     public Double objDepth;
@@ -110,7 +134,9 @@ public class TrcVisionTargetInfo<O extends TrcVisionTargetInfo.ObjectInfo>
         this.detectedObj = detectedObj;
         this.objRect = detectedObj.getObjectRect();
         this.objArea = detectedObj.getObjectArea();
-
+        this.objPixelWidth = detectedObj.getPixelWidth();
+        this.objPixelHeight = detectedObj.getPixelHeight();
+        this.objRotatedAngle = detectedObj.getRotatedAngle();
         if (homographyMapper == null)
         {
             // Caller did not provide homography mapper, it means the caller is doing pose/width/depth calculation
@@ -171,9 +197,13 @@ public class TrcVisionTargetInfo<O extends TrcVisionTargetInfo.ObjectInfo>
     {
         return String.format(
             Locale.US,
-            "pose=%s,rect=%s,bottomMidPoint(%d,%d),area=%.0f,width=%.1f,depth=%.1f",
+            "pose=%s,rect=%s,bottomMidPoint(%d,%d),area=%.0f,rotatedRect=(%.1f,%.1f,%.1f),width=%.1f,depth=%.1f",
             objPose, objRect, objRect != null? objRect.x + objRect.width/2: 0,
-            objRect != null? objRect.y + objRect.height: 0, objArea, objWidth != null? objWidth: 0.0,
+            objRect != null? objRect.y + objRect.height: 0, objArea,
+            objPixelWidth != null? objPixelWidth: 0.0,
+            objPixelHeight != null? objPixelHeight: 0.0,
+            objRotatedAngle != null? objRotatedAngle: 0.0,
+            objWidth != null? objWidth: 0.0,
             objDepth != null? objDepth: 0.0);
     }   //toString
 

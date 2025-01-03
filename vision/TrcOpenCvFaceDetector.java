@@ -41,6 +41,7 @@ public abstract class TrcOpenCvFaceDetector extends TrcOpenCvDetector
      */
     public static class DetectedObject extends TrcOpenCvDetector.DetectedObject<Rect>
     {
+        final Rect rect;
         /**
          * Constructor: Creates an instance of the object.
          *
@@ -50,6 +51,7 @@ public abstract class TrcOpenCvFaceDetector extends TrcOpenCvDetector
         public DetectedObject(String label, Rect rect)
         {
             super(label, rect);
+            this.rect = rect;
         }   //DetectedObject
 
         /**
@@ -73,6 +75,39 @@ public abstract class TrcOpenCvFaceDetector extends TrcOpenCvDetector
         {
             return object.area();
         }   //getObjectArea
+
+        /**
+         * This method returns the object's pixel width.
+         *
+         * @return object pixel width, null if not supported.
+         */
+        @Override
+        public Double getPixelWidth()
+        {
+            return (double)rect.width;
+        }   //getPixelWidth
+
+        /**
+         * This method returns the object's pixel height.
+         *
+         * @return object pixel height, null if not supported.
+         */
+        @Override
+        public Double getPixelHeight()
+        {
+            return (double)rect.height;
+        }   //getPixelHeight
+
+        /**
+         * This method returns the object's rotated rectangle angle.
+         *
+         * @return rotated rectangle angle.
+         */
+        @Override
+        public Double getRotatedAngle()
+        {
+            return 0.0;
+        }   //getRotatedAngle
 
         /**
          * This method returns the pose of the detected object relative to the camera.
