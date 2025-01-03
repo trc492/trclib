@@ -1162,7 +1162,7 @@ public class TrcPurePursuitDrive
                 }
             }
 
-            if (timedOut || lastSegment && (stalled ||posOnTarget && headingOnTarget))
+            if (timedOut || lastSegment && (stalled || posOnTarget && headingOnTarget))
             {
                 tracer.traceInfo(
                     instanceName,
