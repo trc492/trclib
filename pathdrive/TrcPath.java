@@ -278,10 +278,15 @@ public class TrcPath
             if (length <= dist)
             {
                 double vel = Math.sqrt(2 * length * maxDecel);
-                if (vel >= to.velocity)
+                if (vel < from.velocity)
+                {
+                    from.velocity = vel;
+                    from.acceleration = -maxDecel;
+                }
+                else
+                {
                     break;
-                to.velocity = vel;
-                to.acceleration = -maxDecel;
+                }
             }
             else
             {
