@@ -136,18 +136,16 @@ public class CmdPurePursuitDrive implements TrcRobot.RobotCommand
      * This method starts the Pure Pursuit drive with the specified poses in the drive path.
      *
      * @param timeout specifies the maximum time allowed for this operation.
-     * @param startingPose specifies the starting pose at the beginning of the path.
      * @param incrementalPath specifies true if appending point is relative to the previous point in the path,
-     *                        false if appending point is in the same reference frame as startingPose.
+     *        false if appending point is in the same reference frame as startingPose.
      * @param maxVel specifies the maximum velocity if applying trapezoid velocity profile, null if not.
      * @param maxAccel specifies the maximum acceleration if applying trapezoid velocity profile, null if not.
      * @param poses specifies an array of waypoint poses in the drive path.
      */
     public void start(
-        double timeout, TrcPose2D startingPose, boolean incrementalPath, Double maxVel, Double maxAccel,
-        TrcPose2D... poses)
+        double timeout, boolean incrementalPath, Double maxVel, Double maxAccel, Double maxDecel, TrcPose2D... poses)
     {
-        purePursuitDrive.start(event, timeout, startingPose, incrementalPath, maxVel, maxAccel, poses);
+        purePursuitDrive.start(event, timeout, incrementalPath, maxVel, maxAccel, maxDecel, poses);
     }   //start
 
     /**
@@ -155,20 +153,20 @@ public class CmdPurePursuitDrive implements TrcRobot.RobotCommand
      * or from a file.
      *
      * @param timeout specifies the maximum time allowed for this operation.
-     * @param startingPose specifies the starting pose at the beginning of the path.
      * @param incrementalPath specifies true if appending point is relative to the previous point in the path,
-     *                        false if appending point is in the same reference frame as startingPose.
+     *        false if appending point is in the same reference frame as startingPose.
      * @param maxVel specifies the maximum velocity if applying trapezoid velocity profile, null if not.
      * @param maxAccel specifies the maximum acceleration if applying trapezoid velocity profile, null if not.
+     * @param maxDecel specifies the maximum deceleration if applying trapezoid velocity profile, null if not.
      * @param path specifies the file system path or resource name.
      * @param loadFromResources specifies true if the data is from attached resources, false if from file system.
      */
     public void start(
-        double timeout, TrcPose2D startingPose, boolean incrementalPath, Double maxVel, Double maxAccel,
+        double timeout, boolean incrementalPath, Double maxVel, Double maxAccel, Double maxDecel,
         String path, boolean loadFromResources)
     {
         purePursuitDrive.start(
-            event, timeout, startingPose, incrementalPath, maxVel, maxAccel, path, loadFromResources);
+            event, timeout, incrementalPath, maxVel, maxAccel, maxDecel, path, loadFromResources);
     }   //start
 
     /**
@@ -176,60 +174,57 @@ public class CmdPurePursuitDrive implements TrcRobot.RobotCommand
      * or from a file.
      *
      * @param timeout specifies the maximum time allowed for this operation.
-     * @param startingPose specifies the starting pose at the beginning of the path.
      * @param incrementalPath specifies true if appending point is relative to the previous point in the path,
-     *                        false if appending point is in the same reference frame as startingPose.
+     *        false if appending point is in the same reference frame as startingPose.
      * @param path specifies the file system path or resource name.
      * @param loadFromResources specifies true if the data is from attached resources, false if from file system.
      */
     public void start(
-        double timeout, TrcPose2D startingPose, boolean incrementalPath, String path, boolean loadFromResources)
+        double timeout, boolean incrementalPath, String path, boolean loadFromResources)
     {
         purePursuitDrive.start(
-            event, timeout, startingPose, incrementalPath, null, null, path, loadFromResources);
+            event, timeout, incrementalPath, null, null, null, path, loadFromResources);
     }   //start
 
     /**
      * This method starts the Pure Pursuit drive with the specified poses in the drive path.
      *
-     * @param startingPose specifies the starting pose at the beginning of the path.
      * @param incrementalPath specifies true if appending point is relative to the previous point in the path,
-     *                        false if appending point is in the same reference frame as startingPose.
+     *        false if appending point is in the same reference frame as startingPose.
      * @param maxVel specifies the maximum velocity if applying trapezoid velocity profile, null if not.
      * @param maxAccel specifies the maximum acceleration if applying trapezoid velocity profile, null if not.
+     * @param maxDecel specifies the maximum deceleration if applying trapezoid velocity profile, null if not.
      * @param poses specifies an array of waypoint poses in the drive path.
      */
     public void start(
-        TrcPose2D startingPose, boolean incrementalPath, Double maxVel, Double maxAccel, TrcPose2D... poses)
+        boolean incrementalPath, Double maxVel, Double maxAccel, Double maxDecel, TrcPose2D... poses)
     {
-        purePursuitDrive.start(event, 0.0, startingPose, incrementalPath, maxVel, maxAccel, poses);
+        purePursuitDrive.start(event, 0.0, incrementalPath, maxVel, maxAccel, maxDecel, poses);
     }   //start
 
     /**
      * This method starts the Pure Pursuit drive with the specified poses in the drive path.
      *
      * @param timeout specifies the maximum time allowed for this operation.
-     * @param startingPose specifies the starting pose at the beginning of the path.
      * @param incrementalPath specifies true if appending point is relative to the previous point in the path,
-     *                        false if appending point is in the same reference frame as startingPose.
+     *        false if appending point is in the same reference frame as startingPose.
      * @param poses specifies an array of waypoint poses in the drive path.
      */
-    public void start(double timeout, TrcPose2D startingPose, boolean incrementalPath, TrcPose2D... poses)
+    public void start(double timeout, boolean incrementalPath, TrcPose2D... poses)
     {
-        purePursuitDrive.start(event, timeout, startingPose, incrementalPath, null, null, poses);
+        purePursuitDrive.start(event, timeout, incrementalPath, null, null, null, poses);
     }   //start
 
     /**
      * This method starts the Pure Pursuit drive with the specified poses in the drive path.
      *
-     * @param startingPose specifies the starting pose at the beginning of the path.
      * @param incrementalPath specifies true if appending point is relative to the previous point in the path,
-     *                        false if appending point is in the same reference frame as startingPose.
+     *        false if appending point is in the same reference frame as startingPose.
      * @param poses specifies an array of waypoint poses in the drive path.
      */
-    public void start(TrcPose2D startingPose, boolean incrementalPath, TrcPose2D... poses)
+    public void start(boolean incrementalPath, TrcPose2D... poses)
     {
-        purePursuitDrive.start(event, 0.0, startingPose, incrementalPath, null, null, poses);
+        purePursuitDrive.start(event, 0.0, incrementalPath, null, null, null, poses);
     }   //start
 
     //
