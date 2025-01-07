@@ -252,8 +252,10 @@ public class TrcPath
                     to.acceleration = maxAccel;
                     tracer.traceDebug(moduleName, "Adjusted accelerated velocity to %f", to.velocity);
                 }
-                else if (segLength > 0.0)
+                else if ((int) segLength > 0)
                 {
+                    // Because of odometry sensitivity, segLength may have a very small value instead of zero.
+                    // Casting it to integer to truncate the small error before determining if it's a turn-only path.
                     // The path has only one segment and it is shorter than speed up distance.
                     // Insert a mid-point with prorated velocity.
                     TrcWaypoint inserted = interpolate(path.waypoints[0], path.waypoints[1], 0.5);
