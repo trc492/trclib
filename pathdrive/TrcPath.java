@@ -26,6 +26,7 @@ import java.util.Arrays;
 
 import trclib.dataprocessor.TrcUtil;
 import trclib.dataprocessor.TrcWarpSpace;
+import trclib.robotcore.TrcDbgTrace;
 
 /**
  * This class implements a path. A path is consists of an array of waypoints, and can be used for path following,
@@ -35,6 +36,9 @@ import trclib.dataprocessor.TrcWarpSpace;
  */
 public class TrcPath
 {
+    private static final TrcDbgTrace.MsgLevel msgLevel = TrcDbgTrace.MsgLevel.DEBUG;
+    private final String moduleName = getClass().getSimpleName();
+
     /**
      * This method loads waypoints from a CSV file and create a path with them.
      *
@@ -48,6 +52,7 @@ public class TrcPath
         return new TrcPath(inDegrees, TrcWaypoint.loadPointsFromCsv(path, loadFromResources));
     }   //loadPathFromCsv
 
+    public final TrcDbgTrace tracer;
     private final TrcWaypoint[] waypoints;
     private boolean inDegrees;
 
@@ -60,6 +65,8 @@ public class TrcPath
      */
     public TrcPath(boolean inDegrees, TrcWaypoint... waypoints)
     {
+        tracer = new TrcDbgTrace();
+        tracer.setTraceLevel(msgLevel);
         if (waypoints == null || waypoints.length <= 1)
         {
             throw new IllegalArgumentException("Waypoints cannot be null or have less than 2 entries!");
@@ -234,12 +241,16 @@ public class TrcPath
             TrcWaypoint to = path.waypoints[i + 1];
             double segLength = from.distanceTo(to);
             length += segLength;
+            tracer.traceDebug(
+                moduleName,
+                from + "->" + to + ":segLen=" + segLength + ",distFromStart=" + length + ",speedUpDist= " + dist);
             if (length <= dist)
             {
                 if (path.getSize() > 2)
                 {
                     to.velocity = Math.sqrt(2*length*maxAccel);
                     to.acceleration = maxAccel;
+                    tracer.traceDebug(moduleName, "adjusted accelerated velocity to " + to.velocity);
                 }
                 else if (segLength > 0.0)
                 {
@@ -248,11 +259,13 @@ public class TrcPath
                     TrcWaypoint inserted = interpolate(path.waypoints[0], path.waypoints[1], 0.5);
                     inserted.velocity = Math.sqrt(segLength*maxAccel);
                     inserted.acceleration = 0.0;
+                    tracer.traceDebug(moduleName, "inserted mid-point to single segment " + inserted);
                     path = path.insertWaypoint(1, inserted);
                     break;
                 }
                 else
                 {
+                    tracer.traceDebug(moduleName, "turn-only path");
                     break;
                 }
             }
@@ -262,6 +275,7 @@ public class TrcPath
                 TrcWaypoint inserted = interpolate(from, to, (dist - prevDist) / segLength);
                 inserted.velocity = maxVel;
                 inserted.acceleration = 0.0;
+                tracer.traceDebug(moduleName, "inserted acceleration point " + inserted);
                 path = path.insertWaypoint(i + 1, inserted);
                 break;
             }
@@ -280,6 +294,9 @@ public class TrcPath
             dist = Math.pow(from.velocity, 2) / (2 * maxDecel); // this is the distance required to get down to speed
             length += segLength;
             double vel = Math.sqrt(2 * length * maxDecel);
+            tracer.traceDebug(
+                moduleName,
+                from + "<-" + to + ":segLen=" + segLength + ",distFromEnd=" + length + ",speedDownDist= " + dist);
             if (length <= dist)
             {
 // Abhay, I think this condition is always true if length <= dist, so it is not necessary to check it. Please confirm.
@@ -289,6 +306,7 @@ public class TrcPath
 //                {
                 from.velocity = vel;
                 from.acceleration = from.velocity == maxVel? -maxDecel: 0.0;
+                tracer.traceDebug(moduleName, "adjusted decelerated velocity to " + from.velocity);
 //                }
 //                else
 //                {
@@ -301,6 +319,7 @@ public class TrcPath
                 TrcWaypoint inserted = interpolate(to, from, (dist - prevDist) / segLength);
                 inserted.velocity = from.velocity;
                 inserted.acceleration = 0.0;
+                tracer.traceDebug(moduleName, "inserted deceleration point " + inserted);
                 path = path.insertWaypoint(i, inserted);
                 break;
             }
