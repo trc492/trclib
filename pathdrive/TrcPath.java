@@ -202,9 +202,9 @@ public class TrcPath
      * This is characterized by maxVel and maxAccel. Up to two points will be inserted into the path to make the
      * robot accelerate at maxAccel. Between those two points, the robot velocity will be maxVel.
      *
-     * @param maxVel   The maximum velocity of the path, with matching units.
-     * @param maxAccel The maximum acceleration of the path, with matching units.
-     * @param maxDecel The maximum deceleration of the path, with matching units.
+     * @param maxVel   The maximum velocity magnitude of the path, with matching units.
+     * @param maxAccel The maximum acceleration magnitude of the path, with matching units.
+     * @param maxDecel The maximum deceleration magnitude of the path, with matching units.
      * @return A new {@link TrcPath} object, with the velocities and accelerations matching the profile.
      */
     public TrcPath trapezoidVelocity(double maxVel, double maxAccel, double maxDecel)
