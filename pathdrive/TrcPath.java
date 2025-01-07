@@ -241,7 +241,7 @@ public class TrcPath
                     to.velocity = Math.sqrt(2*length*maxAccel);
                     to.acceleration = maxAccel;
                 }
-                else
+                else if (segLength > 0.0)
                 {
                     // The path has only one segment and it is shorter than speed up distance.
                     // Insert a mid-point with prorated velocity.
@@ -249,6 +249,10 @@ public class TrcPath
                     inserted.velocity = Math.sqrt(segLength*maxAccel);
                     inserted.acceleration = 0.0;
                     path = path.insertWaypoint(1, inserted);
+                    break;
+                }
+                else
+                {
                     break;
                 }
             }
@@ -266,7 +270,6 @@ public class TrcPath
         path.waypoints[path.getSize() - 1].velocity = 0;
         path.waypoints[path.getSize() - 1].acceleration = 0;
 
-        dist = Math.pow(maxVel, 2) / (2 * maxDecel); // this is the distance required to get down to speed
         length = 0;
         // Same as before, but backwards from the end. This creates the "ramp down" of the trapezoid.
         for (int i = path.getSize() - 1; i > 0; i--)
@@ -274,26 +277,30 @@ public class TrcPath
             TrcWaypoint from = path.waypoints[i - 1];
             TrcWaypoint to = path.waypoints[i];
             double segLength = from.distanceTo(to);
+            dist = Math.pow(from.velocity, 2) / (2 * maxDecel); // this is the distance required to get down to speed
             length += segLength;
+            double vel = Math.sqrt(2 * length * maxDecel);
             if (length <= dist)
             {
-                double vel = Math.sqrt(2 * length * maxDecel);
-                if (vel < from.velocity)
-                {
-                    from.velocity = vel;
-                    from.acceleration = -maxDecel;
-                }
-                else
-                {
-                    break;
-                }
+// Abhay, I think this condition is always true if length <= dist, so it is not necessary to check it. Please confirm.
+// If you think otherwise, please explain the scenario that requires this check. I have drew diagrams of what you
+// described (total path length is less than twice the speed up distance and still cannot see this check is necessary).
+//                if (vel < from.velocity)
+//                {
+                from.velocity = vel;
+                from.acceleration = from.velocity == maxVel? -maxDecel: 0.0;
+//                }
+//                else
+//                {
+//                    break;
+//                }
             }
             else
             {
                 double prevDist = length - segLength;
                 TrcWaypoint inserted = interpolate(to, from, (dist - prevDist) / segLength);
-                inserted.velocity = maxVel;
-                inserted.acceleration = -maxDecel;
+                inserted.velocity = from.velocity;
+                inserted.acceleration = 0.0;
                 path = path.insertWaypoint(i, inserted);
                 break;
             }
