@@ -242,7 +242,7 @@ public class TrcPath
             double segLength = from.distanceTo(to);
             length += segLength;
             tracer.traceDebug(
-                moduleName, "%s->%s: segLen=%.1f, distFromStart=%.1f, speedUpDist=%.1f",
+                moduleName, "%s->%s: segLen=%f, distFromStart=%f, speedUpDist=%f",
                 from, to, segLength, length, dist);
             if (length <= dist)
             {
@@ -250,7 +250,7 @@ public class TrcPath
                 {
                     to.velocity = Math.sqrt(2*length*maxAccel);
                     to.acceleration = maxAccel;
-                    tracer.traceDebug(moduleName, "Adjusted accelerated velocity to %.1f", to.velocity);
+                    tracer.traceDebug(moduleName, "Adjusted accelerated velocity to %f", to.velocity);
                 }
                 else if (segLength > 0.0)
                 {
@@ -295,7 +295,7 @@ public class TrcPath
             length += segLength;
             double vel = Math.sqrt(2 * length * maxDecel);
             tracer.traceDebug(
-                moduleName, "%s<-%s: segLen=%.1f, distFromEnd=%.1f, speedDownDist=%.1f",
+                moduleName, "%s<-%s: segLen=%f, distFromEnd=%f, speedDownDist=%f",
                 from, to, segLength, length, dist);
             if (length <= dist)
             {
@@ -306,7 +306,7 @@ public class TrcPath
 //                {
                 from.velocity = vel;
                 from.acceleration = from.velocity == maxVel? -maxDecel: 0.0;
-                tracer.traceDebug(moduleName, "Adjusted decelerated velocity to %.1f", from.velocity);
+                tracer.traceDebug(moduleName, "Adjusted decelerated velocity to %f", from.velocity);
 //                }
 //                else
 //                {
