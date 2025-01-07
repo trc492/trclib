@@ -242,15 +242,15 @@ public class TrcPath
             double segLength = from.distanceTo(to);
             length += segLength;
             tracer.traceDebug(
-                moduleName,
-                from + "->" + to + ":segLen=" + segLength + ",distFromStart=" + length + ",speedUpDist= " + dist);
+                moduleName, "%s->%s: segLen=%.1f, distFromStart=%.1f, speedUpDist=%.1f",
+                from, to, segLength, length, dist);
             if (length <= dist)
             {
                 if (path.getSize() > 2)
                 {
                     to.velocity = Math.sqrt(2*length*maxAccel);
                     to.acceleration = maxAccel;
-                    tracer.traceDebug(moduleName, "adjusted accelerated velocity to " + to.velocity);
+                    tracer.traceDebug(moduleName, "Adjusted accelerated velocity to %.1f", to.velocity);
                 }
                 else if (segLength > 0.0)
                 {
@@ -259,13 +259,13 @@ public class TrcPath
                     TrcWaypoint inserted = interpolate(path.waypoints[0], path.waypoints[1], 0.5);
                     inserted.velocity = Math.sqrt(segLength*maxAccel);
                     inserted.acceleration = 0.0;
-                    tracer.traceDebug(moduleName, "inserted mid-point to single segment " + inserted);
+                    tracer.traceDebug(moduleName, "Inserted mid-point to single segment: %s", inserted);
                     path = path.insertWaypoint(1, inserted);
                     break;
                 }
                 else
                 {
-                    tracer.traceDebug(moduleName, "turn-only path");
+                    tracer.traceDebug(moduleName, "Turn-only path");
                     break;
                 }
             }
@@ -275,7 +275,7 @@ public class TrcPath
                 TrcWaypoint inserted = interpolate(from, to, (dist - prevDist) / segLength);
                 inserted.velocity = maxVel;
                 inserted.acceleration = 0.0;
-                tracer.traceDebug(moduleName, "inserted acceleration point " + inserted);
+                tracer.traceDebug(moduleName, "Inserted acceleration point: %s", inserted);
                 path = path.insertWaypoint(i + 1, inserted);
                 break;
             }
@@ -295,8 +295,8 @@ public class TrcPath
             length += segLength;
             double vel = Math.sqrt(2 * length * maxDecel);
             tracer.traceDebug(
-                moduleName,
-                from + "<-" + to + ":segLen=" + segLength + ",distFromEnd=" + length + ",speedDownDist= " + dist);
+                moduleName, "%s<-%s: segLen=%.1f, distFromEnd=%.1f, speedDownDist=%.1f",
+                from, to, segLength, length, dist);
             if (length <= dist)
             {
 // Abhay, I think this condition is always true if length <= dist, so it is not necessary to check it. Please confirm.
@@ -306,7 +306,7 @@ public class TrcPath
 //                {
                 from.velocity = vel;
                 from.acceleration = from.velocity == maxVel? -maxDecel: 0.0;
-                tracer.traceDebug(moduleName, "adjusted decelerated velocity to " + from.velocity);
+                tracer.traceDebug(moduleName, "Adjusted decelerated velocity to %.1f", from.velocity);
 //                }
 //                else
 //                {
@@ -319,7 +319,7 @@ public class TrcPath
                 TrcWaypoint inserted = interpolate(to, from, (dist - prevDist) / segLength);
                 inserted.velocity = from.velocity;
                 inserted.acceleration = 0.0;
-                tracer.traceDebug(moduleName, "inserted deceleration point " + inserted);
+                tracer.traceDebug(moduleName, "Inserted deceleration point: %s", inserted);
                 path = path.insertWaypoint(i, inserted);
                 break;
             }
