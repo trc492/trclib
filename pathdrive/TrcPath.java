@@ -216,6 +216,7 @@ public class TrcPath
      */
     public TrcPath trapezoidVelocity(double maxVel, double maxAccel, double maxDecel)
     {
+        Integer lastInsertedIndex = null;
         maxVel = Math.abs(maxVel);
         maxAccel = Math.abs(maxAccel);
         maxDecel = Math.abs(maxDecel);
@@ -263,6 +264,7 @@ public class TrcPath
                     inserted.acceleration = 0.0;
                     tracer.traceDebug(moduleName, "Inserted mid-point to single segment: %s", inserted);
                     path = path.insertWaypoint(1, inserted);
+                    lastInsertedIndex = 1;
                     break;
                 }
                 else
@@ -279,6 +281,7 @@ public class TrcPath
                 inserted.acceleration = 0.0;
                 tracer.traceDebug(moduleName, "Inserted acceleration point: %s", inserted);
                 path = path.insertWaypoint(i + 1, inserted);
+                lastInsertedIndex = i + 1;
                 break;
             }
         }
@@ -293,7 +296,8 @@ public class TrcPath
             TrcWaypoint from = path.waypoints[i - 1];
             TrcWaypoint to = path.waypoints[i];
             double segLength = from.distanceTo(to);
-            dist = Math.pow(from.velocity, 2) / (2 * maxDecel); // this is the distance required to get down to speed
+            // this is the distance required to get down to speed
+            dist = Math.pow(from.velocity, 2) / (2 * maxDecel);
             length += segLength;
             double vel = Math.sqrt(2 * length * maxDecel);
             tracer.traceDebug(
@@ -301,19 +305,16 @@ public class TrcPath
                 from, to, segLength, length, dist);
             if (length <= dist)
             {
-// Abhay, I think this condition is always true if length <= dist, so it is not necessary to check it. Please confirm.
-// If you think otherwise, please explain the scenario that requires this check. I have drew diagrams of what you
-// described (total path length is less than twice the speed up distance and still cannot see this check is necessary).
-//                if (vel < from.velocity)
-//                {
-                from.velocity = vel;
-                from.acceleration = from.velocity == maxVel? -maxDecel: 0.0;
-                tracer.traceDebug(moduleName, "Adjusted decelerated velocity to %f", from.velocity);
-//                }
-//                else
-//                {
-//                    break;
-//                }
+                if (vel < from.velocity)
+                {
+                    from.velocity = vel;
+                    from.acceleration = from.velocity == maxVel? -maxDecel: 0.0;
+                    tracer.traceDebug(moduleName, "Adjusted decelerated velocity to %f", from.velocity);
+                }
+                else
+                {
+                    break;
+                }
             }
             else
             {
