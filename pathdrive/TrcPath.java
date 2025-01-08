@@ -311,13 +311,19 @@ public class TrcPath
                     from.velocity = vel;
                     from.acceleration = from.velocity == maxVel? -maxDecel: 0.0;
                     tracer.traceDebug(moduleName, "Adjusted decelerated velocity to %f", from.velocity);
+                    if (lastInsertedIndex != null && i - 1 <= lastInsertedIndex)
+                    {
+                        tracer.traceDebug(moduleName, "Found last inserted point at %d", i - 1);
+                        break;
+                    }
                 }
                 else
                 {
+                    tracer.traceDebug(moduleName, "Adjusted decelerated velocity to %f", from.velocity);
                     break;
                 }
             }
-            else if (i - 1 > lastInsertedIndex)
+            else if (lastInsertedIndex != null && i - 1 > lastInsertedIndex)
             {
                 double prevDist = length - segLength;
                 TrcWaypoint inserted = interpolate(to, from, (dist - prevDist) / segLength);
