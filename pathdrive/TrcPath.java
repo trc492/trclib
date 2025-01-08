@@ -321,7 +321,7 @@ public class TrcPath
                     break;
                 }
             }
-            else if (lastInsertedIndex != null && i - 1 > lastInsertedIndex)
+            else
             {
                 double prevDist = length - segLength;
                 TrcWaypoint inserted = interpolate(to, from, (dist - prevDist) / segLength);
