@@ -216,7 +216,7 @@ public class TrcPath
      */
     public TrcPath trapezoidVelocity(double maxVel, double maxAccel, double maxDecel)
     {
-        Integer lastInsertedIndex = null;
+        int lastInsertedIndex = -1;
         maxVel = Math.abs(maxVel);
         maxAccel = Math.abs(maxAccel);
         maxDecel = Math.abs(maxDecel);
@@ -309,15 +309,11 @@ public class TrcPath
                     from.velocity = vel;
                     from.acceleration = from.velocity == maxVel? -maxDecel: 0.0;
                     tracer.traceDebug(moduleName, "Adjusted decelerated velocity to %f", from.velocity);
-                    if (lastInsertedIndex != null && i - 1 <= lastInsertedIndex)
-                    {
-                        tracer.traceDebug(moduleName, "Found last inserted point at %d", i - 1);
-                        break;
-                    }
                 }
-                else
+
+                if (i - 1 <= lastInsertedIndex)
                 {
-                    tracer.traceDebug(moduleName, "Adjusted decelerated velocity to %f", from.velocity);
+                    tracer.traceDebug(moduleName, "Found last inserted point at %d", i - 1);
                     break;
                 }
             }
