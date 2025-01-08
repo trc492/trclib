@@ -297,7 +297,7 @@ public class TrcPath
             TrcWaypoint to = path.waypoints[i];
             double segLength = from.distanceTo(to);
             // this is the distance required to get down to speed
-            dist = Math.pow(from.velocity, 2) / (2 * maxDecel);
+            dist = Math.pow(from.velocity != 0.0? from.velocity: to.velocity, 2) / (2 * maxDecel);
             length += segLength;
             double vel = Math.sqrt(2 * length * maxDecel);
             tracer.traceDebug(
