@@ -36,7 +36,7 @@ import trclib.robotcore.TrcDbgTrace;
  */
 public class TrcPath
 {
-    private static final TrcDbgTrace.MsgLevel msgLevel = TrcDbgTrace.MsgLevel.DEBUG;
+    private static final TrcDbgTrace.MsgLevel msgLevel = TrcDbgTrace.MsgLevel.INFO;
     private final String moduleName = getClass().getSimpleName();
 
     /**
@@ -297,13 +297,11 @@ public class TrcPath
             TrcWaypoint to = path.waypoints[i];
             double segLength = from.distanceTo(to);
             // this is the distance required to get down to speed
-//            dist = Math.pow(from.velocity != 0.0? from.velocity: to.velocity, 2) / (2 * maxDecel);
             dist = Math.pow(from.velocity, 2) / (2 * maxDecel);
             length += segLength;
             double vel = Math.sqrt(2 * length * maxDecel);
             tracer.traceDebug(
-                moduleName, "%s<-%s: segLen=%f, distFromEnd=%f, speedDownDist=%f",
-                from, to, segLength, length, dist);
+                moduleName, "%s<-%s: segLen=%f, distFromEnd=%f, speedDownDist=%f", from, to, segLength, length, dist);
             if (length <= dist)
             {
                 if (vel < from.velocity)
