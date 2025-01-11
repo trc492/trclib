@@ -134,17 +134,20 @@ public abstract class TrcMotor implements TrcMotorController, TrcExclusiveSubsys
     {
         TrcMotor motor;
         double valueScale;
+        boolean nativeFollower;
 
         /**
          * Constructor: Create an instance of the object.
          *
          * @param motor specifies the follower motor.
          * @param scale specifies the value scale for the follower motor, 1.0 by default.
+         * @param nativeFollower specifies true if the motor supports following natively, false otherwise.
          */
-        FollowerMotor(TrcMotor motor, double scale)
+        FollowerMotor(TrcMotor motor, double scale, boolean nativeFollower)
         {
             this.motor = motor;
             this.valueScale = scale;
+            this.nativeFollower = nativeFollower;
         }   //FollowerMotor
     }   //class FollowerMotor
 
@@ -511,8 +514,9 @@ public abstract class TrcMotor implements TrcMotorController, TrcExclusiveSubsys
      *
      * @param motor specifies the motor that will follow this motor.
      * @param scale specifies the value scale for the follower motor, 1.0 by default.
+     * @param nativeFollower specifies true if the motor supports following natively, false otherwise.
      */
-    private void addFollower(TrcMotor motor, double scale)
+    protected void addFollower(TrcMotor motor, double scale, boolean nativeFollower)
     {
         synchronized (followingMotorsList)
         {
@@ -520,10 +524,11 @@ public abstract class TrcMotor implements TrcMotorController, TrcExclusiveSubsys
             {
                 if (motor == follower.motor)
                 {
+                    // Motor is already in the list, do nothing.
                     return;
                 }
             }
-            followingMotorsList.add(new FollowerMotor(motor, scale));
+            followingMotorsList.add(new FollowerMotor(motor, scale, nativeFollower));
         }
     }   //addFollower
 
@@ -534,9 +539,10 @@ public abstract class TrcMotor implements TrcMotorController, TrcExclusiveSubsys
      * @param inverted specifies true if this motor is inverted from the motor it is following, false otherwise.
      * @param scale specifies the value scale for the follower motor, 1.0 by default.
      */
+    @Override
     public void follow(TrcMotor motor, boolean inverted, double scale)
     {
-        motor.addFollower(this, scale);
+        motor.addFollower(this, scale, false);
         setMotorInverted(motor.isMotorInverted() ^ inverted);
     }   //follow
 
@@ -546,34 +552,10 @@ public abstract class TrcMotor implements TrcMotorController, TrcExclusiveSubsys
      * @param motor specifies the motor to follow.
      * @param inverted specifies true if this motor is inverted from the motor it is following, false otherwise.
      */
-    @Override
     public void follow(TrcMotor motor, boolean inverted)
     {
         follow(motor, inverted, 1.0);
     }   //follow
-
-    /**
-     * This method returns the follower in the specifies follower list with the specified index. This method is
-     * intended to be called by the subclasses.
-     *
-     * @param followerList specifies the follower list.
-     * @param index specifies the follower index.
-     * @return follower.
-     */
-    protected TrcMotor getFollower(ArrayList<FollowerMotor> followerList, int index)
-    {
-        TrcMotor follower = null;
-
-        synchronized (followerList)
-        {
-            if (index < followerList.size())
-            {
-                follower = followerList.get(index).motor;
-            }
-        }
-
-        return follower;
-    }   //getFollower
 
     /**
      * This method returns the follower with the specified index.
@@ -584,7 +566,17 @@ public abstract class TrcMotor implements TrcMotorController, TrcExclusiveSubsys
     @Override
     public TrcMotor getFollower(int index)
     {
-        return getFollower(followingMotorsList, index);
+        TrcMotor follower = null;
+
+        synchronized (followingMotorsList)
+        {
+            if (index < followingMotorsList.size())
+            {
+                follower = followingMotorsList.get(index).motor;
+            }
+        }
+
+        return follower;
     }   //getFollower
 
     //
@@ -1218,9 +1210,12 @@ public abstract class TrcMotor implements TrcMotorController, TrcExclusiveSubsys
             {
                 for (FollowerMotor follower : followingMotorsList)
                 {
-                    if (motorSetPowerElapsedTimer != null) motorSetPowerElapsedTimer.recordStartTime();
-                    follower.motor.setMotorPower(currMotorPower * follower.valueScale);
-                    if (motorSetPowerElapsedTimer != null) motorSetPowerElapsedTimer.recordEndTime();
+                    if (!follower.nativeFollower)
+                    {
+                        if (motorSetPowerElapsedTimer != null) motorSetPowerElapsedTimer.recordStartTime();
+                        follower.motor.setMotorPower(currMotorPower * follower.valueScale);
+                        if (motorSetPowerElapsedTimer != null) motorSetPowerElapsedTimer.recordEndTime();
+                    }
                 }
             }
         }
@@ -2966,47 +2961,51 @@ public abstract class TrcMotor implements TrcMotorController, TrcExclusiveSubsys
 
                                     for (FollowerMotor follower : followingMotorsList)
                                     {
-                                        switch (taskParams.currControlMode)
+                                        if (!follower.nativeFollower)
                                         {
-                                            case Velocity:
-                                                // Since this is running in a task loop and if the velocity did not
-                                                // change, we will be setting the same velocity over and over again.
-                                                // So, instead of calling setMotorVelocity, we call
-                                                // setControllerMotorVelocity which has optimization to not sending
-                                                // same velocity if it hasn't change.
-                                                follower.motor.setControllerMotorVelocity(
-                                                    taskParams.motorValue * follower.valueScale, controllerFeedforward);
-                                                break;
+                                            switch (taskParams.currControlMode)
+                                            {
+                                                case Velocity:
+                                                    // Since this is running in a task loop and if the velocity did not
+                                                    // change, we will be setting the same velocity over and over again.
+                                                    // So, instead of calling setMotorVelocity, we call
+                                                    // setControllerMotorVelocity which has optimization to not sending
+                                                    // same velocity if it hasn't change.
+                                                    follower.motor.setControllerMotorVelocity(
+                                                        taskParams.motorValue * follower.valueScale,
+                                                        controllerFeedforward);
+                                                    break;
 
-                                            case Position:
-                                                // What does it mean to have position followers?
-                                                // If we are performing position control on followers, the
-                                                // followers must have their own position sensors and they must
-                                                // be synchronized. Even so, it's not guaranteed the movement of
-                                                // the followers are synchronized. Some may move faster than the
-                                                // others. It doesn't make much sense. It only makes sense if the
-                                                // motors are driving the same mechanism and are mechanically
-                                                // linked so you don't need to synchronize them. The motors are
-                                                // just sharing the load. In this case, all the followers should
-                                                // just mimic the power output of the master.
-                                                follower.motor.setControllerMotorPower(
-                                                    power * follower.valueScale, true);
-                                                break;
+                                                case Position:
+                                                    // What does it mean to have position followers?
+                                                    // If we are performing position control on followers, the
+                                                    // followers must have their own position sensors and they must
+                                                    // be synchronized. Even so, it's not guaranteed the movement of
+                                                    // the followers are synchronized. Some may move faster than the
+                                                    // others. It doesn't make much sense. It only makes sense if the
+                                                    // motors are driving the same mechanism and are mechanically
+                                                    // linked so you don't need to synchronize them. The motors are
+                                                    // just sharing the load. In this case, all the followers should
+                                                    // just mimic the power output of the master.
+                                                    follower.motor.setControllerMotorPower(
+                                                        power * follower.valueScale, true);
+                                                    break;
 
-                                            case Current:
-                                                // Since this is running in a task loop and if the current did not
-                                                // change, we will be setting the same current over and over again.
-                                                // So, instead of calling setMotorCurrent, we call
-                                                // setControllerMotorCurrent which has optimization to not sending
-                                                // same current if it hasn't change.
-                                                follower.motor.setControllerMotorCurrent(
-                                                    taskParams.motorValue * follower.valueScale);
-                                                break;
+                                                case Current:
+                                                    // Since this is running in a task loop and if the current did not
+                                                    // change, we will be setting the same current over and over again.
+                                                    // So, instead of calling setMotorCurrent, we call
+                                                    // setControllerMotorCurrent which has optimization to not sending
+                                                    // same current if it hasn't change.
+                                                    follower.motor.setControllerMotorCurrent(
+                                                        taskParams.motorValue * follower.valueScale);
+                                                    break;
 
-                                            default:
-                                                // If we come here, it's power control mode which we excluded from
-                                                // the above code. So we should never come here.
-                                                throw new IllegalStateException("Should never come here.");
+                                                default:
+                                                    // If we come here, it's power control mode which we excluded from
+                                                    // the above code. So we should never come here.
+                                                    throw new IllegalStateException("Should never come here.");
+                                            }
                                         }
                                     }
                                 }

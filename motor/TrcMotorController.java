@@ -354,8 +354,9 @@ public interface TrcMotorController
      *
      * @param motor specifies the motor to follow.
      * @param inverted specifies true if this motor is inverted from the motor it is following, false otherwise.
+     * @param scale specifies the value scale for the follower motor, 1.0 by default.
      */
-    void follow(TrcMotor motor, boolean inverted);
+    void follow(TrcMotor motor, boolean inverted, double scale);
 
     /**
      * This method returns the follower with the specified index.
