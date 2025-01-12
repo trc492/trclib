@@ -364,16 +364,12 @@ public class TrcPath
      */
     private double interpolate(double start, double end, double weight)
     {
-        if (weight > 1.0)
+        if (!TrcUtil.inRange(weight, 0.0, 1.0))
         {
             tracer.traceInfo(moduleName, "start=%f, end=%f, weight=%f", start, end, weight);
             TrcDbgTrace.printThreadStack();
-            weight = 1.0;
-        }
-
-        if (!TrcUtil.inRange(weight, 0.0, 1.0))
-        {
-            throw new IllegalArgumentException("Weight must be in range [0,1]! (weight=" + weight + ")");
+            if (weight > 1.0) weight = 1.0;
+//            throw new IllegalArgumentException("Weight must be in range [0,1]! (weight=" + weight + ")");
         }
         return (1.0 - weight) * start + weight * end;
     }   //interpolate
