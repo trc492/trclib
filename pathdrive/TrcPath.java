@@ -216,7 +216,7 @@ public class TrcPath
      */
     public TrcPath trapezoidVelocity(double maxVel, double maxAccel, double maxDecel)
     {
-        int lastAccelIndex = -1;
+        int lastProcessedIndex = -1;
         maxVel = Math.abs(maxVel);
         maxAccel = Math.abs(maxAccel);
         maxDecel = Math.abs(maxDecel);
@@ -251,7 +251,7 @@ public class TrcPath
                 {
                     to.velocity = Math.sqrt(2*length*maxAccel);
                     to.acceleration = maxAccel;
-                    lastAccelIndex = i + 1;
+                    lastProcessedIndex = i + 1;
                     tracer.traceDebug(moduleName, "Adjusted accelerated velocity to %f", to.velocity);
                 }
                 else if ((int) segLength > 0)
@@ -265,7 +265,7 @@ public class TrcPath
                     inserted.acceleration = 0.0;
                     tracer.traceDebug(moduleName, "Inserted mid-point to single segment: %s", inserted);
                     path = path.insertWaypoint(1, inserted);
-                    lastAccelIndex = 1;
+                    lastProcessedIndex = 1;
                     break;
                 }
                 else
@@ -282,7 +282,7 @@ public class TrcPath
                 inserted.acceleration = 0.0;
                 tracer.traceDebug(moduleName, "Inserted acceleration point: %s", inserted);
                 path = path.insertWaypoint(i + 1, inserted);
-                lastAccelIndex = i + 1;
+                lastProcessedIndex = i + 1;
                 break;
             }
         }
@@ -312,9 +312,9 @@ public class TrcPath
                     tracer.traceDebug(moduleName, "Adjusted decelerated velocity to %f", from.velocity);
                 }
 
-                if (i - 1 <= lastAccelIndex)
+                if (i - 1 <= lastProcessedIndex)
                 {
-                    tracer.traceDebug(moduleName, "Found last acceleration point at %d", i - 1);
+                    tracer.traceDebug(moduleName, "Found last acceleration processed point point at %d", i - 1);
                     break;
                 }
             }
