@@ -368,7 +368,10 @@ public class TrcPath
         {
             tracer.traceInfo(moduleName, "start=%f, end=%f, weight=%f", start, end, weight);
             TrcDbgTrace.printThreadStack();
-            if (weight > 1.0) weight = 1.0;
+            if (weight > 1.0)
+                weight = 1.0;
+            else if (weight < 0.0)
+                weight = 0.0;
 //            throw new IllegalArgumentException("Weight must be in range [0,1]! (weight=" + weight + ")");
         }
         return (1.0 - weight) * start + weight * end;
