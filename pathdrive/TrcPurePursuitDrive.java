@@ -138,6 +138,7 @@ public class TrcPurePursuitDrive
     private TrcPose2D relativeTargetPose;
     private boolean fastModeEnabled = false;
     private boolean resetError = false;
+    private TrcWaypoint targetPoint = null;
 
     /**
      * Constructor: Create an instance of the object.
@@ -600,6 +601,16 @@ public class TrcPurePursuitDrive
     }   //getTargetFieldPosition
 
     /**
+     * This method returns the target velocity of the current point on the path.
+     *
+     * @return target velocity of the current point on the path, zero if path is not started or already finished.
+     */
+    public double getCurrentTargetVelocity()
+    {
+        return targetPoint != null? targetPoint.velocity: 0.0;
+    }   //getCurrentTargetVelocity
+
+    /**
      * This method sets the waypoint event handler that gets called when the robot crosses each waypoint. This allows
      * the caller to perform actions when each waypoint is reached. Waypoint handler is cleared when the start method
      * is called. In other words, this method should only be called after the start method is called and the Waypoint
@@ -663,6 +674,7 @@ public class TrcPurePursuitDrive
 
             referencePose = driveBase.getFieldPosition();
             pathIndex = 1;
+            targetPoint = null;
 
             if (xPosPidCtrl != null)
             {
@@ -1070,7 +1082,7 @@ public class TrcPurePursuitDrive
         TrcTaskMgr.TaskType taskType, TrcRobot.RunMode runMode, boolean slowPeriodicLoop)
     {
         TrcPose2D robotPose = driveBase.getPositionRelativeTo(referencePose, true);
-        TrcWaypoint targetPoint = getFollowingPoint(robotPose);
+        targetPoint = getFollowingPoint(robotPose);
 
         if (path != null)
         {
@@ -1181,6 +1193,7 @@ public class TrcPurePursuitDrive
                 }
 
                 stop();
+                targetPoint = null;
 
                 if (onFinishedEvent != null)
                 {
