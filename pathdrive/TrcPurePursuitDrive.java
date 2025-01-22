@@ -138,7 +138,7 @@ public class TrcPurePursuitDrive
     private TrcPose2D relativeTargetPose;
     private boolean fastModeEnabled = false;
     private boolean resetError = false;
-    private TrcWaypoint targetPoint = null;
+    private Double targetVel = null;
 
     /**
      * Constructor: Create an instance of the object.
@@ -607,7 +607,7 @@ public class TrcPurePursuitDrive
      */
     public double getCurrentTargetVelocity()
     {
-        return targetPoint != null? targetPoint.velocity: 0.0;
+        return targetVel != null? targetVel: 0.0;
     }   //getCurrentTargetVelocity
 
     /**
@@ -674,7 +674,7 @@ public class TrcPurePursuitDrive
 
             referencePose = driveBase.getFieldPosition();
             pathIndex = 1;
-            targetPoint = null;
+            targetVel = null;
 
             if (xPosPidCtrl != null)
             {
@@ -1081,14 +1081,15 @@ public class TrcPurePursuitDrive
     private synchronized void driveTask(
         TrcTaskMgr.TaskType taskType, TrcRobot.RunMode runMode, boolean slowPeriodicLoop)
     {
-        TrcPose2D robotPose = driveBase.getPositionRelativeTo(referencePose, true);
-        targetPoint = getFollowingPoint(robotPose);
-
         if (path != null)
         {
-            relativeTargetPose = targetPoint.pose.relativeTo(robotPose, true);
+            TrcPose2D robotPose = driveBase.getPositionRelativeTo(referencePose, true);
+            TrcWaypoint targetPoint = getFollowingPoint(robotPose);
+            TrcWaypoint segmentStart = path.getWaypoint(pathIndex - 1);
+            TrcWaypoint segmentEnd = path.getWaypoint(pathIndex);
             boolean lastSegment = pathIndex == path.getSize() - 1;
 
+            relativeTargetPose = targetPoint.pose.relativeTo(robotPose, true);
             if (!INVERTED_TARGET)
             {
                 //
@@ -1123,13 +1124,21 @@ public class TrcPurePursuitDrive
                 turnPidCtrl.setTarget(
                     relativeTargetPose.angle + referencePose.angle + robotPose.angle, warpSpace, resetError);
             }
-            velPidCtrl.setTarget(targetPoint.velocity, resetError);
+
+            double distanceFromStart =
+                orthogonalProjectedPointOnLine(segmentStart.pose, segmentEnd.pose, robotPose)
+                    .distanceTo(segmentStart.pose);
+            double segmentLength = segmentEnd.distanceTo(segmentStart);
+            targetVel = interpolate(
+                segmentStart.velocity, segmentEnd.velocity,
+                TrcUtil.clipRange(distanceFromStart/segmentLength, 0.0, 1.0));
+            velPidCtrl.setTarget(targetVel, resetError);
             resetError = false;
 
             double xPosPower = xPosPidCtrl != null? xPosPidCtrl.getOutput(): 0.0;
             double yPosPower = yPosPidCtrl.getOutput();
             double turnPower = turnPidCtrl.getOutput();
-            double velPower = targetPoint.velocity > 0.0? velPidCtrl.getOutput(): 0.0;
+            double velPower = targetVel > 0.0? velPidCtrl.getOutput(): 0.0;
             double theta = Math.atan2(relativeTargetPose.x, relativeTargetPose.y);
             xPosPower = xPosPidCtrl == null? 0.0: TrcUtil.clipRange(xPosPower + velPower * Math.sin(theta),
                                                                     -moveOutputLimit, moveOutputLimit);
@@ -1174,7 +1183,7 @@ public class TrcPurePursuitDrive
                 }
             }
 
-            if (timedOut || lastSegment && (stalled ||posOnTarget && headingOnTarget))
+            if (timedOut || lastSegment && (stalled || posOnTarget && headingOnTarget))
             {
                 tracer.traceInfo(
                     instanceName,
@@ -1233,6 +1242,25 @@ public class TrcPurePursuitDrive
             }
         }
     }   //driveTask
+
+    /**
+     * This method orthogonally projects the given point onto the given line segment and returns the projected point.
+     *
+     * @param lineStart specifies the starting point of the line segment.
+     * @param lineEnd specifies the ending point of the line segment.
+     * @param point specifies the point to be projected onto the line segment.
+     * @return projected point.
+     */
+    private TrcPose2D orthogonalProjectedPointOnLine(TrcPose2D lineStart, TrcPose2D lineEnd, TrcPose2D point)
+    {
+        // Line equation: ax + by + c = 0
+        double a = lineEnd.y - lineStart.y;
+        double b = lineStart.x - lineEnd.x;
+        double c = lineEnd.x * lineStart.y - lineStart.x * lineEnd.y;
+        double d = a * point.x - b * point.y;
+
+        return new TrcPose2D((b*d - a*c)/(a*a + b*b), (a*-d - b*c)/(a*a + b*b), point.angle);
+    }   //orthogonalProjectedPointOnLine
 
     /**
      * Returns a weighted value between given values.
