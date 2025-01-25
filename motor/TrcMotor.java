@@ -3169,7 +3169,7 @@ public abstract class TrcMotor implements TrcMotorController, TrcExclusiveSubsys
      * If this method specifies an owner and the subsystem was not owned by it, it will acquire exclusive ownership
      * on its behalf and release ownership after the operation is completed.
      *
-     * @param owner specifies the owner ID to check if the caller has ownership of the motor.
+     * @param owner specifies the owner ID to to claim subsystem ownership, can be null if ownership not required.
      * @param calPower specifies the motor power for the zero calibration, can be positive or negative depending on
      *        the desire direction of movement.
      * @param completionEvent specifies an event to signal when zero calibration is done, can be null if not provided.
@@ -3209,7 +3209,7 @@ public abstract class TrcMotor implements TrcMotorController, TrcExclusiveSubsys
      * If this method specifies an owner and the subsystem was not owned by it, it will acquire exclusive ownership
      * on its behalf and release ownership after the operation is completed.
      *
-     * @param owner specifies the owner ID to check if the caller has ownership of the motor.
+     * @param owner specifies the owner ID to to claim subsystem ownership, can be null if ownership not required.
      * @param calPower specifies the motor power for the zero calibration, can be positive or negative depending on
      *        the desire direction of movement.
      * @param completionEvent specifies an event to signal when zero calibration is done, can be null if not provided.
@@ -3246,7 +3246,7 @@ public abstract class TrcMotor implements TrcMotorController, TrcExclusiveSubsys
      * If this method specifies an owner and the subsystem was not owned by it, it will acquire exclusive ownership
      * on its behalf and release ownership after the operation is completed.
      *
-     * @param owner specifies the owner ID to check if the caller has ownership of the motor.
+     * @param owner specifies the owner ID to to claim subsystem ownership, can be null if ownership not required.
      * @param calPower specifies the motor power for the zero calibration, can be positive or negative depending on
      *        the desire direction of movement.
      * @param callback specifies a callback handler when zero calibration is done.
@@ -3281,7 +3281,7 @@ public abstract class TrcMotor implements TrcMotorController, TrcExclusiveSubsys
      * it may be necessary to use a positive calibration power to move it towards the limit switch instead of using
      * negative calibration power and turning the long way around that may cause wires to entangle.
      *
-     * @param owner specifies the owner ID to check if the caller has ownership of the motor.
+     * @param owner specifies the owner ID to to claim subsystem ownership, can be null if ownership not required.
      * @param calPower specifies the motor power for the zero calibration, can be positive or negative depending on
      *        the desire direction of movement.
      */
