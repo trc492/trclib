@@ -150,7 +150,7 @@ public abstract class TrcSubsystem
     /**
      * This method enumerates all subsystems and calls their updateStatus method.
      */
-    public static int updateAllStatus(int lineNum)
+    public static int updateStatusAll(int lineNum)
     {
         for (SubsystemInfo subsystemInfo: subsystemList)
         {
@@ -158,7 +158,7 @@ public abstract class TrcSubsystem
         }
 
         return lineNum;
-    }   //updateAllStatus
+    }   //updateStatusAll
 
     /**
      * This method is called when the zero calibration completion event of a subsystem is signaled. If there are
