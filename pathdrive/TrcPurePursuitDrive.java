@@ -1125,45 +1125,39 @@ public class TrcPurePursuitDrive
                     relativeTargetPose.angle + referencePose.angle + robotPose.angle, warpSpace, resetError);
             }
 
-            double distanceFromStart =
-                orthogonalProjectedPointOnLine(segmentStart.pose, segmentEnd.pose, robotPose)
-                    .distanceTo(segmentStart.pose);
+            TrcPose2D projectedPose = orthogonalProjectedPointOnLine(segmentStart.pose, segmentEnd.pose, robotPose);
+            double distanceFromStart = projectedPose.distanceTo(segmentStart.pose);
             double segmentLength = segmentEnd.distanceTo(segmentStart);
-            targetVel = interpolate(
+            double currVelTarget = interpolate(
                 segmentStart.velocity, segmentEnd.velocity,
                 TrcUtil.clipRange(distanceFromStart/segmentLength, 0.0, 1.0));
+            targetVel = pathIndex == 1 && distanceFromStart <= proximityRadius? targetPoint.velocity: currVelTarget;
             velPidCtrl.setTarget(targetVel, resetError);
             resetError = false;
+            tracer.traceDebug(
+                instanceName,
+                "[%d] robotPose=%s, lookaheadPose=%s, SegStart=%s, SegEnd=%s, projectedPose=%s\n" +
+                "***** distWeight: %f/%f=%f, interpolatedVel: %f/%f=%f, robotVel=%f, LookaheadVel=%f, " +
+                "actualVelTarget=%f",
+                pathIndex, robotPose, targetPoint.pose, segmentStart.pose, segmentEnd.pose, projectedPose,
+                distanceFromStart, segmentLength, distanceFromStart/segmentLength, segmentStart.velocity,
+                segmentEnd.velocity, currVelTarget, getVelocityInput(), targetPoint.velocity, targetVel);
 
             double xPosPower = xPosPidCtrl != null? xPosPidCtrl.getOutput(): 0.0;
             double yPosPower = yPosPidCtrl.getOutput();
             double turnPower = turnPidCtrl.getOutput();
-            double velPower = targetVel > 0.0? velPidCtrl.getOutput(): 0.0;
+            double velPower = velPidCtrl.getOutput();
             double theta = Math.atan2(relativeTargetPose.x, relativeTargetPose.y);
-            xPosPower = xPosPidCtrl == null? 0.0: TrcUtil.clipRange(xPosPower + velPower * Math.sin(theta),
-                                                                    -moveOutputLimit, moveOutputLimit);
+            xPosPower = xPosPidCtrl == null? 0.0:
+                TrcUtil.clipRange(xPosPower + velPower * Math.sin(theta), -moveOutputLimit, moveOutputLimit);
             yPosPower = TrcUtil.clipRange(yPosPower + velPower * Math.cos(theta), -moveOutputLimit, moveOutputLimit);
             turnPower = TrcUtil.clipRange(turnPower, -rotOutputLimit, rotOutputLimit);
 
             tracer.traceDebug(
                 instanceName,
-                "[" + pathIndex +
-                "] RobotPose=" + robotPose +
-                ",TargetPose=" + targetPoint.pose +
-                ",relPose=" + relativeTargetPose);
-            tracer.traceDebug(
-                instanceName,
-                "RobotVel=" + getVelocityInput() +
-                ",TargetVel=" + targetPoint.velocity +
-                ",xError=" + (xPosPidCtrl != null? xPosPidCtrl.getError(): 0.0) +
-                ",yError=" + yPosPidCtrl.getError() +
-                ",turnError=" + turnPidCtrl.getError() +
-                ",velError=" + velPidCtrl.getError() +
-                ",theta=" + Math.toDegrees(theta) +
-                ",xPower=" + xPosPower +
-                ",yPower=" + yPosPower +
-                ",turnPower=" + turnPower +
-                ",velPower=" + velPower);
+                "Errors(x/y/turn/vel)=%f/%f/%f/%f, Powers(x/y/turn/vel)=%f/%f/%f/%f, theta=%f",
+                xPosPidCtrl != null? xPosPidCtrl.getError(): 0.0, yPosPidCtrl.getError(), turnPidCtrl.getError() +
+                velPidCtrl.getError() + xPosPower, yPosPower, turnPower, velPower, Math.toDegrees(theta));
 
             // If we have timed out or finished, stop the operation.
             double currTime = TrcTimer.getCurrentTime();
@@ -1183,6 +1177,7 @@ public class TrcPurePursuitDrive
                 }
             }
 
+            boolean ending = false;
             if (timedOut || lastSegment && (stalled || posOnTarget && headingOnTarget))
             {
                 tracer.traceInfo(
@@ -1202,7 +1197,7 @@ public class TrcPurePursuitDrive
                 }
 
                 stop();
-                targetPoint = null;
+                ending = true;
 
                 if (onFinishedEvent != null)
                 {
@@ -1233,6 +1228,11 @@ public class TrcPurePursuitDrive
                     "\" Delta=\"" + relativeTargetPose + "\"");
             }
 
+            if (ending)
+            {
+                targetPoint = null;
+            }
+
             if (tracePidInfo)
             {
                 if (xPosPidCtrl != null) xPosPidCtrl.printPidInfo(tracer, verbosePidInfo, battery);
@@ -1245,6 +1245,27 @@ public class TrcPurePursuitDrive
 
     /**
      * This method orthogonally projects the given point onto the given line segment and returns the projected point.
+     * https://math.stackexchange.com/questions/62633/orthogonal-projection-of-a-point-onto-a-line
+     *
+     * m = (Y1 - Y0)/(X1 - X0)
+     *
+     * -1/m = (Y - Yp)/(X - Xp)
+     * => m(Y - Yp) = Xp - X
+     * => mY - mYp = Xp - X
+     * => Xp + mYp = X + mY
+     *
+     * Yp = mXp + b
+     * => Xp + m(mXp + b) = X + mY
+     * => Xp + m^2*Xp + mb = X + mY
+     * => Xp(1 + m^2) + mb = X + mY
+     * => Xp = (X + mY - mb)/(1 + m^2)
+     * => Xp = (X + m(Y - b))/(1 + m^2)
+     *
+     * Yp = m(X + mY - mb)/(1 + m^2) + b
+     * => Yp = (mX + m^2*Y - m^2*b)/(1 + m^2) + b
+     * => Yp = (mX + m^2*Y - m^2*b + b + m^2*b)/(1 + m^2)
+     * => Yp = (mX + m^2*Y + b)/(1 + m^2)
+     * => Yp = (m*(X + mY) + b)/(1 + m^2)
      *
      * @param lineStart specifies the starting point of the line segment.
      * @param lineEnd specifies the ending point of the line segment.
@@ -1253,13 +1274,18 @@ public class TrcPurePursuitDrive
      */
     private TrcPose2D orthogonalProjectedPointOnLine(TrcPose2D lineStart, TrcPose2D lineEnd, TrcPose2D point)
     {
-        // Line equation: ax + by + c = 0
-        double a = lineEnd.y - lineStart.y;
-        double b = lineStart.x - lineEnd.x;
-        double c = lineEnd.x * lineStart.y - lineStart.x * lineEnd.y;
-        double d = a * point.x - b * point.y;
-
-        return new TrcPose2D((b*d - a*c)/(a*a + b*b), (a*-d - b*c)/(a*a + b*b), point.angle);
+        double deltaX = lineEnd.x - lineStart.x;
+        if (deltaX != 0.0)
+        {
+            double m = (lineEnd.y - lineStart.y)/deltaX;
+            double b = lineStart.y - m*lineStart.x;
+            double den = 1.0 + m*m;
+            return new TrcPose2D((point.x + m*(point.y - b))/den, (m*(point.x + m*point.y) + b)/den, point.angle);
+        }
+        else
+        {
+            return new TrcPose2D(lineStart.x, point.y, point.angle);
+        }
     }   //orthogonalProjectedPointOnLine
 
     /**
@@ -1362,10 +1388,8 @@ public class TrcPurePursuitDrive
         if (fastModeEnabled && robotPose.distanceTo(endWaypoint.getPositionPose()) > proximityRadius)
         {
             tracer.traceDebug(
-                instanceName,
-                "pathIndex=" + pathIndex +
-                ", startPose=" + startWaypoint.getPositionPose() +
-                ", endPose=" + endWaypoint.getPositionPose());
+                instanceName, "pathIndex=%d, startPose=%s, endPose=%s",
+                pathIndex, startWaypoint.getPositionPose(), endWaypoint.getPositionPose());
             return interpolate(
                 startWaypoint, endWaypoint, 1.0, !incrementalTurn? robotPose: null);
         }
@@ -1420,9 +1444,8 @@ public class TrcPurePursuitDrive
                     // The furthest intersection point is not on the line segment, so skip this segment.
                     //
                     tracer.traceDebug(
-                        instanceName,
-                        "Intersection not on line segment t1=" + t1 + ", t2=" + t2 + ", t=" + t +
-                        ", stalled=" + stalled);
+                        instanceName, "Intersection not on line segment t1=%f, t2=%f, t=%f, stalled=%s",
+                        t1, t2, t, stalled);
                     return null;
                 }
 
@@ -1431,9 +1454,8 @@ public class TrcPurePursuitDrive
 
                 tracer.traceDebug(
                     instanceName,
-                    "startPoint=" + startWaypoint.getPositionPose() +
-                    ", endPoint=" + endWaypoint.getPositionPose() +
-                    ", interpolatedPoint=" + interpolated.getPositionPose());
+                    "startPoint=%s, endPoint=%s, interpolatedPoint=%s",
+                    startWaypoint.getPositionPose(), endWaypoint.getPositionPose(),interpolated.getPositionPose());
 
                 return interpolated;
             }
@@ -1471,13 +1493,8 @@ public class TrcPurePursuitDrive
                     }
 
                     tracer.traceDebug(
-                        instanceName,
-                        "Segment[" + (i - 1) +
-                        ":" + segmentStart +
-                        "->" + i +
-                        ":" + segmentEnd +
-                        "] PrevIndex=" + pathIndex +
-                        ", Target=" + interpolated);
+                        instanceName, "Segment[%d:%s->%d:%s] PrevIndex=%d, Target=%s",
+                        i - 1, segmentStart, i, segmentEnd, pathIndex, interpolated);
                     pathIndex = i;
                 }
                 return interpolated;
