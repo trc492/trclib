@@ -24,13 +24,13 @@ package trclib.pathdrive;
 
 import org.apache.commons.math3.linear.RealVector;
 
-import trclib.robotcore.TrcPidController;
 import trclib.driverio.TrcTone;
 import trclib.dataprocessor.TrcUtil;
 import trclib.dataprocessor.TrcWarpSpace;
 import trclib.drivebase.TrcDriveBase;
 import trclib.robotcore.TrcDbgTrace;
 import trclib.robotcore.TrcEvent;
+import trclib.robotcore.TrcPidController;
 import trclib.robotcore.TrcRobot;
 import trclib.robotcore.TrcTaskMgr;
 import trclib.sensor.TrcRobotBattery;
@@ -139,6 +139,7 @@ public class TrcPurePursuitDrive
     private boolean fastModeEnabled = false;
     private boolean resetError = false;
     private Double targetVel = null;
+//    private Double firstLookaheadVel = null;
 
     /**
      * Constructor: Create an instance of the object.
@@ -235,6 +236,7 @@ public class TrcPurePursuitDrive
         String instanceName, TrcDriveBase driveBase, double proximityRadius, double posTolerance, double turnTolerance,
         TrcPidController.PidCoefficients xPosPidCoeff, TrcPidController.PidCoefficients yPosPidCoeff,
         TrcPidController.PidCoefficients turnPidCoeff, TrcPidController.PidCoefficients velPidCoeff)
+//        TrcPidController.FFCoefficients velFfCoeff)
     {
         if (xPosPidCoeff != null && !driveBase.supportsHolonomicDrive())
         {
@@ -675,6 +677,7 @@ public class TrcPurePursuitDrive
             referencePose = driveBase.getFieldPosition();
             pathIndex = 1;
             targetVel = null;
+//            firstLookaheadVel = null;
 
             if (xPosPidCtrl != null)
             {
@@ -1093,11 +1096,11 @@ public class TrcPurePursuitDrive
             if (!INVERTED_TARGET)
             {
                 //
-                // We only initialize the PID controller error state at the beginning. Once the path following has started,
-                // all subsequent setTarget calls should not re-initialize PID controller error states because we are just
-                // updating the target and do not really want to destroy totalError or previous error that will screw up
-                // the subsequent getOutput() calls where it needs the previous error states to compute the I and D terms
-                // correctly.
+                // We only initialize the PID controller error state at the beginning. Once the path following has
+                // started, all subsequent setTarget calls should not re-initialize PID controller error states
+                // because we are just updating the target and do not really want to destroy totalError or previous
+                // error that will screw up the subsequent calculate() calls where it needs the previous error states
+                // to compute the I and D terms correctly.
                 //
                 if (xPosPidCtrl != null)
                 {
@@ -1129,9 +1132,13 @@ public class TrcPurePursuitDrive
             double distanceFromStart = projectedPose.distanceTo(segmentStart.pose);
             double segmentLength = segmentEnd.distanceTo(segmentStart);
             double currVelTarget = interpolate(
-                segmentStart.velocity, segmentEnd.velocity,
-                TrcUtil.clipRange(distanceFromStart/segmentLength, 0.0, 1.0));
-            targetVel = pathIndex == 1 && distanceFromStart <= proximityRadius? targetPoint.velocity: currVelTarget;
+                segmentStart.velocity, segmentEnd.velocity, distanceFromStart/segmentLength);
+//            if (firstLookaheadVel == null)
+//            {
+//                firstLookaheadVel = targetPoint.velocity;
+//            }
+//            targetVel = pathIndex == 1 && distanceFromStart <= proximityRadius? firstLookaheadVel: currVelTarget;
+            targetVel = targetPoint.velocity;
             velPidCtrl.setTarget(targetVel, resetError);
             resetError = false;
             tracer.traceDebug(
@@ -1156,15 +1163,15 @@ public class TrcPurePursuitDrive
             tracer.traceDebug(
                 instanceName,
                 "Errors(x/y/turn/vel)=%f/%f/%f/%f, Powers(x/y/turn/vel)=%f/%f/%f/%f, theta=%f",
-                xPosPidCtrl != null? xPosPidCtrl.getError(): 0.0, yPosPidCtrl.getError(), turnPidCtrl.getError() +
-                velPidCtrl.getError() + xPosPower, yPosPower, turnPower, velPower, Math.toDegrees(theta));
+                xPosPidCtrl != null? xPosPidCtrl.getError(): 0.0, yPosPidCtrl.getError(), turnPidCtrl.getError(),
+                velPidCtrl.getError(), xPosPower, yPosPower, turnPower, velPower, Math.toDegrees(theta));
 
             // If we have timed out or finished, stop the operation.
             double currTime = TrcTimer.getCurrentTime();
             boolean timedOut = currTime >= timedOutTime;
 
             stalled = (xPosPidCtrl == null || xPosPidCtrl.isStalled()) &&
-                    yPosPidCtrl.isStalled() && turnPidCtrl.isStalled();
+                      yPosPidCtrl.isStalled() && turnPidCtrl.isStalled();
             boolean posOnTarget =
                 (xPosPidCtrl == null || xPosPidCtrl.isOnTarget(posTolerance)) && yPosPidCtrl.isOnTarget(posTolerance);
             boolean headingOnTarget = turnPidCtrl.isOnTarget(turnTolerance);
@@ -1177,7 +1184,6 @@ public class TrcPurePursuitDrive
                 }
             }
 
-            boolean ending = false;
             if (timedOut || lastSegment && (stalled || posOnTarget && headingOnTarget))
             {
                 tracer.traceInfo(
@@ -1197,7 +1203,6 @@ public class TrcPurePursuitDrive
                 }
 
                 stop();
-                ending = true;
 
                 if (onFinishedEvent != null)
                 {
@@ -1226,11 +1231,6 @@ public class TrcPurePursuitDrive
                     "AbsPose=\"" + driveBase.getFieldPosition() +
                     "\" AbsTarget=\"" + referencePose.addRelativePose(targetPoint.pose) +
                     "\" Delta=\"" + relativeTargetPose + "\"");
-            }
-
-            if (ending)
-            {
-                targetPoint = null;
             }
 
             if (tracePidInfo)
@@ -1298,11 +1298,6 @@ public class TrcPurePursuitDrive
      */
     private double interpolate(double startValue, double endValue, double weight)
     {
-        if (!TrcUtil.inRange(weight, 0.0, 1.0))
-        {
-            throw new IllegalArgumentException("Weight must be in range [0,1]!");
-        }
-
         switch (interpolationType)
         {
             case LINEAR:
@@ -1318,8 +1313,8 @@ public class TrcPurePursuitDrive
                 weight = Math.pow(weight, 1.0 / interpolationType.value);
                 break;
         }
-
-        return (1.0 - weight) * startValue + weight * endValue;
+        // This should work for interpolate as well as extrapolate.
+        return startValue + weight*(endValue - startValue);
     }   //interpolate
 
     /**

@@ -29,20 +29,20 @@ import org.apache.commons.math3.linear.RealVector;
 import java.util.Arrays;
 import java.util.Stack;
 
+import trclib.dataprocessor.TrcUtil;
 import trclib.dataprocessor.TrcWrapValueConverter;
+import trclib.motor.TrcMotor;
+import trclib.pathdrive.TrcPose2D;
 import trclib.robotcore.TrcDbgTrace;
 import trclib.robotcore.TrcEvent;
 import trclib.robotcore.TrcExclusiveSubsystem;
-import trclib.sensor.TrcDriveBaseOdometry;
-import trclib.sensor.TrcGyro;
-import trclib.motor.TrcMotor;
-import trclib.sensor.TrcOdometrySensor;
-import trclib.sensor.TrcOdometryWheels;
 import trclib.robotcore.TrcPidController;
-import trclib.pathdrive.TrcPose2D;
 import trclib.robotcore.TrcRobot;
 import trclib.robotcore.TrcTaskMgr;
-import trclib.dataprocessor.TrcUtil;
+import trclib.sensor.TrcDriveBaseOdometry;
+import trclib.sensor.TrcGyro;
+import trclib.sensor.TrcOdometrySensor;
+import trclib.sensor.TrcOdometryWheels;
 import trclib.timer.TrcTimer;
 
 /**
