@@ -2309,6 +2309,16 @@ public abstract class TrcMotor implements TrcMotorController, TrcExclusiveSubsys
     }   //getVelocityPidCoefficients
 
     /**
+     * This method returns the software velocity PID controller.
+     *
+     * @return velocity PID controller, null if software PID control is not used.
+     */
+    public TrcPidController getVelPidCtrl()
+    {
+        return velPidCtrl;
+    }   //getVelPidCtrl
+
+    /**
      * This method checks if velocity PID control has reached target.
      *
      * @return true if velocity has reached target, false otherwise.
@@ -2462,6 +2472,16 @@ public abstract class TrcMotor implements TrcMotorController, TrcExclusiveSubsys
 
         return pidCoeff;
     }   //getPositionPidCoefficients
+
+    /**
+     * This method returns the software position PID controller.
+     *
+     * @return position PID controller, null if software PID control is not used.
+     */
+    public TrcPidController getPosPidCtrl()
+    {
+        return posPidCtrl;
+    }   //getPosPidCtrl
 
     /**
      * This method checks if position PID control has reached target.
@@ -2619,6 +2639,16 @@ public abstract class TrcMotor implements TrcMotorController, TrcExclusiveSubsys
 
         return pidCoeff;
     }   //getCurrentPidCoefficients
+
+    /**
+     * This method returns the software current PID controller.
+     *
+     * @return current PID controller, null if software PID control is not used.
+     */
+    public TrcPidController getCurrentPidCtrl()
+    {
+        return currentPidCtrl;
+    }   //getCurrentPidCtrl
 
     /**
      * This method checks if current PID control has reached target.
