@@ -233,6 +233,16 @@ public class TrcPidDrive
     }   //setAbsoluteTargetModeEnabled
 
     /**
+     * This method checks if Absolute Target Mode is enabled.
+     *
+     * @return true if Absolute Target Mode is enabled, false otherwise.
+     */
+    public synchronized boolean isAbsoluteTargetModeEnabled()
+    {
+        return absTargetModeEnabled;
+    }   //isAbsoluteTargetModeEnabled
+
+    /**
      * This method enables/disables NoOscillation mode. When NoOscillation is enabled, PIDDrive will determine which
      * degrees of freedom are moving and set the corresponding PID controllers to enable noOscillation mode. For
      * the degrees of freedom that are maintaining previous position, we need to allow oscillation.
@@ -245,14 +255,21 @@ public class TrcPidDrive
     }   //setNoOscillation
 
     /**
-     * This method checks if Absolute Target Mode is enabled.
+     * This method enables/disables the mode that square rooting all PID output. By square rooting the PID output,
+     * it gives a boost to the output when the error is smaller. That means it will make PID stronger to reach
+     * target.
      *
-     * @return true if Absolute Target Mode is enabled, false otherwise.
+     * @param enable specifies true to enable and false to disable.
      */
-    public synchronized boolean isAbsoluteTargetModeEnabled()
+    public synchronized void setSquareRootPidEnabled(boolean enable)
     {
-        return absTargetModeEnabled;
-    }   //isAbsoluteTargetModeEnabled
+        if (xPidCtrl != null)
+        {
+            xPidCtrl.setSquareRootOutputEnabled(enable);
+        }
+        yPidCtrl.setSquareRootOutputEnabled(enable);
+        turnPidCtrl.setSquareRootOutputEnabled(enable);
+    }   //setSquareRootPidEnabled
 
     /**
      * This method sets the message tracer for logging trace messages.

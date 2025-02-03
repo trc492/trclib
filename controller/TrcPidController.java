@@ -265,6 +265,7 @@ public class TrcPidController
     private boolean inverted = false;
     private boolean absSetPoint = false;
     private boolean noOscillation = false;
+    private boolean squareRootOutput = false;
     private double minOutput = -1.0;
     private double maxOutput = 1.0;
     private double minIntegral = -1.0;
@@ -424,6 +425,22 @@ public class TrcPidController
             this.noOscillation = noOscillation;
         }
     }   //setNoOscillation
+
+    /**
+     * This method enables/disables the mode that square rooting the PID output. By square rooting the PID output,
+     * it gives a boost to the output when the error is smaller. That means it will make PID stronger to reach
+     * target. Apparently, this strategy is widely used in Washington state teams and rumored that it came from
+     * the team Escape Velocity.
+     *
+     * @param enable specifies true to enable and false to disable.
+     */
+    public void setSquareRootOutputEnabled(boolean enable)
+    {
+        synchronized (pidCtrlState)
+        {
+            this.squareRootOutput = true;
+        }
+    }   //setSquareRootOutputEnabled
 
     /**
      * This method enables/disables stall detection.
@@ -1076,6 +1093,10 @@ public class TrcPidController
                 output = pidCtrlState.output + change;
             }
 
+            if (squareRootOutput)
+            {
+                output = Math.signum(output) * Math.sqrt(Math.abs(output));
+            }
             pidCtrlState.output = output;
 
             if (tracer.isMsgLevelEnabled(TrcDbgTrace.MsgLevel.DEBUG))

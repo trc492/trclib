@@ -310,6 +310,24 @@ public class TrcPurePursuitDrive
     }   //getTurnPidCtrl
 
     /**
+     * This method enables/disables the mode that square rooting all PID output. By square rooting the PID output,
+     * it gives a boost to the output when the error is smaller. That means it will make PID stronger to reach
+     * target.
+     *
+     * @param enable specifies true to enable and false to disable.
+     */
+    public synchronized void setSquareRootPidEnabled(boolean enable)
+    {
+        if (xPosPidCtrl != null)
+        {
+            xPosPidCtrl.setSquareRootOutputEnabled(enable);
+        }
+        yPosPidCtrl.setSquareRootOutputEnabled(enable);
+        turnPidCtrl.setSquareRootOutputEnabled(enable);
+        velPidCtrl.setSquareRootOutputEnabled(enable);
+    }   //setSquareRootPidEnabled
+
+    /**
      * This method sets the message tracer for logging trace messages.
      *
      * @param msgLevel specifies the message level.
