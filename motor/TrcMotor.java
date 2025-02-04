@@ -2239,6 +2239,21 @@ public abstract class TrcMotor implements TrcMotorController, TrcExclusiveSubsys
      * different for software PID and controller built-in PID. If you enable/disable software PID, you need to set
      * the appropriate PID coefficients accordingly.
      *
+     * @param pidCoeff specifies the PID coefficients to set.
+     * @param tolerance specifies the PID tolerance.
+     * @param softwarePid specifies true to use software PID control, false to use native motor PID control.
+     */
+    public void setVelocityPidParameters(
+        TrcPidController.PidCoefficients pidCoeff, double tolerance, boolean softwarePid)
+    {
+        setVelocityPidParameters(pidCoeff, tolerance, softwarePid, false);
+    }   //setVelocityPidParameters
+
+    /**
+     * This method sets the PID parameters of the motor's velocity PID controller. Note that PID coefficients are
+     * different for software PID and controller built-in PID. If you enable/disable software PID, you need to set
+     * the appropriate PID coefficients accordingly.
+     *
      * @param kP specifies the Kp coefficient.
      * @param kI specifies the Ki coefficient.
      * @param kD specifies the Kd coefficient.
@@ -2249,12 +2264,31 @@ public abstract class TrcMotor implements TrcMotorController, TrcExclusiveSubsys
      * @param enableSquareRootPid specifies true to enable square root PID control mode, false to disable (only
      *        applicable if softwarePid is true).
      */
-    public void setVelocityParameters(
+    public void setVelocityPidParameters(
         double kP, double kI, double kD, double kF, double iZone, double tolerance, boolean softwarePid,
         boolean enableSquareRootPid)
     {
         setVelocityPidParameters(
             new TrcPidController.PidCoefficients(kP, kI, kD, kF, iZone), tolerance, softwarePid, enableSquareRootPid);
+    }   //setVelocityPidParameters
+
+    /**
+     * This method sets the PID parameters of the motor's velocity PID controller. Note that PID coefficients are
+     * different for software PID and controller built-in PID. If you enable/disable software PID, you need to set
+     * the appropriate PID coefficients accordingly.
+     *
+     * @param kP specifies the Kp coefficient.
+     * @param kI specifies the Ki coefficient.
+     * @param kD specifies the Kd coefficient.
+     * @param kF specifies the Kf coefficient.
+     * @param iZone specifies IZone, can be 0.0 if not provided.
+     * @param tolerance specifies the PID tolerance.
+     * @param softwarePid specifies true to use software PID control, false to use native motor PID control.
+     */
+    public void setVelocityPidParameters(
+        double kP, double kI, double kD, double kF, double iZone, double tolerance, boolean softwarePid)
+    {
+        setVelocityPidParameters(kP, kI, kD, kF, iZone, tolerance, softwarePid, false);
     }   //setVelocityPidParameters
 
     /**
@@ -2276,6 +2310,24 @@ public abstract class TrcMotor implements TrcMotorController, TrcExclusiveSubsys
     {
         setVelocityPidParameters(
             new TrcPidController.PidCoefficients(kP, kI, kD, kF, 0.0), tolerance, softwarePid, enableSquareRootPid);
+    }   //setVelocityPidParameters
+
+    /**
+     * This method sets the PID parameters of the motor's velocity PID controller. Note that PID coefficients are
+     * different for software PID and controller built-in PID. If you enable/disable software PID, you need to set
+     * the appropriate PID coefficients accordingly.
+     *
+     * @param kP specifies the Kp coefficient.
+     * @param kI specifies the Ki coefficient.
+     * @param kD specifies the Kd coefficient.
+     * @param kF specifies the Kf coefficient.
+     * @param tolerance specifies the PID tolerance.
+     * @param softwarePid specifies true to use software PID control, false to use native motor PID control.
+     */
+    public void setVelocityPidParameters(
+        double kP, double kI, double kD, double kF, double tolerance, boolean softwarePid)
+    {
+        setVelocityPidParameters(kP, kI, kD, kF, 0.0, tolerance, softwarePid, false);
     }   //setVelocityPidParameters
 
     /**
@@ -2388,7 +2440,8 @@ public abstract class TrcMotor implements TrcMotorController, TrcExclusiveSubsys
      * @param pidCoeff specifies the PID coefficients to set.
      * @param tolerance specifies the PID tolerance.
      * @param softwarePid specifies true to use software PID control, false to use native motor PID control.
-     * @param enableSquareRootPid specifies true to enable square root PID control mode, false to disable.
+     * @param enableSquareRootPid specifies true to enable square root PID control mode, false to disable (only
+     *        applicable if softwarePid is true).
      */
     public void setPositionPidParameters(
         TrcPidController.PidCoefficients pidCoeff, double tolerance, boolean softwarePid, boolean enableSquareRootPid)
@@ -2413,6 +2466,21 @@ public abstract class TrcMotor implements TrcMotorController, TrcExclusiveSubsys
             setMotorPositionPidCoefficients(pidCoeff);
         }
         posTolerance = tolerance;
+    }   //setPositionPidParameters
+
+    /**
+     * This method sets the PID parameters of the motor's position PID controller. Note that PID coefficients are
+     * different for software PID and controller built-in PID. If you enable/disable software PID, you need to set
+     * the appropriate PID coefficients accordingly.
+     *
+     * @param pidCoeff specifies the PID coefficients to set.
+     * @param tolerance specifies the PID tolerance.
+     * @param softwarePid specifies true to use software PID control, false to use native motor PID control.
+     */
+    public void setPositionPidParameters(
+        TrcPidController.PidCoefficients pidCoeff, double tolerance, boolean softwarePid)
+    {
+        setPositionPidParameters(pidCoeff, tolerance, softwarePid, false);
     }   //setPositionPidParameters
 
     /**
@@ -2447,6 +2515,25 @@ public abstract class TrcMotor implements TrcMotorController, TrcExclusiveSubsys
      * @param kI specifies the Ki coefficient.
      * @param kD specifies the Kd coefficient.
      * @param kF specifies the Kf coefficient.
+     * @param iZone specifies IZone, can be 0.0 if not provided.
+     * @param tolerance specifies the PID tolerance.
+     * @param softwarePid specifies true to use software PID control, false to use native motor PID control.
+     */
+    public void setPositionPidParameters(
+        double kP, double kI, double kD, double kF, double iZone, double tolerance, boolean softwarePid)
+    {
+        setPositionPidParameters(kP, kI, kD, kF, iZone, tolerance, softwarePid, false);
+    }   //setPositionPidParameters
+
+    /**
+     * This method sets the PID parameters of the motor's position PID controller. Note that PID coefficients are
+     * different for software PID and controller built-in PID. If you enable/disable software PID, you need to set
+     * the appropriate PID coefficients accordingly.
+     *
+     * @param kP specifies the Kp coefficient.
+     * @param kI specifies the Ki coefficient.
+     * @param kD specifies the Kd coefficient.
+     * @param kF specifies the Kf coefficient.
      * @param tolerance specifies the PID tolerance.
      * @param softwarePid specifies true to use software PID control, false to use native motor PID control.
      * @param enableSquareRootPid specifies true to enable square root PID control mode, false to disable (only
@@ -2457,6 +2544,24 @@ public abstract class TrcMotor implements TrcMotorController, TrcExclusiveSubsys
     {
         setPositionPidParameters(
             new TrcPidController.PidCoefficients(kP, kI, kD, kF, 0.0), tolerance, softwarePid, enableSquareRootPid);
+    }   //setPositionPidParameters
+
+    /**
+     * This method sets the PID parameters of the motor's position PID controller. Note that PID coefficients are
+     * different for software PID and controller built-in PID. If you enable/disable software PID, you need to set
+     * the appropriate PID coefficients accordingly.
+     *
+     * @param kP specifies the Kp coefficient.
+     * @param kI specifies the Ki coefficient.
+     * @param kD specifies the Kd coefficient.
+     * @param kF specifies the Kf coefficient.
+     * @param tolerance specifies the PID tolerance.
+     * @param softwarePid specifies true to use software PID control, false to use native motor PID control.
+     */
+    public void setPositionPidParameters(
+        double kP, double kI, double kD, double kF, double tolerance, boolean softwarePid)
+    {
+        setPositionPidParameters(kP, kI, kD, kF, 0.0, tolerance, softwarePid, false);
     }   //setPositionPidParameters
 
     /**
@@ -2604,6 +2709,21 @@ public abstract class TrcMotor implements TrcMotorController, TrcExclusiveSubsys
      * different for software PID and controller built-in PID. If you enable/disable software PID, you need to set
      * the appropriate PID coefficients accordingly.
      *
+     * @param pidCoeff specifies the PID coefficients to set.
+     * @param tolerance specifies the PID tolerance.
+     * @param softwarePid specifies true to use software PID control, false to use native motor PID control.
+     */
+    public void setCurrentPidParameters(
+        TrcPidController.PidCoefficients pidCoeff, double tolerance, boolean softwarePid)
+    {
+        setCurrentPidParameters(pidCoeff, tolerance, softwarePid, false);
+    }   //setCurrentPidParameters
+
+    /**
+     * This method sets the PID parameters of the motor's current PID controller. Note that PID coefficients are
+     * different for software PID and controller built-in PID. If you enable/disable software PID, you need to set
+     * the appropriate PID coefficients accordingly.
+     *
      * @param kP specifies the Kp coefficient.
      * @param kI specifies the Ki coefficient.
      * @param kD specifies the Kd coefficient.
@@ -2631,6 +2751,25 @@ public abstract class TrcMotor implements TrcMotorController, TrcExclusiveSubsys
      * @param kI specifies the Ki coefficient.
      * @param kD specifies the Kd coefficient.
      * @param kF specifies the Kf coefficient.
+     * @param iZone specifies IZone, can be 0.0 if not provided.
+     * @param tolerance specifies the PID tolerance.
+     * @param softwarePid specifies true to use software PID control, false to use native motor PID control.
+     */
+    public void setCurrentPidParameters(
+        double kP, double kI, double kD, double kF, double iZone, double tolerance, boolean softwarePid)
+    {
+        setCurrentPidParameters(kP, kI, kD, kF, iZone, tolerance, softwarePid, false);
+    }   //setCurrentPidParameters
+
+    /**
+     * This method sets the PID parameters of the motor's current PID controller. Note that PID coefficients are
+     * different for software PID and controller built-in PID. If you enable/disable software PID, you need to set
+     * the appropriate PID coefficients accordingly.
+     *
+     * @param kP specifies the Kp coefficient.
+     * @param kI specifies the Ki coefficient.
+     * @param kD specifies the Kd coefficient.
+     * @param kF specifies the Kf coefficient.
      * @param tolerance specifies the PID tolerance.
      * @param softwarePid specifies true to use software PID control, false to use native motor PID control.
      * @param enableSquareRootPid specifies true to enable square root PID control mode, false to disable (only
@@ -2641,6 +2780,24 @@ public abstract class TrcMotor implements TrcMotorController, TrcExclusiveSubsys
     {
         setCurrentPidParameters(
             new TrcPidController.PidCoefficients(kP, kI, kD, kF, 0.0), tolerance, softwarePid, enableSquareRootPid);
+    }   //setCurrentPidParameters
+
+    /**
+     * This method sets the PID parameters of the motor's current PID controller. Note that PID coefficients are
+     * different for software PID and controller built-in PID. If you enable/disable software PID, you need to set
+     * the appropriate PID coefficients accordingly.
+     *
+     * @param kP specifies the Kp coefficient.
+     * @param kI specifies the Ki coefficient.
+     * @param kD specifies the Kd coefficient.
+     * @param kF specifies the Kf coefficient.
+     * @param tolerance specifies the PID tolerance.
+     * @param softwarePid specifies true to use software PID control, false to use native motor PID control.
+     */
+    public void setCurrentPidParameters(
+        double kP, double kI, double kD, double kF, double tolerance, boolean softwarePid)
+    {
+        setCurrentPidParameters(kP, kI, kD, kF, 0.0, tolerance, softwarePid, false);
     }   //setCurrentPidParameters
 
     /**
