@@ -339,9 +339,10 @@ public interface TrcMotorController
      *
      * @param velocity specifies cruise velocity in the unit of rps.
      * @param acceleration specifies acceleration in the unit of rot per sec square.
+     * @param deceleration specifies deceleration in the unit of rot per sec square.
      * @param jerk specifies acceleration derivation in the unit of rot per sec cube.
      */
-    void enableMotionProfile(double velocity, double acceleration, double jerk);
+    void enableMotionProfile(double velocity, double acceleration, double deceleration, double jerk);
 
     /**
      * This method disables motion profile support.
