@@ -64,6 +64,7 @@ public class TrcPurePursuitDrive
 {
     private static final boolean INVERTED_TARGET = false;
     private static final boolean useLookaheadVelUntilDecel = true;     //algorithm 2
+    private static final boolean applySquidOnVel = false;
 
     public interface WaypointEventHandler
     {
@@ -324,7 +325,10 @@ public class TrcPurePursuitDrive
         }
         yPosPidCtrl.setSquareRootOutputEnabled(enable);
         turnPidCtrl.setSquareRootOutputEnabled(enable);
-        velPidCtrl.setSquareRootOutputEnabled(enable);
+        if (applySquidOnVel)
+        {
+            velPidCtrl.setSquareRootOutputEnabled(enable);
+        }
     }   //setSquareRootPidEnabled
 
     /**
