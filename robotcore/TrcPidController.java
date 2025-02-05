@@ -37,7 +37,7 @@ import trclib.timer.TrcTimer;
  */
 public class TrcPidController
 {
-    public static final double DEF_SETTLING_TIME = 0.2;
+    public static final double DEF_SETTLING_TIME = 0.1;
     private static final double DEF_STALL_DETECTION_DELAY = 0.5;
     private static final double DEF_STALL_DETECTION_TIMEOUT = 0.2;
     private static final double DEF_STALL_ERR_RATE_THRESHOLD = 1.0;
