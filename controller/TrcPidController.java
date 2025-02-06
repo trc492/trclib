@@ -438,7 +438,7 @@ public class TrcPidController
     {
         synchronized (pidCtrlState)
         {
-            this.squareRootOutput = true;
+            this.squareRootOutput = enable;
         }
     }   //setSquareRootOutputEnabled
 
@@ -941,11 +941,8 @@ public class TrcPidController
                 }
                 tracer.traceDebug(
                     instanceName,
-                    "NoOscillation: err=" + pidCtrlState.posError +
-                    ", errRate=" + pidCtrlState.velError +
-                    ", tolerance=" + tolerance +
-                    ", setPointSign=" + pidCtrlState.setPointSign +
-                    ", onTarget=" + onTarget);
+                    "NoOscillation: err=%f, errRate=%f, tolerance=%f, setPointSign=%f, onTarget=%s",
+                    pidCtrlState.posError, pidCtrlState.velError, tolerance, pidCtrlState.setPointSign, onTarget);
             }
             //
             // We consider it on-target if error is within tolerance for the settling period.
@@ -955,18 +952,24 @@ public class TrcPidController
                 pidCtrlState.settlingStartTime = TrcTimer.getCurrentTime();
                 tracer.traceDebug(
                     instanceName,
-                    "InProgress: err=" + pidCtrlState.posError +
-                    ", errRate=" + pidCtrlState.velError +
-                    ", tolerance=" + tolerance);
-            }
-            else if (currTime >= pidCtrlState.settlingStartTime + settlingTime)
+                    "InProgress: err=%f, errRate=%f, tolerance=%f",
+                    pidCtrlState.posError, pidCtrlState.velError, tolerance);
+           }
+            else if (settlingTime == 0.0 || currTime >= pidCtrlState.settlingStartTime + settlingTime)
             {
                 tracer.traceDebug(
                     instanceName,
-                    "OnTarget: err=" + pidCtrlState.posError +
-                    ", errRate=" + pidCtrlState.velError +
-                    ", tolerance=" + tolerance);
+                    "OnTarget: err=%f, errRate=%f, tolerance=%f",
+                    pidCtrlState.posError, pidCtrlState.velError, tolerance);
                 onTarget = true;
+            }
+            else
+            {
+                tracer.traceDebug(
+                    instanceName,
+                    "Settling: err=%f, errRate=%f, tolerance=%f, currTime=%f, expiredTime=%f",
+                    pidCtrlState.posError, pidCtrlState.velError, tolerance, currTime,
+                    pidCtrlState.settlingStartTime + settlingTime);
             }
         }
 
