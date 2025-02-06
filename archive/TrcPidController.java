@@ -20,7 +20,7 @@
  * SOFTWARE.
  */
 
-package trclib.robotcore;
+package trclib.archive;
 
 import java.util.EmptyStackException;
 import java.util.Stack;
@@ -28,6 +28,7 @@ import java.util.Stack;
 import trclib.dataprocessor.TrcUtil;
 import trclib.dataprocessor.TrcWarpSpace;
 import trclib.driverio.TrcDashboard;
+import trclib.robotcore.TrcDbgTrace;
 import trclib.sensor.TrcRobotBattery;
 import trclib.timer.TrcTimer;
 

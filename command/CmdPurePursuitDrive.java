@@ -22,12 +22,12 @@
 
 package trclib.command;
 
+import trclib.controller.TrcPidController;
 import trclib.drivebase.TrcDriveBase;
 import trclib.pathdrive.TrcPath;
 import trclib.pathdrive.TrcPose2D;
 import trclib.pathdrive.TrcPurePursuitDrive;
 import trclib.robotcore.TrcEvent;
-import trclib.robotcore.TrcPidController;
 import trclib.robotcore.TrcRobot;
 
 /**

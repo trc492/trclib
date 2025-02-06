@@ -24,12 +24,12 @@ package trclib.pathdrive;
 
 import org.apache.commons.math3.linear.RealVector;
 
+import trclib.controller.TrcPidController;
 import trclib.dataprocessor.TrcUtil;
 import trclib.dataprocessor.TrcWarpSpace;
 import trclib.drivebase.TrcDriveBase;
 import trclib.robotcore.TrcDbgTrace;
 import trclib.robotcore.TrcEvent;
-import trclib.robotcore.TrcPidController;
 import trclib.robotcore.TrcRobot;
 import trclib.robotcore.TrcTaskMgr;
 import trclib.sensor.TrcRobotBattery;

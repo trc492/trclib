@@ -25,25 +25,25 @@ package trclib.motor;
 import java.util.ArrayList;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import trclib.controller.TrcPidController;
+import trclib.dataprocessor.TrcUtil;
+import trclib.driverio.TrcTone;
 import trclib.robotcore.TrcDbgTrace;
 import trclib.robotcore.TrcEvent;
 import trclib.robotcore.TrcExclusiveSubsystem;
 import trclib.robotcore.TrcPresets;
+import trclib.robotcore.TrcRobot;
+import trclib.robotcore.TrcTaskMgr;
+import trclib.robotcore.TrcTaskMgr.TaskType;
+import trclib.sensor.TrcDigitalInput;
+import trclib.sensor.TrcEncoder;
 import trclib.sensor.TrcMotorLimitSwitch;
 import trclib.sensor.TrcOdometrySensor;
-import trclib.timer.TrcPerformanceTimer;
-import trclib.robotcore.TrcPidController;
-import trclib.robotcore.TrcRobot;
 import trclib.sensor.TrcRobotBattery;
 import trclib.sensor.TrcTriggerDigitalInput;
 import trclib.sensor.TrcTrigger.TriggerMode;
-import trclib.robotcore.TrcTaskMgr;
-import trclib.robotcore.TrcTaskMgr.TaskType;
-import trclib.driverio.TrcTone;
-import trclib.dataprocessor.TrcUtil;
-import trclib.sensor.TrcDigitalInput;
-import trclib.sensor.TrcEncoder;
 import trclib.timer.TrcElapsedTimer;
+import trclib.timer.TrcPerformanceTimer;
 import trclib.timer.TrcTimer;
 
 /**

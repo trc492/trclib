@@ -24,14 +24,13 @@ package trclib.command;
 
 import java.util.Arrays;
 
-import trclib.driverio.TrcDashboard;
-import trclib.robotcore.TrcDbgTrace;
+import trclib.controller.TrcPidController;
 import trclib.drivebase.TrcDriveBase;
-import trclib.robotcore.TrcEvent;
-import trclib.robotcore.TrcPidController;
-import trclib.robotcore.TrcPidController.PidCoefficients;
+import trclib.driverio.TrcDashboard;
 import trclib.pathdrive.TrcPidDrive;
 import trclib.pathdrive.TrcPose2D;
+import trclib.robotcore.TrcDbgTrace;
+import trclib.robotcore.TrcEvent;
 import trclib.robotcore.TrcRobot;
 import trclib.robotcore.TrcStateMachine;
 import trclib.timer.TrcTimer;
@@ -76,7 +75,7 @@ public class CmdPidDrive implements TrcRobot.RobotCommand
     private int pathIndex;
 
     private TrcPidController tunePidCtrl = null;
-    private PidCoefficients savedPidCoeffs = null;
+    private TrcPidController.PidCoefficients savedPidCoeffs = null;
     private Boolean savedTargetIsAbsolute = null;
     private Boolean savedWarpSpaceEnabled = null;
 

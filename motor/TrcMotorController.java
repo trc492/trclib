@@ -22,7 +22,7 @@
 
 package trclib.motor;
 
-import trclib.robotcore.TrcPidController;
+import trclib.controller.TrcPidController;
 
 /**
  * This interface implements a generic motor. Some motors natively support some of the methods but simulate others.

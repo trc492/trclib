@@ -22,9 +22,9 @@
 
 package trclib.pathdrive;
 
+import trclib.controller.TrcPidController;
 import trclib.driverio.TrcTone;
 import trclib.robotcore.TrcLoopProfiler;
-import trclib.robotcore.TrcPidController;
 import trclib.robotcore.TrcRobot;
 import trclib.robotcore.TrcTaskMgr;
 import trclib.robotcore.TrcTaskMgr.TaskType;
