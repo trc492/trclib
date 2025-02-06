@@ -40,11 +40,11 @@ public class TrcWrapValueConverter
 {
     protected final String instanceName;
     protected final DoubleSupplier valueSupplier;
-    private final double rangeLow, rangeHigh;
+    private final double range, threshold;
     private final TrcTaskMgr.TaskObject converterTaskObj;
 
     private boolean enabled = false;
-    private double prevValue = 0.0;
+    private double prevReading = 0.0;
     private int numCrossovers = 0;
 
     /**
@@ -59,8 +59,8 @@ public class TrcWrapValueConverter
     {
         this.instanceName = instanceName;
         this.valueSupplier = valueSupplier;
-        this.rangeLow = rangeLow;
-        this.rangeHigh = rangeHigh;
+        this.range = rangeHigh - rangeLow;
+        this.threshold = this.range/2.0;
 
         converterTaskObj = TrcTaskMgr.createTask(instanceName + ".converterTask", this::converterTask);
     }   //TrcWrapValueConverter
@@ -111,9 +111,20 @@ public class TrcWrapValueConverter
      */
     public synchronized void resetConverter()
     {
-        prevValue = valueSupplier.getAsDouble();
+        prevReading = valueSupplier.getAsDouble();
         numCrossovers = 0;
     }   //resetConverter
+
+    /**
+     * This method returns a continuous value from the sensor reading.
+     *
+     * @param reading specifies the sensor reading.
+     * @return calculated continuous value.
+     */
+    private double getContinuousValue(double reading)
+    {
+        return reading + range * numCrossovers;
+    }   //getContinuousValue
 
     /**
      * This method returns the current continuous value.
@@ -122,7 +133,7 @@ public class TrcWrapValueConverter
      */
     public synchronized double getContinuousValue()
     {
-        return valueSupplier.getAsDouble() + (rangeHigh - rangeLow) * numCrossovers;
+        return getContinuousValue(valueSupplier.getAsDouble());
     }   //getContinuousValue
 
     /**
@@ -136,23 +147,33 @@ public class TrcWrapValueConverter
     private synchronized void converterTask(
         TrcTaskMgr.TaskType taskType, TrcRobot.RunMode runMode, boolean slowPeriodicLoop)
     {
-        double currValue = valueSupplier.getAsDouble();
+        double currReading = valueSupplier.getAsDouble();
 
-        if (Math.abs(currValue - prevValue) > (rangeHigh - rangeLow) / 2.0)
+        if (Math.abs(currReading - prevReading) > threshold)
         {
             // Detected crossover.
-            if (currValue > prevValue)
+            if (currReading > prevReading)
             {
                 // Crossing over backward.
                 numCrossovers--;
+                if (Math.abs(getContinuousValue(currReading) - getContinuousValue(prevReading)) > threshold)
+                {
+                    // Reading cannot jump more than threshold, it must be a glitch, ignore the crossover.
+                    numCrossovers++;
+                }
             }
             else
             {
                 // Crossing over forward.
                 numCrossovers++;
+                if (Math.abs(getContinuousValue(currReading) - getContinuousValue(prevReading)) > threshold)
+                {
+                    // Reading cannot jump more than threshold, it must be a glitch, ignore the crossover.
+                    numCrossovers--;
+                }
             }
         }
-        prevValue = currValue;
+        prevReading = currReading;
     }   //converterTask
 
 }   //class TrcWrapValueConverter

@@ -939,6 +939,13 @@ public class TrcPidController
                 {
                     onTarget = true;
                 }
+                tracer.traceDebug(
+                    instanceName,
+                    "NoOscillation: err=" + pidCtrlState.posError +
+                    ", errRate=" + pidCtrlState.velError +
+                    ", tolerance=" + tolerance +
+                    ", setPointSign=" + pidCtrlState.setPointSign +
+                    ", onTarget=" + onTarget);
             }
             //
             // We consider it on-target if error is within tolerance for the settling period.
