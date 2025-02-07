@@ -52,11 +52,11 @@ public class TrcPidController
      */
     public static class PidCoefficients
     {
-        public final double kP;
-        public final double kI;
-        public final double kD;
-        public final double kF;
-        public final double iZone;
+        public double kP;
+        public double kI;
+        public double kD;
+        public double kF;
+        public double iZone;
 
         /**
          * Constructor: Create an instance of the object.
@@ -112,16 +112,16 @@ public class TrcPidController
             return "(PIDFZ:" + kP + "," + kI + "," + kD + "," + kF + "," + iZone + ")";
         }   //toString
 
-        /**
-         * This method returns a copy of this object.
-         *
-         * @return a copy of this object.
-         */
-        @Override
-        public PidCoefficients clone()
-        {
-            return new PidCoefficients(kP, kI, kD, kF, iZone);
-        }   //clone
+//        /**
+//         * This method returns a copy of this object.
+//         *
+//         * @return a copy of this object.
+//         */
+//        @Override
+//        public PidCoefficients clone()
+//        {
+//            return new PidCoefficients(kP, kI, kD, kF, iZone);
+//        }   //clone
 
     }   //class PidCoefficients
 
@@ -132,9 +132,9 @@ public class TrcPidController
      */
     public static class FFCoefficients
     {
-        public final double kS;
-        public final double kV;
-        public final double kA;
+        public double kS;
+        public double kV;
+        public double kA;
 
         /**
          * Constructor: Create an instance of the object.
@@ -161,16 +161,16 @@ public class TrcPidController
             return "(SVA:" + kS + "," + kV + "," + kA + ")";
         }   //toString
 
-        /**
-         * This method returns a copy of this object.
-         *
-         * @return a copy of this object.
-         */
-        @Override
-        public TrcPidController.FFCoefficients clone()
-        {
-            return new TrcPidController.FFCoefficients(kS, kV, kA);
-        }   //clone
+//        /**
+//         * This method returns a copy of this object.
+//         *
+//         * @return a copy of this object.
+//         */
+//        @Override
+//        public TrcPidController.FFCoefficients clone()
+//        {
+//            return new TrcPidController.FFCoefficients(kS, kV, kA);
+//        }   //clone
 
     }   //class FFCoefficients
 
