@@ -156,21 +156,21 @@ public class TrcWrapValueConverter
             {
                 // Crossing over backward.
                 numCrossovers--;
-                if (Math.abs(getContinuousValue(currReading) - getContinuousValue(prevReading)) > threshold)
-                {
-                    // Reading cannot jump more than threshold, it must be a glitch, ignore the crossover.
-                    numCrossovers++;
-                }
+//                if (Math.abs(getContinuousValue(currReading) - getContinuousValue(prevReading)) > threshold)
+//                {
+//                    // Reading cannot jump more than threshold, it must be a glitch, ignore the crossover.
+//                    numCrossovers++;
+//                }
             }
             else
             {
                 // Crossing over forward.
                 numCrossovers++;
-                if (Math.abs(getContinuousValue(currReading) - getContinuousValue(prevReading)) > threshold)
-                {
-                    // Reading cannot jump more than threshold, it must be a glitch, ignore the crossover.
-                    numCrossovers--;
-                }
+//                if (Math.abs(getContinuousValue(currReading) - getContinuousValue(prevReading)) > threshold)
+//                {
+//                    // Reading cannot jump more than threshold, it must be a glitch, ignore the crossover.
+//                    numCrossovers--;
+//                }
             }
         }
         prevReading = currReading;
