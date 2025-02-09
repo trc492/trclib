@@ -728,23 +728,22 @@ public class TrcPidController
      */
     public void setTarget(double target, TrcWarpSpace warpSpace, boolean resetError)
     {
-        //
-        // Read from input device without holding a lock on this object, since this could
-        // be a long-running call.
-        // Note: if we are changing target, don't need to waste time to get current input because we are not
-        // updating error states anyway.
-        //
-        final double input = resetError? pidInput.get(): 0.0;
+//        // Note: if we are changing target, don't need to waste time to get current input because we are not
+//        // updating error states anyway.
+//        final double input = resetError? pidInput.get(): 0.0;
+        // Read from input device without holding a lock on this object, since this could be a long-running call.
+        final double input = pidInput.get();
 
         synchronized (pidCtrlState)
         {
             double error;
 
-            if (resetError)
-            {
-                pidCtrlState.input = input;
-            }
-
+//            if (resetError)
+//            {
+//                pidCtrlState.input = input;
+//            }
+//
+            pidCtrlState.input = input;
             if (!absSetPoint)
             {
                 //
@@ -1022,7 +1021,6 @@ public class TrcPidController
         synchronized (pidCtrlState)
         {
             pidCtrlState.input = input;
-
             // If posSetPoint parameter is null, setpoints were set by setTarget call and have not changed.
             if (posSetpoint != null)
             {
@@ -1033,7 +1031,8 @@ public class TrcPidController
                     // clear previous timestamp that will cause differential and integral error to be reset.
                     pidCtrlState.timestamp = null;
                 }
-                pidCtrlState.posSetpoint = posSetpoint;
+                // Relative setpoint is only applicable for position setpoint, all other setpoints are absolute.
+                pidCtrlState.posSetpoint = absSetPoint? posSetpoint: pidCtrlState.input + posSetpoint;
                 pidCtrlState.velSetpoint = velSetpoint != null? velSetpoint: 0.0;
                 pidCtrlState.accelSetpoint = accelSetpoint != null? accelSetpoint: 0.0;
             }
@@ -1052,6 +1051,7 @@ public class TrcPidController
                 double errorBound = (pidCtrlState.inputMax - pidCtrlState.inputMin) / 2.0;
                 pidCtrlState.posError = inputMod(pidCtrlState.posError, -errorBound, errorBound);
             }
+            pidCtrlState.setPointSign = Math.signum(pidCtrlState.posError);
 
             // Calculate velocity error (differential error).
             // If deltaTime is zero, this is the first call to pid-calculate or the posSetpoint has changed.
