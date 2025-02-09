@@ -1191,7 +1191,7 @@ public class TrcPurePursuitDrive
                 (xPosPidCtrl == null || xPosPidCtrl.isOnTarget(posTolerance)) && yPosPidCtrl.isOnTarget(posTolerance);
             boolean headingOnTarget = turnPidCtrl.isOnTarget(turnTolerance, 0.0);
 
-            tracer.traceInfo(
+            tracer.traceDebug(
                 instanceName,
                 "OnTarget(pos/turn)=%s/%s, timedOut=%s, stalled=%s", posOnTarget, headingOnTarget, timedOut, stalled);
             if (beepDevice != null && (stalled || timedOut))
