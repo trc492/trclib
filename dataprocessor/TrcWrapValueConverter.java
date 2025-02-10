@@ -24,6 +24,7 @@ package trclib.dataprocessor;
 
 import java.util.function.DoubleSupplier;
 
+import trclib.robotcore.TrcDbgTrace;
 import trclib.robotcore.TrcRobot;
 import trclib.robotcore.TrcTaskMgr;
 
@@ -38,6 +39,7 @@ import trclib.robotcore.TrcTaskMgr;
  */
 public class TrcWrapValueConverter
 {
+    public TrcDbgTrace tracer;
     protected final String instanceName;
     protected final DoubleSupplier valueSupplier;
     private final double range, threshold;
@@ -57,6 +59,7 @@ public class TrcWrapValueConverter
      */
     public TrcWrapValueConverter(String instanceName, DoubleSupplier valueSupplier, double rangeLow, double rangeHigh)
     {
+        this.tracer = new TrcDbgTrace();
         this.instanceName = instanceName;
         this.valueSupplier = valueSupplier;
         this.range = rangeHigh - rangeLow;
@@ -151,6 +154,9 @@ public class TrcWrapValueConverter
 
         if (Math.abs(currReading - prevReading) > threshold)
         {
+            tracer.traceDebug(
+                instanceName, "prevReading=%f, currReading=%s, numCrossovers=%d",
+                prevReading, currReading, numCrossovers);
             // Detected crossover.
             if (currReading > prevReading)
             {
@@ -172,6 +178,9 @@ public class TrcWrapValueConverter
 //                    numCrossovers--;
 //                }
             }
+            tracer.traceDebug(
+                instanceName, "numCrossovers=%d, prevValue=%f, currValue=%f",
+                numCrossovers, getContinuousValue(prevReading), getContinuousValue(currReading));
         }
         prevReading = currReading;
     }   //converterTask

@@ -40,7 +40,7 @@ import trclib.timer.TrcTimer;
  */
 public class TrcPidController
 {
-    public static final double DEF_SETTLING_TIME = 0.1;
+    public static final double DEF_SETTLING_TIME = 0.2;
     private static final double DEF_STALL_DETECTION_DELAY = 0.5;
     private static final double DEF_STALL_DETECTION_TIMEOUT = 0.2;
     private static final double DEF_STALL_ERR_RATE_THRESHOLD = 1.0;
@@ -112,17 +112,6 @@ public class TrcPidController
             return "(PIDFZ:" + kP + "," + kI + "," + kD + "," + kF + "," + iZone + ")";
         }   //toString
 
-//        /**
-//         * This method returns a copy of this object.
-//         *
-//         * @return a copy of this object.
-//         */
-//        @Override
-//        public PidCoefficients clone()
-//        {
-//            return new PidCoefficients(kP, kI, kD, kF, iZone);
-//        }   //clone
-
     }   //class PidCoefficients
 
     /**
@@ -160,17 +149,6 @@ public class TrcPidController
         {
             return "(SVA:" + kS + "," + kV + "," + kA + ")";
         }   //toString
-
-//        /**
-//         * This method returns a copy of this object.
-//         *
-//         * @return a copy of this object.
-//         */
-//        @Override
-//        public TrcPidController.FFCoefficients clone()
-//        {
-//            return new TrcPidController.FFCoefficients(kS, kV, kA);
-//        }   //clone
 
     }   //class FFCoefficients
 
@@ -1024,19 +1002,11 @@ public class TrcPidController
             // If posSetPoint parameter is null, setpoints were set by setTarget call and have not changed.
             if (posSetpoint != null)
             {
-                if (posSetpoint != pidCtrlState.posSetpoint)
-                {
-                    // posSetpoint has changed either because this is the first call to pid-calculate since target is
-                    // set or target has changed mid-run. This invalidates differential and integral errors. We will
-                    // clear previous timestamp that will cause differential and integral error to be reset.
-                    pidCtrlState.timestamp = null;
-                }
                 // Relative setpoint is only applicable for position setpoint, all other setpoints are absolute.
                 pidCtrlState.posSetpoint = absSetPoint? posSetpoint: pidCtrlState.input + posSetpoint;
                 pidCtrlState.velSetpoint = velSetpoint != null? velSetpoint: 0.0;
                 pidCtrlState.accelSetpoint = accelSetpoint != null? accelSetpoint: 0.0;
             }
-
             // Calculate detla time.
             Double prevTimestamp = pidCtrlState.timestamp;
             pidCtrlState.timestamp = TrcTimer.getCurrentTime();
