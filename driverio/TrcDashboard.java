@@ -109,6 +109,24 @@ public abstract class TrcDashboard
      */
     public abstract void putString(String key, String value);
 
+    /**
+     * This method returns the value of the named object data read from the Telemetry class. If the named data does
+     * not exist, it is created and assigned the given default value. Then it is sent to the Driver Station.
+     *
+     * @param key specifies the name associated with the object data.
+     * @param defaultValue specifies the default value if it does not exist.
+     * @return object data value.
+     */
+    public abstract Object getObject(String key, Object defaultValue);
+
+    /**
+     * This method sets the named object data with the given value and also sends it to the Driver Station.
+     *
+     * @param key specifies the name associated with the object data.
+     * @param value specifies the data value.
+     */
+    public abstract void putObject(String key, Object value);
+
     protected static final int MAX_NUM_TEXTLINES = 16;
     protected static final String displayKeyFormat = "%02d";
     protected static TrcDashboard instance = null;
