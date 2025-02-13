@@ -843,7 +843,13 @@ public class TrcPidController
                     stalled = currTime > pidCtrlState.stallDetectionStartTime + pidCtrlState.stallDetectionTimeout;
                     if (stalled)
                     {
-                        tracer.traceInfo(instanceName, "PID stalled.");
+                        tracer.traceInfo(
+                            instanceName,
+                            "PID stalled (currTime=" + currTime +
+                            ", stallStartTime=" + pidCtrlState.stallDetectionStartTime +
+                            ", timeout=" + pidCtrlState.stallDetectionTimeout +
+                            ", velError=" + pidCtrlState.velError +
+                            ", errRateThreshold=" + pidCtrlState.stallErrorRateThreshold + ").");
                     }
                 }
             }
@@ -1122,7 +1128,7 @@ public class TrcPidController
     @Deprecated
     public double getOutput(double input, double setPoint)
     {
-        return calculate(input, setPoint);
+        return calculate(input, setPoint, null, null);
     }   //getOutput
 
     /**
@@ -1134,7 +1140,7 @@ public class TrcPidController
     @Deprecated
     public double getOutput()
     {
-        return calculate(pidInput.get(), pidCtrlState.posSetpoint);
+        return calculate(pidInput.get(), null, null, null);
     }   //getOutput
 
     /**
