@@ -136,7 +136,7 @@ public class TrcPurePursuitDrive
     private int pathIndex;
     private TrcPose2D referencePose;
     private TrcPose2D relTargetPose;
-    private TrcPose2D relRobotPose;
+    private boolean fastModeEnabled = true;
     private Double targetVelocity = null;
     private boolean nearStartPath = false;
     private boolean nearEndPath = false;
@@ -401,6 +401,16 @@ public class TrcPurePursuitDrive
         yPosPidCtrl.setStallDetectionEnabled(enabled);
         turnPidCtrl.setStallDetectionEnabled(enabled);
     }   //setStallDetectionEnabled
+
+    /**
+     * This method enables/disables fast mode.
+     *
+     * @param enabled specifies true to enable fast mode, false to disable.
+     */
+    public synchronized void setFastModeEnabled(boolean enabled)
+    {
+        this.fastModeEnabled = enabled;
+    }   //setFastModeEnabled
 
     /**
      * This method enables/disables incremental turn when running a path segment. Incremental turn is only
@@ -1081,7 +1091,7 @@ public class TrcPurePursuitDrive
         if (path != null)
         {
             TrcPose2D absRobotPose = driveBase.getFieldPosition();
-            relRobotPose = absRobotPose.relativeTo(referencePose, true);
+            TrcPose2D relRobotPose = absRobotPose.relativeTo(referencePose, true);
             TrcWaypoint targetPoint = getFollowingPoint(relRobotPose);
             TrcWaypoint segmentStart = path.getWaypoint(pathIndex - 1);
             TrcWaypoint segmentEnd = path.getWaypoint(pathIndex);
@@ -1101,18 +1111,17 @@ public class TrcPurePursuitDrive
 
             tracer.traceDebug(
                 instanceName,
-                "***** relRobotPose=%s, lookaheadPose=%s, index=%d/%d, segStart=%s(vel=%f), segEnd=%s(vel=%f), " +
-                "segLen=%f, nearStartPath=%s, nearEndPath=%s",
-                relRobotPose, targetPoint.pose, pathIndex, path.getSize(), segmentStart.pose, segmentStart.velocity,
-                segmentEnd.pose, segmentEnd.velocity, segmentLength, nearStartPath, nearEndPath);
+                "\n\tabsRobotPose=%s\n\trelRobotPose=%s\n\tlookaheadPose=%s\n\tindex=%d/%d, segStart=%s(vel=%f), " +
+                "segEnd=%s(vel=%f), len=%f",
+                absRobotPose, relRobotPose, targetPoint.pose, pathIndex, path.getSize(), segmentStart.pose,
+                segmentStart.velocity, segmentEnd.pose, segmentEnd.velocity, segmentLength);
             relTargetPose = getRelativeTargetPose(relRobotPose, targetPoint, segmentStart, segmentEnd);
             targetVelocity = getTargetVelocity(relRobotPose, segmentStart, segmentEnd);
 
             double xPosPower = xPosPidCtrl != null? xPosPidCtrl.calculate(absRobotPose.x, relTargetPose.x): 0.0;
             double yPosPower = yPosPidCtrl.calculate(absRobotPose.y, relTargetPose.y);
             double turnPower = turnPidCtrl.calculate(
-                absRobotPose.angle,
-                warpSpace.getOptimizedTarget(relTargetPose.angle, absRobotPose.angle));
+                absRobotPose.angle, warpSpace.getOptimizedTarget(relTargetPose.angle, absRobotPose.angle));
             double velPower = segmentLength > 0.0? velPidCtrl.calculate(getPathRobotVelocity(), targetVelocity): 0.0;
             double theta = Math.atan2(relTargetPose.x, relTargetPose.y);
             xPosPower = xPosPidCtrl == null? 0.0:
@@ -1159,8 +1168,8 @@ public class TrcPurePursuitDrive
                     ", stalled=" + stalled +
                     ", timeout=" + timedOut +
                     ", posOnTarget=" + posOnTarget +
-                    ",headingOnTarget=" + headingOnTarget +
-                    ",robotPose=" + driveBase.getFieldPosition());
+                    ", headingOnTarget=" + headingOnTarget +
+                    ", robotPose=" + driveBase.getFieldPosition());
                 if (tracePidInfo)
                 {
                     if (xPosPidCtrl != null) xPosPidCtrl.printPidInfo(tracer, verbosePidInfo, battery);
@@ -1223,10 +1232,7 @@ public class TrcPurePursuitDrive
         TrcPose2D relRobotPose, TrcWaypoint lookaheadPoint, TrcWaypoint segmentStart, TrcWaypoint segmentEnd)
     {
         TrcPose2D targetPose;
-        double distanceToStart = relRobotPose.distanceTo(segmentStart.pose);
-        double distanceToEnd = relRobotPose.distanceTo(segmentEnd.pose);
         double targetHeading;
-
         targetPose = lookaheadPoint.pose.relativeTo(relRobotPose, true);
         if (targetHeadingOffset != null)
         {
@@ -1245,7 +1251,10 @@ public class TrcPurePursuitDrive
             targetHeading = targetPose.angle + referencePose.angle + relRobotPose.angle;
         }
 
-        if (nearStartPath || nearEndPath || distanceToStart > lookaheadRadius && distanceToEnd > lookaheadRadius)
+        double distanceToStart = relRobotPose.distanceTo(segmentStart.pose);
+        double distanceToEnd = relRobotPose.distanceTo(segmentEnd.pose);
+        if (nearStartPath || nearEndPath ||
+            fastModeEnabled && distanceToStart > lookaheadRadius && distanceToEnd > lookaheadRadius)
         {
             // Use segment end as position target.
             targetPose = segmentEnd.pose.relativeTo(relRobotPose, true);
@@ -1260,7 +1269,10 @@ public class TrcPurePursuitDrive
     }   //getRelativeTargetPose
 
     /**
-     * This method determines the next target velocity.
+     * This method determines the next target velocity. If the projected robot pose is on the segment, it interpolates
+     * the velocity on the motion profile segment linearly with respect to time. If the projected pose is outside of
+     * the start point of the segment, it will use the start point velocity. If the projected pose is outside of the
+     * end point of the segment, it will use the end point velocity.
      *
      * @param relRobotPose specifies the robot pose relative to the beginning of path.
      * @param segmentStart specifies the start waypoint of the current path segment.
@@ -1269,93 +1281,115 @@ public class TrcPurePursuitDrive
      */
     private double getTargetVelocity(TrcPose2D relRobotPose, TrcWaypoint segmentStart, TrcWaypoint segmentEnd)
     {
-        double targetVel;
+        TrcPose2D projectedPoseOnSegment = orthogonalProjectedPointOnLine(
+            segmentStart.pose, segmentEnd.pose, relRobotPose);
+        double segmentLen = segmentStart.distanceTo(segmentEnd);
+        double distToStart = projectedPoseOnSegment.distanceTo(segmentStart.pose);
+        double distToEnd = projectedPoseOnSegment.distanceTo(segmentEnd.pose);
 
-        if (segmentEnd.distanceTo(segmentStart) == 0.0)
+        if (distToEnd > segmentLen)
         {
-            // Turn only.
-            targetVel = 0.0;
-            tracer.traceDebug(instanceName, "TargetVel=0.0 (Turn-only)");
+            // Projected pose is outside of the start point, use start point velocity.
+            return segmentStart.velocity;
+        }
+        else if (distToStart > segmentLen)
+        {
+            // Projected pose is outside of the end point, use end point velocity.
+            return segmentEnd.velocity;
         }
         else
         {
-            double distanceToStart = relRobotPose.distanceTo(segmentStart.pose);
-            double distanceToEnd = relRobotPose.distanceTo(segmentEnd.pose);
-            boolean nearSegStart = false, nearSegEnd = false;   // These are for tracing.
-
-            if (nearEndPath)
-            {
-                targetVel = segmentEnd.velocity;
-            }
-            else if (distanceToEnd <= lookaheadRadius)
-            {
-                targetVel = segmentEnd.velocity;
-                nearSegEnd = true;
-            }
-            else if (distanceToStart <= lookaheadRadius)
-            {
-                targetVel = segmentStart.velocity != 0.0? segmentStart.velocity:
-                    interpolate(
-                        segmentStart.velocity, segmentEnd.velocity, distanceToStart/(distanceToStart + distanceToEnd));
-                nearSegStart = true;
-            }
-            else
-            {
-                targetVel = interpolate(
-                    segmentStart.velocity, segmentEnd.velocity, distanceToStart/(distanceToStart + distanceToEnd));
-            }
-            tracer.traceDebug(
-                instanceName, "TargetVel=%f (NearSegStart=%s, NearSegEnd=%s, robotVel=%f)",
-                targetVel, nearSegStart, nearSegEnd, getPathRobotVelocity());
+            // Projected pose is on the segment, interpolate the velocity linearly with respect to time.
+            return segmentStart.velocity +
+                   (segmentEnd.velocity - segmentStart.velocity) * Math.sqrt(distToStart/segmentLen);
         }
-
-        return targetVel;
-    }   //getTargetVelocity
-
-//    /**
-//     * This method orthogonally projects the given point onto the given line segment and returns the projected point.
-//     * <a href="https://math.stackexchange.com/questions/62633/orthogonal-projection-of-a-point-onto-a-line">...</a>
-//     * <p>
-//     * m = (Y1 - Y0)/(X1 - X0)
-//     * <p>
-//     * -1/m = (Y - Yp)/(X - Xp)
-//     * => m(Y - Yp) = Xp - X
-//     * => mY - mYp = Xp - X
-//     * => Xp + mYp = X + mY
-//     * <p>
-//     * Yp = mXp + b
-//     * => Xp + m(mXp + b) = X + mY
-//     * => Xp + m^2*Xp + mb = X + mY
-//     * => Xp(1 + m^2) + mb = X + mY
-//     * => Xp = (X + mY - mb)/(1 + m^2)
-//     * => Xp = (X + m(Y - b))/(1 + m^2)
-//     * <p>
-//     * Yp = m(X + mY - mb)/(1 + m^2) + b
-//     * => Yp = (mX + m^2*Y - m^2*b)/(1 + m^2) + b
-//     * => Yp = (mX + m^2*Y - m^2*b + b + m^2*b)/(1 + m^2)
-//     * => Yp = (mX + m^2*Y + b)/(1 + m^2)
-//     * => Yp = (m*(X + mY) + b)/(1 + m^2)
-//     *
-//     * @param lineStart specifies the starting point of the line segment.
-//     * @param lineEnd specifies the ending point of the line segment.
-//     * @param point specifies the point to be projected onto the line segment.
-//     * @return projected point.
-//     */
-//    private TrcPose2D orthogonalProjectedPointOnLine(TrcPose2D lineStart, TrcPose2D lineEnd, TrcPose2D point)
-//    {
-//        double deltaX = lineEnd.x - lineStart.x;
-//        if (deltaX != 0.0)
+//        double targetVel;
+//
+//        if (segmentEnd.distanceTo(segmentStart) == 0.0)
 //        {
-//            double m = (lineEnd.y - lineStart.y)/deltaX;
-//            double b = lineStart.y - m*lineStart.x;
-//            double den = 1.0 + m*m;
-//            return new TrcPose2D((point.x + m*(point.y - b))/den, (m*(point.x + m*point.y) + b)/den, point.angle);
+//            // Turn only.
+//            targetVel = 0.0;
+//            tracer.traceDebug(instanceName, "TargetVel=0.0 (Turn-only)");
 //        }
 //        else
 //        {
-//            return new TrcPose2D(lineStart.x, point.y, point.angle);
+//            double distanceToStart = relRobotPose.distanceTo(segmentStart.pose);
+//            double distanceToEnd = relRobotPose.distanceTo(segmentEnd.pose);
+//            boolean nearSegStart = false, nearSegEnd = false;   // These are for tracing.
+//
+//            if (nearEndPath)
+//            {
+//                targetVel = segmentEnd.velocity;
+//            }
+//            else if (distanceToEnd <= lookaheadRadius)
+//            {
+//                targetVel = segmentEnd.velocity;
+//                nearSegEnd = true;
+//            }
+//            else if (distanceToStart <= lookaheadRadius)
+//            {
+//                targetVel = segmentStart.velocity != 0.0? segmentStart.velocity:
+//                    interpolateVelocityByDistanceWeight(
+//                        segmentStart.velocity, segmentEnd.velocity, distanceToStart/(distanceToStart + distanceToEnd));
+//                nearSegStart = true;
+//            }
+//            else
+//            {
+//                targetVel = interpolate(
+//                    segmentStart.velocity, segmentEnd.velocity, distanceToStart/(distanceToStart + distanceToEnd));
+//            }
+//            tracer.traceDebug(
+//                instanceName, "TargetVel=%f (NearSegStart=%s, NearSegEnd=%s, robotVel=%f)",
+//                targetVel, nearSegStart, nearSegEnd, getPathRobotVelocity());
 //        }
-//    }   //orthogonalProjectedPointOnLine
+//
+//        return targetVel;
+    }   //getTargetVelocity
+
+    /**
+     * This method orthogonally projects the given point onto the given line segment and returns the projected point.
+     * <a href="https://math.stackexchange.com/questions/62633/orthogonal-projection-of-a-point-onto-a-line">...</a>
+     * <p>
+     * m = (Y1 - Y0)/(X1 - X0)
+     * <p>
+     * -1/m = (Y - Yp)/(X - Xp)
+     * => m(Y - Yp) = Xp - X
+     * => mY - mYp = Xp - X
+     * => Xp + mYp = X + mY
+     * <p>
+     * Yp = mXp + b
+     * => Xp + m(mXp + b) = X + mY
+     * => Xp + m^2*Xp + mb = X + mY
+     * => Xp(1 + m^2) + mb = X + mY
+     * => Xp = (X + mY - mb)/(1 + m^2)
+     * => Xp = (X + m(Y - b))/(1 + m^2)
+     * <p>
+     * Yp = m(X + mY - mb)/(1 + m^2) + b
+     * => Yp = (mX + m^2*Y - m^2*b)/(1 + m^2) + b
+     * => Yp = (mX + m^2*Y - m^2*b + b + m^2*b)/(1 + m^2)
+     * => Yp = (mX + m^2*Y + b)/(1 + m^2)
+     * => Yp = (m*(X + mY) + b)/(1 + m^2)
+     *
+     * @param lineStart specifies the starting point of the line segment.
+     * @param lineEnd specifies the ending point of the line segment.
+     * @param point specifies the point to be projected onto the line segment.
+     * @return projected point.
+     */
+    private TrcPose2D orthogonalProjectedPointOnLine(TrcPose2D lineStart, TrcPose2D lineEnd, TrcPose2D point)
+    {
+        double deltaX = lineEnd.x - lineStart.x;
+        if (deltaX != 0.0)
+        {
+            double m = (lineEnd.y - lineStart.y)/deltaX;
+            double b = lineStart.y - m*lineStart.x;
+            double den = 1.0 + m*m;
+            return new TrcPose2D((point.x + m*(point.y - b))/den, (m*(point.x + m*point.y) + b)/den, point.angle);
+        }
+        else
+        {
+            return new TrcPose2D(lineStart.x, point.y, point.angle);
+        }
+    }   //orthogonalProjectedPointOnLine
 
     /**
      * Returns a weighted value between given values.
