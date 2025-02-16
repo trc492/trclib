@@ -2029,8 +2029,10 @@ public abstract class TrcMotor implements TrcMotorController, TrcExclusiveSubsys
             double currPos = getPosition();
             // currTarget is undetermined if the motor is stop.
             Double currTarget = power < 0.0? (Double)minPos: power > 0.0? (Double)maxPos: null;
+            tracer.traceDebug(
+                instanceName, "power=%f, minPos=%f, maxPos=%f, holdTarget=%s, currTarget=%s, prevTarget=%s",
+                power, minPos, maxPos, holdTarget, currTarget, taskParams.prevPosTarget);
             power = Math.abs(power);
-
             synchronized (taskParams)
             {
                 // Target position changes when:
