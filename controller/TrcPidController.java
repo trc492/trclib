@@ -156,7 +156,6 @@ public class TrcPidController
      * PID controller needs input from a feedback device for calculating the output power. Whoever is providing this
      * input must implement this interface.
      */
-    @Deprecated
     public interface PidInput
     {
         /**
@@ -339,7 +338,6 @@ public class TrcPidController
      *
      * @return PidInput interface.
      */
-    @Deprecated
     public PidInput getPidInput()
     {
         return pidInput;
@@ -706,9 +704,6 @@ public class TrcPidController
      */
     public void setTarget(double target, TrcWarpSpace warpSpace, boolean resetError)
     {
-//        // Note: if we are changing target, don't need to waste time to get current input because we are not
-//        // updating error states anyway.
-//        final double input = resetError? pidInput.get(): 0.0;
         // Read from input device without holding a lock on this object, since this could be a long-running call.
         final double input = pidInput.get();
 
@@ -716,11 +711,6 @@ public class TrcPidController
         {
             double error;
 
-//            if (resetError)
-//            {
-//                pidCtrlState.input = input;
-//            }
-//
             pidCtrlState.input = input;
             if (!absSetPoint)
             {
@@ -994,14 +984,6 @@ public class TrcPidController
      */
     public double calculate(double input, Double posSetpoint, Double velSetpoint, Double accelSetpoint)
     {
-        /*
-        double settlingStartTime = 0.0;
-        double setPointSign = 1.0;
-        double stallDetectionDelay = 0.0;
-        double stallDetectionTimeout = 0.0;
-        double stallErrorRateThreshold = 0.0;
-        Double stallDetectionStartTime = null;
-        */
         synchronized (pidCtrlState)
         {
             pidCtrlState.input = input;
@@ -1041,10 +1023,8 @@ public class TrcPidController
             if (pidCtrlState.deltaTime > 0.0 && pidCtrlState.pidCoeffs.kI != 0.0 &&
                 (pidCtrlState.pidCoeffs.iZone == 0.0 || absPosError <= pidCtrlState.pidCoeffs.iZone))
             {
-                //
                 // Make sure the total error doesn't get wound up too much exceeding the Integral range.
                 // This is essentially capping the I-term to within the range of minIntegral and maxIntegral.
-                //
                 pidCtrlState.totalPosError = TrcUtil.clipRange(
                     pidCtrlState.totalPosError + pidCtrlState.posError * pidCtrlState.deltaTime,
                     minIntegral / pidCtrlState.pidCoeffs.kI, maxIntegral / pidCtrlState.pidCoeffs.kI);
@@ -1120,28 +1100,15 @@ public class TrcPidController
     }   //calculate
 
     /**
-     * This method calculates the PID output applying the PID equation to the given set point target and current
+     * This method calculates the PID output applying the PID equation to the given set point targets and current
      * input value.
      *
-     * @return PID output value.
+     * @return calculated PID output value.
      */
-    @Deprecated
-    public double getOutput(double input, double setPoint)
-    {
-        return calculate(input, setPoint, null, null);
-    }   //getOutput
-
-    /**
-     * This method calculates the PID output applying the PID equation to the given set point target and current
-     * input value.
-     *
-     * @return PID output value.
-     */
-    @Deprecated
-    public double getOutput()
+    public double calculate()
     {
         return calculate(pidInput.get(), null, null, null);
-    }   //getOutput
+    }   //calculate
 
     /**
      * This method converts a continuous input value to a wrap value by performing a modulus operation.

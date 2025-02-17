@@ -71,10 +71,10 @@ public class TrcCascadePidController extends TrcPidController
      * @return output of the Cascade PID controller.
      */
     @Override
-    public synchronized double getOutput()
+    public synchronized double calculate()
     {
-        secondaryCtrl.setTarget(super.getOutput());
-        return secondaryCtrl.getOutput();
+        secondaryCtrl.setTarget(super.calculate());
+        return secondaryCtrl.calculate();
     }   //getOutput
 
 }   //class TrcCascadePidController

@@ -1403,9 +1403,9 @@ public class TrcPidDrive
     {
         pidDriveTaskProfiler.recordLoopStartTime();
         long startNanoTime = TrcTimer.getNanoTime();
-        double xPower = turnOnly || xPidCtrl == null? 0.0: xPidCtrl.getOutput();
-        double yPower = turnOnly || yPidCtrl == null? 0.0: yPidCtrl.getOutput();
-        double turnPower = turnPidCtrl == null? 0.0: turnPidCtrl.getOutput();
+        double xPower = turnOnly || xPidCtrl == null? 0.0: xPidCtrl.calculate();
+        double yPower = turnOnly || yPidCtrl == null? 0.0: yPidCtrl.calculate();
+        double turnPower = turnPidCtrl == null? 0.0: turnPidCtrl.calculate();
 
         double currTime = TrcTimer.getCurrentTime();
         boolean expired = currTime >= expiredTime;

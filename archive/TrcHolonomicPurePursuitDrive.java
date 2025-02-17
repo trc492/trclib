@@ -689,9 +689,9 @@ public class TrcHolonomicPurePursuitDrive
             turnPidCtrl.setTarget(warpSpace.getOptimizedTarget(point.pose.angle, pose.angle));
         }
 
-        double posPower = posPidCtrl.getOutput();
-        double turnPower = turnPidCtrl.getOutput();
-        double velPower = velPidCtrl.getOutput();
+        double posPower = posPidCtrl.calculate();
+        double turnPower = turnPidCtrl.calculate();
+        double velPower = velPidCtrl.calculate();
         turnPower = TrcUtil.clipRange(turnPower, -rotOutputLimit, rotOutputLimit);
 
         double r = posPower + velPower;

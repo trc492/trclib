@@ -1078,7 +1078,7 @@ public abstract class TrcDriveBase implements TrcExclusiveSubsystem
                     tracer.traceDebug(moduleName, "Maintain robot heading at " + gyroAssistHeading);
                 }
                 // Robot is going straight, use turnPid controller to calculate GyroAssist power.
-                gyroAssistPower = gyroAssistPidCtrl.getOutput();
+                gyroAssistPower = gyroAssistPidCtrl.calculate();
             }
         }
 
@@ -1171,7 +1171,7 @@ public abstract class TrcDriveBase implements TrcExclusiveSubsystem
         TrcPidController tippingPidCtrl = xTippingControl? xTippingPidCtrl: yTippingPidCtrl;
         double tolerance = xTippingControl? xTippingTolerance: yTippingTolerance;
 
-        power = tippingPidCtrl.getOutput();
+        power = tippingPidCtrl.calculate();
         if (Math.abs(tippingPidCtrl.getError()) <= tolerance)
         {
             power = 0.0;

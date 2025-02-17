@@ -3086,7 +3086,7 @@ public abstract class TrcMotor implements TrcMotorController, TrcExclusiveSubsys
                             {
                                 // We are either holding target or we are not yet onTarget or stalled or timed out,
                                 // keep applying PID calculated power.
-                                double pidPower = taskParams.softwarePidCtrl.getOutput();
+                                double pidPower = taskParams.softwarePidCtrl.calculate();
                                 // Apply power limit to the calculated PID power.
                                 // Only applicable for Position control mode.
                                 double limitedPower = taskParams.powerLimit != null?
