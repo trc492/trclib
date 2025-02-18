@@ -654,17 +654,6 @@ public class TrcPidController
     }   //restoreOutputLimit
 
     /**
-     * This method returns the current set point value.
-     *
-     * @return current set point.
-     */
-    @Deprecated
-    public double getTarget()
-    {
-        return pidCtrlState.posSetpoint;
-    }   //getTarget
-
-    /**
      * This method returns the position set point value.
      *
      * @return position set point.

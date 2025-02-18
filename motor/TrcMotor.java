@@ -130,7 +130,7 @@ public abstract class TrcMotor implements TrcMotorController, TrcExclusiveSubsys
     /**
      * This class encapsulates a follower motor with the associated scale factor.
      */
-    protected class FollowerMotor
+    protected static class FollowerMotor
     {
         TrcMotor motor;
         double valueScale;
@@ -1064,7 +1064,7 @@ public abstract class TrcMotor implements TrcMotorController, TrcExclusiveSubsys
         {
             if (softwarePidEnabled)
             {
-                target = taskParams.softwarePidCtrl != null? taskParams.softwarePidCtrl.getTarget(): 0.0;
+                target = taskParams.softwarePidCtrl != null? taskParams.softwarePidCtrl.getPositionSetpoint(): 0.0;
             }
             else
             {
@@ -3105,8 +3105,8 @@ public abstract class TrcMotor implements TrcMotorController, TrcExclusiveSubsys
                                     onTarget,
                                     taskParams.softwarePidCtrl == posPidCtrl ? getPosition() :
                                         taskParams.softwarePidCtrl == velPidCtrl ? getVelocity() : getCurrent(),
-                                    taskParams.softwarePidCtrl.getTarget(), expired, stalled, taskParams.powerLimit,
-                                    pidPower, limitedPower, power);
+                                    taskParams.softwarePidCtrl.getPositionSetpoint(), expired, stalled,
+                                    taskParams.powerLimit, pidPower, limitedPower, power);
                                 if (tracePidInfo)
                                 {
                                     taskParams.softwarePidCtrl.printPidInfo(tracer, verbosePidInfo, battery);
