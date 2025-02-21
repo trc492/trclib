@@ -510,6 +510,32 @@ public class TrcPidController
     }   //setPidCoefficients
 
     /**
+     * This method returns the current FF coefficients.
+     *
+     * @return current FF coefficients.
+     */
+    public FFCoefficients getFFCoefficients()
+    {
+        synchronized (pidCtrlState)
+        {
+            return pidCtrlState.ffCoeffs;
+        }
+    }   //getFFCoefficients
+
+    /**
+     * This method sets new FF coefficients.
+     *
+     * @param ffCoeffs specifies new FF coefficients.
+     */
+    public void setFFCoefficients(FFCoefficients ffCoeffs)
+    {
+        synchronized (pidCtrlState)
+        {
+            pidCtrlState.ffCoeffs = ffCoeffs;
+        }
+    }   //setFFCoefficients
+
+    /**
      * This method sets the ramp rate of the PID controller output. It is sometimes useful to limit the acceleration
      * of the output of the PID controller. For example, the strafing PID controller on a mecanum drive base may
      * benefit from a lower acceleration to minimize wheel slippage.
@@ -688,10 +714,8 @@ public class TrcPidController
      *
      * @param target specifies the target set point.
      * @param warpSpace specifies the warp space object if the target is in one, null if not.
-     * @param resetError specifies true to reset error state, false otherwise. It is important to preserve error
-     *                   state if we are changing target before the PID operation is completed.
      */
-    public void setTarget(double target, TrcWarpSpace warpSpace, boolean resetError)
+    public void setTarget(double target, TrcWarpSpace warpSpace)
     {
         // Read from input device without holding a lock on this object, since this could be a long-running call.
         final double input = pidInput.get();
@@ -728,39 +752,14 @@ public class TrcPidController
                 error *= -1.0;
             }
 
-            if (resetError)
-            {
-                pidCtrlState.posError = error;
-                pidCtrlState.velError = 0.0;
-                pidCtrlState.totalPosError = 0.0;
-                pidCtrlState.setPointSign = Math.signum(error);
-
-                pidCtrlState.timestamp = pidCtrlState.settlingStartTime = TrcTimer.getCurrentTime();
-            }
+            pidCtrlState.velSetpoint = 0.0;
+            pidCtrlState.accelSetpoint = 0.0;
+            pidCtrlState.posError = error;
+            pidCtrlState.velError = 0.0;
+            pidCtrlState.totalPosError = 0.0;
+            pidCtrlState.setPointSign = Math.signum(error);
+            pidCtrlState.timestamp = pidCtrlState.settlingStartTime = TrcTimer.getCurrentTime();
         }
-    }   //setTarget
-
-    /**
-     * This methods sets the target set point.
-     *
-     * @param target specifies the target set point.
-     * @param warpSpace specifies the warp space object if the target is in one, null if not.
-     */
-    public void setTarget(double target, TrcWarpSpace warpSpace)
-    {
-        setTarget(target, warpSpace, true);
-    }   //setTarget
-
-    /**
-     * This methods sets the target set point.
-     *
-     * @param target specifies the target set point.
-     * @param resetError specifies true to reset error state, false otherwise. It is important to preserve error
-     *                   state if we are changing target before the PID operation is completed.
-     */
-    public void setTarget(double target, boolean resetError)
-    {
-        setTarget(target, null, resetError);
     }   //setTarget
 
     /**
@@ -770,7 +769,7 @@ public class TrcPidController
      */
     public void setTarget(double target)
     {
-        setTarget(target, null, true);
+        setTarget(target, null);
     }   //setTarget
 
     /**
@@ -962,17 +961,26 @@ public class TrcPidController
     }   //getCurrentInput
 
    /**
-     * This method calculates the PID output applying the PID equation to the given set point targets and current
-     * input value. It also applies FeedForward if provided.
-     *
-     * @param input specifies the current input value from the feedback device.
-     * @param posSetpoint specifies the position setpoint.
-     * @param velSetpoint specifies the velocity setpoint.
-     * @param accelSetpoint specifies the acceleration setpoint.
-     * @return calculated PID output value.
-     */
-    public double calculate(double input, Double posSetpoint, Double velSetpoint, Double accelSetpoint)
+    * This method calculates the PID output applying the PID equation to the given set point targets and current
+    * input value. It also applies FeedForward if provided.
+    *
+    * @param input specifies the current input value from the feedback device, null if not provided in which case
+    *         pidInput is called to get the current input value.
+    * @param posSetpoint specifies the position setpoint, null if not provided in which case the previous setpoint is
+    *        used unchanged.
+    * @param velSetpoint specifies the velocity setpoint, null if not provided in which case the previous setupoint is
+    *        used unchanged (could be null).
+    * @param accelSetpoint specifies the acceleration setpoint, null if not provided in which case the previous
+    *        setpoint is used unchanged (could be null).
+    * @return calculated PID output value.
+    */
+    public double calculate(Double input, Double posSetpoint, Double velSetpoint, Double accelSetpoint)
     {
+        if (input == null)
+        {
+            input = pidInput.get();
+        }
+
         synchronized (pidCtrlState)
         {
             pidCtrlState.input = input;
@@ -980,9 +988,17 @@ public class TrcPidController
             if (posSetpoint != null)
             {
                 // Relative setpoint is only applicable for position setpoint, all other setpoints are absolute.
-                pidCtrlState.posSetpoint = absSetPoint? posSetpoint: pidCtrlState.input + posSetpoint;
-                pidCtrlState.velSetpoint = velSetpoint != null? velSetpoint: 0.0;
-                pidCtrlState.accelSetpoint = accelSetpoint != null? accelSetpoint: 0.0;
+                pidCtrlState.posSetpoint = absSetPoint ? posSetpoint : pidCtrlState.input + posSetpoint;
+            }
+
+            if (velSetpoint != null)
+            {
+                pidCtrlState.velSetpoint = velSetpoint;
+            }
+
+            if (accelSetpoint != null)
+            {
+                pidCtrlState.accelSetpoint = accelSetpoint;
             }
             // Calculate detla time.
             Double prevTimestamp = pidCtrlState.timestamp;

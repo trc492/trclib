@@ -90,17 +90,6 @@ public class TrcWaypoint
     }   //TrcWaypoint
 
     /**
-     * Constructor: Create an instance of the object.
-     *
-     * @param data specifies an array with 8 elements: timeStep, x, y, heading pos, vel, accel and jerk.
-     * @throws ArrayIndexOutOfBoundsException if array size is less than 8.
-     */
-    public TrcWaypoint(double[] data)
-    {
-        this(data[0], data[1], data[2], data[3], data[4], data[5], data[6], data[7]);
-    }   //TrcWaypoint
-
-    /**
      * Copy constructor: Create a copy of the given object.
      *
      * @param other specifies the other object to be copied.
@@ -118,6 +107,17 @@ public class TrcWaypoint
     }   //TrcWaypoint
 
     /**
+     * Constructor: Create an instance of the object.
+     *
+     * @param data specifies an array with 8 elements: timeStep, x, y, heading pos, vel, accel and jerk.
+     * @throws ArrayIndexOutOfBoundsException if array size is less than 8.
+     */
+    public TrcWaypoint(double[] data)
+    {
+        this(data[0], data[1], data[2], data[3], data[4], data[5], data[6], data[7]);
+    }   //TrcWaypoint
+
+    /**
      * Constructor: Create an instance of the object from a given 2D pose.
      *
      * @param pose specifies the position of the way point.
@@ -125,8 +125,33 @@ public class TrcWaypoint
      */
     public TrcWaypoint(TrcPose2D pose, TrcPose2D velocity)
     {
-        // Codereview: should pose be cloned?
-        this(0, pose, 0.0, velocity != null? TrcUtil.magnitude(velocity.x, velocity.y): 0.0, 0, 0);
+        this(0.0, pose, 0.0, velocity != null? TrcUtil.magnitude(velocity.x, velocity.y): 0.0, 0.0, 0.0);
+        simpleWaypoint = true;
+    }   //TrcWaypoint
+
+    /**
+     * Constructor: Create an instance of the object from a given 2D pose.
+     *
+     * @param pose specifies the position of the way point.
+     * @param velocity specifies the velocity of the way point.
+     */
+    public TrcWaypoint(TrcPose2D pose, double velocity)
+    {
+        this(0.0, pose, 0.0, velocity, 0.0, 0.0);
+        simpleWaypoint = true;
+    }   //TrcWaypoint
+
+    /**
+     * Constructor: Create an instance of the object from a given 2D pose.
+     *
+     * @param x specifies the x position in the path reference frame.
+     * @param y specifies the y position in the path reference frame.
+     * @param heading specifies the heading of the robot at this point.
+     * @param velocity specifies the tangential velocity of the wheel at this point.
+     */
+    public TrcWaypoint(double x, double y, double heading, double velocity)
+    {
+        this(0.0, new TrcPose2D(x, y, heading), 0.0, velocity, 0.0, 0.0);
         simpleWaypoint = true;
     }   //TrcWaypoint
 
