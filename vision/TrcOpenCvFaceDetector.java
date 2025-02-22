@@ -104,10 +104,10 @@ public abstract class TrcOpenCvFaceDetector extends TrcOpenCvDetector
          * @return rotated rectangle angle.
          */
         @Override
-        public Double getRotatedAngle()
+        public Double getRotatedRectAngle()
         {
             return 0.0;
-        }   //getRotatedAngle
+        }   //getRotatedRectAngle
 
         /**
          * This method returns the pose of the detected object relative to the camera.

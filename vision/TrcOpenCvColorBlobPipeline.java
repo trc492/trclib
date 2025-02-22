@@ -22,13 +22,17 @@
 
 package trclib.vision;
 
+import org.opencv.calib3d.Calib3d;
 import org.opencv.core.Core;
 import org.opencv.core.CvType;
 import org.opencv.core.Mat;
+import org.opencv.core.MatOfDouble;
 import org.opencv.core.MatOfInt;
 import org.opencv.core.MatOfPoint;
 import org.opencv.core.MatOfPoint2f;
+import org.opencv.core.MatOfPoint3f;
 import org.opencv.core.Point;
+import org.opencv.core.Point3;
 import org.opencv.core.Rect;
 import org.opencv.core.RotatedRect;
 import org.opencv.core.Scalar;
@@ -53,40 +57,137 @@ public class TrcOpenCvColorBlobPipeline implements TrcOpenCvPipeline<TrcOpenCvDe
      * This class encapsulates info of the detected object. It extends TrcOpenCvDetector.DetectedObject that requires
      * it to provide a method to return the detected object rect and area.
      */
-    public static class DetectedObject extends TrcOpenCvDetector.DetectedObject<MatOfPoint>
+    public class DetectedObject extends TrcOpenCvDetector.DetectedObject<MatOfPoint>
     {
+        public final double objWidth;
+        public final double objHeight;
         public final RotatedRect rotatedRect;
+        public final double rotatedRectAngle;
         public final Point[] vertices = new Point[4];
-        public final double pixelWidth, pixelHeight, rotatedAngle;
+        public final TrcPose2D objPose;
+        public final double pixelWidth, pixelHeight;
 
         /**
          * Constructor: Creates an instance of the object.
          *
          * @param label specifies the object label.
          * @param contour specifies the contour of the detected object.
+         * @param objWidth specifies object width in real world units (the long edge).
+         * @param objHeight specifies object height in real world units (the short edge).
+         * @param cameraMatrix specifies the camera lens characteristic matrix (fx, fy, cx, cy).
+         * @param distCoeffs specifies the camera lens distortion coefficients.
          */
-        public DetectedObject(String label, MatOfPoint contour)
+        public DetectedObject(
+            String label, MatOfPoint contour, double objWidth, double objHeight, Mat cameraMatrix,
+            MatOfDouble distCoeffs)
         {
             super(label, contour);
+            this.objWidth = objWidth;
+            this.objHeight = objHeight;
             rotatedRect = Imgproc.minAreaRect(new MatOfPoint2f(contour.toArray()));
-            rotatedRect.points(vertices);
-            double side1 = TrcUtil.magnitude(vertices[1].x - vertices[0].x, vertices[1].y - vertices[0].y);
-            double side2 = TrcUtil.magnitude(vertices[2].x - vertices[1].x, vertices[2].y - vertices[1].y);
-            if (side2 > side1)
+            // The angle OpenCV gives us can be ambiguous, so look at the shape of the rectangle to fix that.
+            if (rotatedRect.size.width < rotatedRect.size.height)
             {
-                pixelWidth = side1;
-                pixelHeight = side2;
-                rotatedAngle = Math.toDegrees(Math.atan(
-                    (vertices[1].y - vertices[0].y) / (vertices[1].x - vertices[0].x)));
+                // pixelWidth is the longer edge.
+                rotatedRectAngle = rotatedRect.angle + 90.0;
+                pixelWidth = rotatedRect.size.height;
+                pixelHeight = rotatedRect.size.width;
             }
             else
             {
-                pixelWidth = side2;
-                pixelHeight = side1;
-                rotatedAngle = Math.toDegrees(Math.atan(
-                    (vertices[2].y - vertices[1].y) / (vertices[2].x - vertices[1].x)));
+                rotatedRectAngle = rotatedRect.angle;
+                pixelWidth = rotatedRect.size.width;
+                pixelHeight = rotatedRect.size.height;
+            }
+            // Get the 2D image points from the detected rectangle corners
+            rotatedRect.points(vertices);
+
+            // Solve PnP: assuming the object is a rectangle with known dimensions.
+            if (cameraMatrix != null && distCoeffs != null &&
+                Calib3d.solvePnP(
+                    // Define the 3D coordinates of the object corners in the object coordinate space
+                    objPoints,                                  // Object points in 3D
+                    new MatOfPoint2f(orderPoints(vertices)),    // Corresponding image points
+                    cameraMatrix,
+                    distCoeffs,
+                    rvec,
+                    tvec))
+            {
+                objPose = new TrcPose2D(-tvec.get(1, 0)[0], tvec.get(0, 0)[0], rvec.get(2, 0)[0]);
+            }
+            else
+            {
+                // Caller did not provide camera matrix nor distortion coefficients so we can't call solvePnP.
+                // return null so caller will determine object pose by Homography.
+                objPose = null;
             }
         }   //DetectedObject
+
+        private Point[] orderPoints(Point[] pts)
+        {
+            // Orders the array of 4 points in the order: top-left, top-right, bottom-right, bottom-left
+            Point[] orderedPts = new Point[4];
+
+            // Sum and difference of x and y coordinates
+            double[] sum = new double[4];
+            double[] diff = new double[4];
+
+            for (int i = 0; i < 4; i++)
+            {
+                sum[i] = pts[i].x + pts[i].y;
+                diff[i] = pts[i].y - pts[i].x;
+            }
+
+            // Top-left point has the smallest sum
+            int tlIndex = indexOfMin(sum);
+            orderedPts[0] = pts[tlIndex];
+
+            // Bottom-right point has the largest sum
+            int brIndex = indexOfMax(sum);
+            orderedPts[2] = pts[brIndex];
+
+            // Top-right point has the smallest difference
+            int trIndex = indexOfMin(diff);
+            orderedPts[1] = pts[trIndex];
+
+            // Bottom-left point has the largest difference
+            int blIndex = indexOfMax(diff);
+            orderedPts[3] = pts[blIndex];
+
+            return orderedPts;
+        }
+
+        private int indexOfMin(double[] array)
+        {
+            int index = 0;
+            double min = array[0];
+
+            for (int i = 1; i < array.length; i++)
+            {
+                if (array[i] < min)
+                {
+                    min = array[i];
+                    index = i;
+                }
+            }
+            return index;
+        }
+
+        private int indexOfMax(double[] array)
+        {
+            int index = 0;
+            double max = array[0];
+
+            for (int i = 1; i < array.length; i++)
+            {
+                if (array[i] > max)
+                {
+                    max = array[i];
+                    index = i;
+                }
+            }
+            return index;
+        }
 
         /**
          * This method returns the rect of the detected object.
@@ -140,10 +241,10 @@ public class TrcOpenCvColorBlobPipeline implements TrcOpenCvPipeline<TrcOpenCvDe
          * @return rotated rectangle angle.
          */
         @Override
-        public Double getRotatedAngle()
+        public Double getRotatedRectAngle()
         {
-            return rotatedAngle;
-        }   //getRotatedAngle
+            return rotatedRectAngle;
+        }   //getRotatedRectAngle
 
         /**
          * This method returns the pose of the detected object relative to the camera.
@@ -153,8 +254,7 @@ public class TrcOpenCvColorBlobPipeline implements TrcOpenCvPipeline<TrcOpenCvDe
         @Override
         public TrcPose2D getObjectPose()
         {
-            // ColorBlob detection does not provide detected object pose, let caller use homography to calculate it.
-            return null;
+            return objPose;
         }   //getObjectPose
 
         /**
@@ -165,8 +265,7 @@ public class TrcOpenCvColorBlobPipeline implements TrcOpenCvPipeline<TrcOpenCvDe
         @Override
         public Double getObjectWidth()
         {
-            // ColorBlob detection does not provide detected object width, let caller use homography to calculate it.
-            return null;
+            return objWidth;
         }   //getObjectWidth
 
         /**
@@ -177,8 +276,7 @@ public class TrcOpenCvColorBlobPipeline implements TrcOpenCvPipeline<TrcOpenCvDe
         @Override
         public Double getObjectDepth()
         {
-            // ColorBlob detection does not provide detected object depth, let caller use homography to calculate it.
-            return null;
+            return TrcUtil.magnitude(objPose.x, objPose.y);
         }   //getObjectDepth
 
         /**
@@ -280,11 +378,18 @@ public class TrcOpenCvColorBlobPipeline implements TrcOpenCvPipeline<TrcOpenCvDe
     private double[] colorThresholds;
     private final FilterContourParams filterContourParams;
     private final boolean externalContourOnly;
+    private final double objWidth;
+    private final double objHeight;
+    private final MatOfPoint3f objPoints;
+    private final Mat cameraMatrix;
+    private final MatOfDouble distCoeffs;
     private final Mat colorConversionOutput = new Mat();
     private final Mat colorThresholdOutput = new Mat();
     private final Mat morphologyOutput = new Mat();
     private final Mat hierarchy = new Mat();
     private final Mat[] intermediateMats;
+    private final Mat rvec = new Mat();
+    private final Mat tvec = new Mat();
 
     private final AtomicReference<DetectedObject[]> detectedObjectsUpdate = new AtomicReference<>();
     private int intermediateStep = 0;
@@ -307,10 +412,14 @@ public class TrcOpenCvColorBlobPipeline implements TrcOpenCvPipeline<TrcOpenCvDe
      * @param filterContourParams specifies the parameters for filtering contours, can be null if not provided.
      * @param externalContourOnly specifies true for finding external contours only, false otherwise (not applicable
      *        if filterContourParams is null).
+     * @param objWidth specifies object width in real world units (the long edge).
+     * @param objHeight specifies object height in real world units (the short edge).
+     * @param cameraMatrix specifies the camera lens characteristics (fx, fy, cx, cy), null if not provided.
+     * @param distCoeffs specifies the camera lens distortion coefficients, null if not provided.
      */
     public TrcOpenCvColorBlobPipeline(
         String instanceName, Integer colorConversion, double[] colorThresholds, FilterContourParams filterContourParams,
-        boolean externalContourOnly)
+        boolean externalContourOnly, double objWidth, double objHeight, Mat cameraMatrix, MatOfDouble distCoeffs)
     {
         if (colorThresholds == null || colorThresholds.length != 6)
         {
@@ -323,6 +432,15 @@ public class TrcOpenCvColorBlobPipeline implements TrcOpenCvPipeline<TrcOpenCvDe
         this.colorThresholds = colorThresholds;
         this.filterContourParams = filterContourParams;
         this.externalContourOnly = externalContourOnly;
+        this.objWidth = objWidth;
+        this.objHeight = objHeight;
+        this.objPoints = new MatOfPoint3f(
+            new Point3(-objWidth/2.0, -objHeight/2.0, 0.0),
+            new Point3(objWidth/2.0, -objHeight/2.0, 0.0),
+            new Point3(objWidth/2.0, objHeight/2.0, 0.0),
+            new Point3(-objWidth/2.0, objHeight/2.0, 0.0));
+        this.cameraMatrix = cameraMatrix;
+        this.distCoeffs = distCoeffs;
         intermediateMats = new Mat[4];
         intermediateMats[0] = null;
         intermediateMats[1] = colorConversionOutput;
@@ -491,7 +609,8 @@ public class TrcOpenCvColorBlobPipeline implements TrcOpenCvPipeline<TrcOpenCvDe
             detectedObjects = new DetectedObject[contoursOutput.size()];
             for (int i = 0; i < detectedObjects.length; i++)
             {
-                detectedObjects[i] = new DetectedObject(instanceName, contoursOutput.get(i));
+                detectedObjects[i] = new DetectedObject(
+                    instanceName, contoursOutput.get(i), objWidth, objHeight, cameraMatrix, distCoeffs);
             }
 
             if (annotateEnabled)
@@ -507,6 +626,7 @@ public class TrcOpenCvColorBlobPipeline implements TrcOpenCvPipeline<TrcOpenCvDe
                 Imgproc.drawMarker(
                     output, new Point(imageCols/2.0, imageRows/2.0), rectColor, Imgproc.MARKER_CROSS,
                     Math.max(imageRows, imageCols), ANNOTATE_RECT_THICKNESS);
+                drawAxes(output);
             }
 
             detectedObjectsUpdate.set(detectedObjects);
@@ -609,6 +729,30 @@ public class TrcOpenCvColorBlobPipeline implements TrcOpenCvPipeline<TrcOpenCvDe
     {
         return getIntermediateOutput(intermediateStep);
     }   //getSelectedOutput
+
+    private void drawAxes(Mat img)
+    {
+        // Length of the axis lines
+        double axisLength = 5.0;
+
+        // Define the points in 3D space for the axes
+        MatOfPoint3f axisPoints = new MatOfPoint3f(
+            new Point3(0, 0, 0),
+            new Point3(axisLength, 0, 0),
+            new Point3(0, axisLength, 0),
+            new Point3(0, 0, -axisLength)); // Z axis pointing away from the camera
+
+        // Project the 3D points to 2D image points
+        MatOfPoint2f imagePoints = new MatOfPoint2f();
+        Calib3d.projectPoints(axisPoints, rvec, tvec, cameraMatrix, distCoeffs, imagePoints);
+
+        Point[] imgPts = imagePoints.toArray();
+
+        // Draw the axis lines
+        Imgproc.line(img, imgPts[0], imgPts[1], new Scalar(0, 0, 255), 2); // X axis in red
+        Imgproc.line(img, imgPts[0], imgPts[2], new Scalar(0, 255, 0), 2); // Y axis in green
+        Imgproc.line(img, imgPts[0], imgPts[3], new Scalar(255, 0, 0), 2); // Z axis in blue
+    }   //drawAxes
 
     /**
      * This method filters out contours that do not meet certain criteria.

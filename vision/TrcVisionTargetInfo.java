@@ -75,7 +75,7 @@ public class TrcVisionTargetInfo<O extends TrcVisionTargetInfo.ObjectInfo>
          *
          * @return rotated rectangle angle.
          */
-        Double getRotatedAngle();
+        Double getRotatedRectAngle();
 
         /**
          * This method returns the projected 2D pose on the ground of the detected object relative to the camera.
@@ -112,7 +112,7 @@ public class TrcVisionTargetInfo<O extends TrcVisionTargetInfo.ObjectInfo>
     public double objArea;
     public Double objPixelWidth;
     public Double objPixelHeight;
-    public Double objRotatedAngle;
+    public Double objRotatedRectAngle;
     public TrcPose2D objPose;
     public Double objWidth;
     public Double objDepth;
@@ -136,7 +136,7 @@ public class TrcVisionTargetInfo<O extends TrcVisionTargetInfo.ObjectInfo>
         this.objArea = detectedObj.getObjectArea();
         this.objPixelWidth = detectedObj.getPixelWidth();
         this.objPixelHeight = detectedObj.getPixelHeight();
-        this.objRotatedAngle = detectedObj.getRotatedAngle();
+        this.objRotatedRectAngle = detectedObj.getRotatedRectAngle();
         if (homographyMapper == null)
         {
             // Caller did not provide homography mapper, it means the caller is doing pose/width/depth calculation
@@ -202,7 +202,7 @@ public class TrcVisionTargetInfo<O extends TrcVisionTargetInfo.ObjectInfo>
             objRect != null? objRect.y + objRect.height: 0, objArea,
             objPixelWidth != null? objPixelWidth: 0.0,
             objPixelHeight != null? objPixelHeight: 0.0,
-            objRotatedAngle != null? objRotatedAngle: 0.0,
+            objRotatedRectAngle != null? objRotatedRectAngle: 0.0,
             objWidth != null? objWidth: 0.0,
             objDepth != null? objDepth: 0.0);
     }   //toString
