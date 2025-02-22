@@ -137,15 +137,10 @@ public class TrcVisionTargetInfo<O extends TrcVisionTargetInfo.ObjectInfo>
         this.objPixelWidth = detectedObj.getPixelWidth();
         this.objPixelHeight = detectedObj.getPixelHeight();
         this.objRotatedRectAngle = detectedObj.getRotatedRectAngle();
-        if (homographyMapper == null)
-        {
-            // Caller did not provide homography mapper, it means the caller is doing pose/width/depth calculation
-            // itself.
-            objPose = detectedObj.getObjectPose();
-            objWidth = detectedObj.getObjectWidth();
-            objDepth = detectedObj.getObjectDepth();
-        }
-        else
+        this.objPose = detectedObj.getObjectPose();
+        this.objWidth = detectedObj.getObjectWidth();
+        this.objDepth = detectedObj.getObjectDepth();
+        if (objPose == null && homographyMapper != null)
         {
             // Caller provided homography mapper, we will use it to calculate the detected object pose.
             Point topLeft = homographyMapper.mapPoint(new Point(objRect.x, objRect.y));

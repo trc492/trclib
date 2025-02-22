@@ -287,7 +287,7 @@ public class TrcOpenCvColorBlobPipeline implements TrcOpenCvPipeline<TrcOpenCvDe
         @Override
         public Double getObjectDepth()
         {
-            return TrcUtil.magnitude(objPose.x, objPose.y);
+            return objPose != null? TrcUtil.magnitude(objPose.x, objPose.y): null;
         }   //getObjectDepth
 
         /**
