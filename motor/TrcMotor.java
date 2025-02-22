@@ -159,6 +159,7 @@ public abstract class TrcMotor implements TrcMotorController, TrcExclusiveSubsys
         double velocity;
         double acceleration;
         double deceleration;
+        @SuppressWarnings("unused")
         double jerk;
 
         MotionProfile(double velocity, double acceleration, double deceleration, double jerk)

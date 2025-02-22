@@ -123,6 +123,17 @@ public class TrcOpenCvColorBlobPipeline implements TrcOpenCvPipeline<TrcOpenCvDe
             }
         }   //DetectedObject
 
+        /**
+         * Constructor: Creates an instance of the object.
+         *
+         * @param label specifies the object label.
+         * @param contour specifies the contour of the detected object.
+         */
+        public DetectedObject(String label, MatOfPoint contour)
+        {
+            this(label, contour, 0.0, 0.0, null, null);
+        }   //DetectedObject
+
         private Point[] orderPoints(Point[] pts)
         {
             // Orders the array of 4 points in the order: top-left, top-right, bottom-right, bottom-left
