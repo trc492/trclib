@@ -460,6 +460,29 @@ public class TrcOpenCvColorBlobPipeline implements TrcOpenCvPipeline<TrcOpenCvDe
     }   //TrcOpenCvColorBlobPipeline
 
     /**
+     * Constructor: Create an instance of the object.
+     *
+     * @param instanceName specifies the instance name.
+     * @param colorConversion specifies color space conversion, can be null if no color space conversion.
+     *        Note: FTC ECOV input Mat format is RGBA, so you need to do Imgproc.COLOR_RGBA2xxx or
+     *        Imgproc.COLOR_RGB2xxx conversion. For FRC, the Desktop OpenCV input Mat format is BGRA, so you need to
+     *        do Imgproc.COLOR_BGRAxxx or Imgproc.COLOR_BGR2xxx conversion.
+     * @param colorThresholds specifies an array of color thresholds. If color space is RGB, the array contains RGB
+     *        thresholds (minRed, maxRed, minGreen, maxGreen, minBlue, maxBlue). If color space is HSV, the array
+     *        contains HSV thresholds (minHue, maxHue, minSat, maxSat, minValue, maxValue).
+     * @param filterContourParams specifies the parameters for filtering contours, can be null if not provided.
+     * @param externalContourOnly specifies true for finding external contours only, false otherwise (not applicable
+     *        if filterContourParams is null).
+     */
+    public TrcOpenCvColorBlobPipeline(
+        String instanceName, Integer colorConversion, double[] colorThresholds, FilterContourParams filterContourParams,
+        boolean externalContourOnly)
+    {
+        this(instanceName, colorConversion, colorThresholds, filterContourParams, externalContourOnly,
+             0.0, 0.0, null, null);
+    }   //TrcOpenCvColorBlobPipeline
+
+    /**
      * This method returns the instance name.
      *
      * @return instance name.
