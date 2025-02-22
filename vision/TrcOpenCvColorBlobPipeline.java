@@ -113,7 +113,7 @@ public class TrcOpenCvColorBlobPipeline implements TrcOpenCvPipeline<TrcOpenCvDe
                     rvec,
                     tvec))
             {
-                objPose = new TrcPose2D(-tvec.get(1, 0)[0], tvec.get(0, 0)[0], rvec.get(2, 0)[0]);
+                objPose = new TrcPose2D(tvec.get(0, 0)[0], tvec.get(2, 0)[0], -(Math.toDegrees(rvec.get(1, 0)[0])));
             }
             else
             {
