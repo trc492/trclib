@@ -660,7 +660,10 @@ public class TrcOpenCvColorBlobPipeline implements TrcOpenCvPipeline<TrcOpenCvDe
                 Imgproc.drawMarker(
                     output, new Point(imageCols/2.0, imageRows/2.0), rectColor, Imgproc.MARKER_CROSS,
                     Math.max(imageRows, imageCols), ANNOTATE_RECT_THICKNESS);
-                drawAxes(output);
+                if (cameraMatrix != null)
+                {
+                    drawAxes(output);
+                }
             }
 
             detectedObjectsUpdate.set(detectedObjects);
