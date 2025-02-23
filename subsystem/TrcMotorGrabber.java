@@ -187,6 +187,16 @@ public class TrcMotorGrabber implements TrcExclusiveSubsystem
     }   //toString
 
     /**
+     * This method returns the grabber motor current.
+     *
+     * @return grabber motor current.
+     */
+    public double getCurrent()
+    {
+        return params.motor.getCurrent();
+    }   //getCurrent
+
+    /**
      * This method returns the current grabber motor power.
      *
      * @return current grabber motor power.
