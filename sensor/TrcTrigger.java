@@ -43,10 +43,31 @@ public interface TrcTrigger
     /**
      * This method arms the digital trigger. It enables the task that monitors the sensor state changes.
      *
+     * @param triggerDelay specifies the delay for arming the trigger.
      * @param triggerMode specifies the trigger mode that will signal the event.
      * @param event specifies the event to signal when the trigger state changed.
      */
-    void enableTrigger(TriggerMode triggerMode, TrcEvent event);
+    void enableTrigger(double triggerDelay, TriggerMode triggerMode, TrcEvent event);
+
+    /**
+     * This method arms the digital trigger. It enables the task that monitors the sensor state changes.
+     *
+     * @param triggerMode specifies the trigger mode that will signal the event.
+     * @param event specifies the event to signal when the trigger state changed.
+     */
+    default void enableTrigger(TriggerMode triggerMode, TrcEvent event)
+    {
+        enableTrigger(0.0, triggerMode, event);
+    }   //enableTrigger
+
+    /**
+     * This method arms the digital trigger. It enables the task that monitors the sensor state changes.
+     *
+     * @param triggerDelay specifies the delay for arming the trigger.
+     * @param triggerMode specifies the trigger mode that will trigger a callback.
+     * @param callback specifies the callback handler to notify when the trigger state changed.
+     */
+    void enableTrigger(double triggerDelay, TriggerMode triggerMode, TrcEvent.Callback callback);
 
     /**
      * This method arms the digital trigger. It enables the task that monitors the sensor state changes.
@@ -54,7 +75,10 @@ public interface TrcTrigger
      * @param triggerMode specifies the trigger mode that will trigger a callback.
      * @param callback specifies the callback handler to notify when the trigger state changed.
      */
-    void enableTrigger(TriggerMode triggerMode, TrcEvent.Callback callback);
+    default void enableTrigger(TriggerMode triggerMode, TrcEvent.Callback callback)
+    {
+        enableTrigger(0.0, triggerMode, callback);
+    }   //enableTrigger
 
     /**
      * This method disarms the trigger. It disables the task that monitors the sensor value.
