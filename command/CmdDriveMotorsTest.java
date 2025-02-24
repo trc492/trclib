@@ -24,6 +24,8 @@ package trclib.command;
 
 import java.util.Locale;
 
+import trclib.drivebase.TrcDriveBase;
+import trclib.drivebase.TrcSwerveDriveBase;
 import trclib.driverio.TrcDashboard;
 import trclib.robotcore.TrcDbgTrace;
 import trclib.robotcore.TrcEvent;
@@ -46,6 +48,7 @@ public class CmdDriveMotorsTest implements TrcRobot.RobotCommand
 
     private final TrcDashboard dashboard = TrcDashboard.getInstance();
     private final TrcDbgTrace tracer = new TrcDbgTrace();
+    private final TrcDriveBase driveBase;
     private final TrcMotor[] motors;
     private final double driveTime;
     private final double drivePower;
@@ -57,14 +60,16 @@ public class CmdDriveMotorsTest implements TrcRobot.RobotCommand
     /**
      * Constructor: Create an instance of the object.
      *
+     * @param driveBase specifies the drive base object.
      * @param motors specifies the array of motors on the drive base.
      * @param driveTime specifies the amount of drive time in seconds.
      * @param drivePower specifies the motor power.
      */
-    public CmdDriveMotorsTest(TrcMotor[] motors, double driveTime, double drivePower)
+    public CmdDriveMotorsTest(TrcDriveBase driveBase, TrcMotor[] motors, double driveTime, double drivePower)
     {
         final String moduleName = getClass().getSimpleName();
 
+        this.driveBase = driveBase;
         this.motors = motors;
         this.driveTime = driveTime;
         this.drivePower = drivePower;
@@ -130,6 +135,11 @@ public class CmdDriveMotorsTest implements TrcRobot.RobotCommand
             switch (state)
             {
                 case START:
+                    if (driveBase instanceof TrcSwerveDriveBase)
+                    {
+                        // Point all wheels absolute forward.
+                        ((TrcSwerveDriveBase) driveBase).setSteerAngle(0.0, false);
+                    }
                     //
                     // Spin a wheel at drivePower for driveTime seconds.
                     //
