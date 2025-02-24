@@ -22,6 +22,10 @@
 
 package trclib.vision;
 
+import org.apache.commons.math3.geometry.euclidean.threed.Rotation;
+import org.apache.commons.math3.geometry.euclidean.threed.RotationConvention;
+import org.apache.commons.math3.geometry.euclidean.threed.RotationOrder;
+import org.apache.commons.math3.geometry.euclidean.threed.Vector3D;
 import org.opencv.calib3d.Calib3d;
 import org.opencv.core.Core;
 import org.opencv.core.CvType;
@@ -45,6 +49,7 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import trclib.dataprocessor.TrcUtil;
 import trclib.pathdrive.TrcPose2D;
+import trclib.pathdrive.TrcPose3D;
 import trclib.robotcore.TrcDbgTrace;
 import trclib.timer.TrcTimer;
 
@@ -76,10 +81,11 @@ public class TrcOpenCvColorBlobPipeline implements TrcOpenCvPipeline<TrcOpenCvDe
          * @param objHeight specifies object height in real world units (the short edge).
          * @param cameraMatrix specifies the camera lens characteristic matrix (fx, fy, cx, cy).
          * @param distCoeffs specifies the camera lens distortion coefficients.
+         * @param cameraPose specifies the camera's 3D position on the robot.
          */
         public DetectedObject(
             String label, MatOfPoint contour, double objWidth, double objHeight, Mat cameraMatrix,
-            MatOfDouble distCoeffs)
+            MatOfDouble distCoeffs, TrcPose3D cameraPose)
         {
             super(label, contour);
             this.objWidth = objWidth;
@@ -113,7 +119,8 @@ public class TrcOpenCvColorBlobPipeline implements TrcOpenCvPipeline<TrcOpenCvDe
                     rvec,
                     tvec))
             {
-                objPose = new TrcPose2D(tvec.get(0, 0)[0], tvec.get(2, 0)[0], -(Math.toDegrees(rvec.get(1, 0)[0])));
+                objPose = projectPose(rvec, tvec, cameraPose);
+//                objPose = new TrcPose2D(tvec.get(0, 0)[0], tvec.get(2, 0)[0], -(Math.toDegrees(rvec.get(1, 0)[0])));
             }
             else
             {
@@ -131,8 +138,78 @@ public class TrcOpenCvColorBlobPipeline implements TrcOpenCvPipeline<TrcOpenCvDe
          */
         public DetectedObject(String label, MatOfPoint contour)
         {
-            this(label, contour, 0.0, 0.0, null, null);
+            this(label, contour, 0.0, 0.0, null, null, null);
         }   //DetectedObject
+
+        /**
+         * This method projects the result from SolvePnP to a 2D pose on the ground.
+         *
+         * @param rvec specifies the rotational vector from SolvePnP.
+         * @param tvec specifies the translational vector from SolvePnP.
+         * @param cameraPose specifies the camera's 3D position on the robot.
+         * @return projected 2D pose on the ground.
+         */
+        private TrcPose2D projectPose(Mat rvec, Mat tvec, TrcPose3D cameraPose)
+        {
+            Mat camera_rvec = cameraRVec(cameraPose);
+            Mat camera_tvec = cameraTVec(cameraPose);
+
+            Mat modelToRobot_rvec = new Mat();
+            Mat modelToRobot_tvec = new Mat();
+            Calib3d.composeRT(rvec, tvec, camera_rvec, camera_tvec, modelToRobot_rvec, modelToRobot_tvec);
+            Mat rotMat = new Mat();
+            Calib3d.Rodrigues(modelToRobot_rvec, rotMat);
+
+            double theta = Math.atan2(
+                -rotMat.get(1, 2)[0],
+                -rotMat.get(0, 2)[0]);
+
+            return new TrcPose2D(
+                -modelToRobot_tvec.get(1, 0)[0],
+                modelToRobot_tvec.get(0, 0)[0],
+                -Math.toDegrees(theta)
+            );
+        }   //projectPose
+
+        /**
+         * This method creates a rotational vector from the camera pose.
+         *
+         * @param cameraPose specifies the camera's 3D position on the robot.
+         * @return rotational vector of the camera on the robot.
+         */
+        private Mat cameraRVec(TrcPose3D cameraPose)
+        {
+//            trc conventions = yaw is CW around up, pitch is CCW around right, roll is CCW around forward
+//            standard conventions = yaw is CCW around up, pitch is CCW around left, roll is CCW around forward
+            double yaw = -Math.toRadians(cameraPose.yaw);
+            double pitch = -Math.toRadians(cameraPose.pitch);
+            double roll = Math.toRadians(cameraPose.roll);
+
+            Rotation rot = new Rotation(RotationOrder.ZYX, RotationConvention.VECTOR_OPERATOR, yaw, pitch, roll);
+            Vector3D axis = rot.getAxis(RotationConvention.VECTOR_OPERATOR);
+            double angle = rot.getAngle();
+
+            Mat rvec = new Mat(3, 1, CvType.CV_64F);
+            rvec.put(0, 0, axis.getX() * angle);
+            rvec.put(1, 0, axis.getY() * angle);
+            rvec.put(2, 0, axis.getZ() * angle);
+            return rvec;
+        }   //cameraRVec
+
+        /**
+         * This method creates a translational vector from the camera pose.
+         *
+         * @param cameraPose specifies the camera's 3D position on the robot.
+         * @return translational vector of the camera on the robot.
+         */
+        private Mat cameraTVec(TrcPose3D cameraPose)
+        {
+            Mat tvec = new Mat(3, 1, CvType.CV_64F);
+            tvec.put(0, 0, cameraPose.x);
+            tvec.put(1, 0, cameraPose.y);
+            tvec.put(2, 0, cameraPose.z);
+            return tvec;
+        }   //cameraTVec
 
         private Point[] orderPoints(Point[] pts)
         {
@@ -394,6 +471,7 @@ public class TrcOpenCvColorBlobPipeline implements TrcOpenCvPipeline<TrcOpenCvDe
     private final MatOfPoint3f objPoints;
     private final Mat cameraMatrix;
     private final MatOfDouble distCoeffs;
+    private final TrcPose3D cameraPose;
     private final Mat colorConversionOutput = new Mat();
     private final Mat colorThresholdOutput = new Mat();
     private final Mat morphologyOutput = new Mat();
@@ -430,7 +508,8 @@ public class TrcOpenCvColorBlobPipeline implements TrcOpenCvPipeline<TrcOpenCvDe
      */
     public TrcOpenCvColorBlobPipeline(
         String instanceName, Integer colorConversion, double[] colorThresholds, FilterContourParams filterContourParams,
-        boolean externalContourOnly, double objWidth, double objHeight, Mat cameraMatrix, MatOfDouble distCoeffs)
+        boolean externalContourOnly, double objWidth, double objHeight, Mat cameraMatrix, MatOfDouble distCoeffs,
+        TrcPose3D cameraPose)
     {
         if (colorThresholds == null || colorThresholds.length != 6)
         {
@@ -452,6 +531,7 @@ public class TrcOpenCvColorBlobPipeline implements TrcOpenCvPipeline<TrcOpenCvDe
             new Point3(-objWidth/2.0, objHeight/2.0, 0.0));
         this.cameraMatrix = cameraMatrix;
         this.distCoeffs = distCoeffs;
+        this.cameraPose = cameraPose;
         intermediateMats = new Mat[4];
         intermediateMats[0] = null;
         intermediateMats[1] = colorConversionOutput;
@@ -479,7 +559,7 @@ public class TrcOpenCvColorBlobPipeline implements TrcOpenCvPipeline<TrcOpenCvDe
         boolean externalContourOnly)
     {
         this(instanceName, colorConversion, colorThresholds, filterContourParams, externalContourOnly,
-             0.0, 0.0, null, null);
+             0.0, 0.0, null, null, null);
     }   //TrcOpenCvColorBlobPipeline
 
     /**
@@ -644,7 +724,7 @@ public class TrcOpenCvColorBlobPipeline implements TrcOpenCvPipeline<TrcOpenCvDe
             for (int i = 0; i < detectedObjects.length; i++)
             {
                 detectedObjects[i] = new DetectedObject(
-                    instanceName, contoursOutput.get(i), objWidth, objHeight, cameraMatrix, distCoeffs);
+                    instanceName, contoursOutput.get(i), objWidth, objHeight, cameraMatrix, distCoeffs, cameraPose);
             }
 
             if (annotateEnabled)
