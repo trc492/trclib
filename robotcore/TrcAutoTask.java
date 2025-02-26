@@ -23,34 +23,41 @@
 package trclib.robotcore;
 
 /**
- * This class implements auto-assist task. It is intended to be extended by a specific auto-assist task that will
- * implement the abstract methods performing the task.
+ * This class implements an auto task. It is intended to be extended by a specific auto task that will implement
+ * the abstract methods performing the task.
  */
 public abstract class TrcAutoTask<T>
 {
     /**
-     * This method is called to acquire ownership of all subsystems involved in the auto-assist operation. This is
-     * typically done before starting an auto-assist operation.
+     * This method is called to acquire ownership of all subsystems involved in the auto task operation. This is
+     * typically called before starting an auto task operation.
      *
+     * @param owner specifies the owner to acquire the subsystem ownerships.
      * @return true if acquired all subsystems ownership, false otherwise. It releases all ownership if any acquire
      *         failed.
      */
-    protected abstract boolean acquireSubsystemsOwnership();
+    protected abstract boolean acquireSubsystemsOwnership(String owner);
 
     /**
-     * This method is called to release ownership of all subsystems involved in the auto-assist operation. This is
-     * typically done if the auto-assist operation is completed or canceled.
-     */
-    protected abstract void releaseSubsystemsOwnership();
-
-    /**
-     * This method is called to stop all the subsystems.
-     */
-    protected abstract void stopSubsystems();
-
-    /**
-     * This methods is called periodically to run the auto-assist task state.
+     * This method is called to release ownership of all subsystems involved in the auto task operation. This is
+     * typically called if the auto task operation is completed or canceled.
      *
+     * @param owner specifies the owner that acquired the subsystem ownerships.
+     */
+    protected abstract void releaseSubsystemsOwnership(String owner);
+
+    /**
+     * This method is called to stop all the subsystems. This is typically called if the auto task operation is
+     * completed or canceled.
+     *
+     * @param owner specifies the owner that acquired the subsystem ownerships.
+     */
+    protected abstract void stopSubsystems(String owner);
+
+    /**
+     * This methods is called periodically to run the auto task state.
+     *
+     * @param owner specifies the owner that acquired the subsystem ownerships.
      * @param params specifies the task parameters.
      * @param state specifies the current state of the task.
      * @param taskType specifies the type of task being run.
@@ -59,14 +66,15 @@ public abstract class TrcAutoTask<T>
      *        false otherwise.
      */
     protected abstract void runTaskState(
-        Object params, T state, TrcTaskMgr.TaskType taskType, TrcRobot.RunMode runMode, boolean slowPeriodicLoop);
+        String owner, Object params, T state, TrcTaskMgr.TaskType taskType, TrcRobot.RunMode runMode,
+        boolean slowPeriodicLoop);
 
     public final TrcDbgTrace tracer;
     private final String instanceName;
-    private final String owner;
     private final TrcTaskMgr.TaskType taskType;
     private final TrcTaskMgr.TaskObject autoTaskObj;
     protected final TrcStateMachine<T> sm;
+    private String currOwner;
 
     private Object taskParams;
     private TrcEvent completionEvent;
@@ -75,17 +83,16 @@ public abstract class TrcAutoTask<T>
      * Constructor: Create an instance of the object.
      *
      * @param instanceName specifies the task name.
-     * @param owner specifies the owner to acquire ownership, can be null if not requiring ownership.
-     * @param taskType specifies the auto-assist task type (e.g. TaskType.FAST_POSTPERIODIC_TASK).
+     * @param taskType specifies the auto task type (typically TaskType.FAST_POSTPERIODIC_TASK).
      */
-    protected TrcAutoTask(String instanceName, String owner, TrcTaskMgr.TaskType taskType)
+    protected TrcAutoTask(String instanceName, TrcTaskMgr.TaskType taskType)
     {
         this.tracer = new TrcDbgTrace();
         this.instanceName = instanceName;
-        this.owner = owner;
         this.taskType = taskType;
         autoTaskObj = TrcTaskMgr.createTask(instanceName, this::autoTask);
         sm = new TrcStateMachine<>(instanceName);
+        currOwner = null;
     }   //TrcAutoTask
 
     /**
@@ -111,14 +118,19 @@ public abstract class TrcAutoTask<T>
     /**
      * This method is called by the subclass to start the auto task.
      *
+     * @param owner specifies the owner to acquire subsystem ownerships, can be null if not requiring ownership.
      * @param startState specifies the state to start the state machine.
      * @param taskParams specifies the task parameters.
      * @param completionEvent specifies the event to signal when the task is completed, can be null if none provided.
      */
-    protected void startAutoTask(T startState, Object taskParams, TrcEvent completionEvent)
+    protected void startAutoTask(String owner, T startState, Object taskParams, TrcEvent completionEvent)
     {
-        if (owner == null || acquireSubsystemsOwnership())
+        boolean acquiredOwnership = owner == null || acquireSubsystemsOwnership(owner);
+
+        if (acquiredOwnership)
         {
+            tracer.traceInfo(instanceName, "Successfully acquired subsystem ownerships on behalf of " + owner);
+            this.currOwner = owner;
             this.taskParams = taskParams;
             this.completionEvent = completionEvent;
             sm.start(startState);
@@ -126,23 +138,24 @@ public abstract class TrcAutoTask<T>
         }
         else
         {
-            tracer.traceWarn(instanceName, "Failed to acquire subsystems ownership.");
+            releaseSubsystemsOwnership(owner);
         }
     }   //startAutoTask
 
     /**
-     * This method is called by the subclass to cancel the auto-assist operation in progress if any.
+     * This method is called to cancel the auto task operation in progress if any.
      */
     protected void stopAutoTask(boolean completed)
     {
         if (isActive())
         {
             setTaskEnabled(false);
-            stopSubsystems();
+            stopSubsystems(currOwner);
 
-            if (owner != null)
+            if (currOwner != null)
             {
-                releaseSubsystemsOwnership();
+                releaseSubsystemsOwnership(currOwner);
+                currOwner = null;
             }
 
             if (completionEvent != null)
@@ -163,7 +176,7 @@ public abstract class TrcAutoTask<T>
     /**
      * This method checks if the auto task is active.
      *
-     * @return true if auto assist task is active, false otherwise.
+     * @return true if auto task is active, false otherwise.
      */
     public boolean isActive()
     {
@@ -171,7 +184,7 @@ public abstract class TrcAutoTask<T>
     }   //isActive
 
     /**
-     * This method enables/disables the auto-assist task.
+     * This method enables/disables the auto task.
      *
      * @param enabled specifies true to enable, false to disable.
      */
@@ -189,7 +202,7 @@ public abstract class TrcAutoTask<T>
     }   //setTaskEnabled
 
     /**
-     * This methods is called periodically to run the auto-assist task.
+     * This methods is called periodically to run the auto task.
      *
      * @param taskType specifies the type of task being run.
      * @param runMode specifies the competition mode (e.g. Autonomous, TeleOp, Test).
@@ -203,7 +216,7 @@ public abstract class TrcAutoTask<T>
         if (state != null)
         {
             tracer.tracePreStateInfo(sm.toString(), state);
-            runTaskState(taskParams, state, taskType, runMode, slowPeriodicLoop);
+            runTaskState(currOwner, taskParams, state, taskType, runMode, slowPeriodicLoop);
         }
     }   //autoTask
 
