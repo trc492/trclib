@@ -74,6 +74,7 @@ public abstract class TrcAutoTask<T>
     private final TrcTaskMgr.TaskType taskType;
     private final TrcTaskMgr.TaskObject autoTaskObj;
     protected final TrcStateMachine<T> sm;
+    private boolean stateTracingEnabled = true;
     private String currOwner;
 
     private Object taskParams;
@@ -129,7 +130,10 @@ public abstract class TrcAutoTask<T>
 
         if (acquiredOwnership)
         {
-            tracer.traceInfo(instanceName, "Successfully acquired subsystem ownerships on behalf of " + owner);
+            if (owner != null)
+            {
+                tracer.traceInfo(instanceName, "Successfully acquired subsystem ownerships on behalf of " + owner);
+            }
             this.currOwner = owner;
             this.taskParams = taskParams;
             this.completionEvent = completionEvent;
@@ -184,6 +188,16 @@ public abstract class TrcAutoTask<T>
     }   //isActive
 
     /**
+     * This method enables/disables state tracing.
+     *
+     * @param enabled specifies true to enable state tracing, false to disable.
+     */
+    public void setStateTracingEnabled(boolean enabled)
+    {
+        stateTracingEnabled = enabled;
+    }   //setStateTracingEnabled
+
+    /**
      * This method enables/disables the auto task.
      *
      * @param enabled specifies true to enable, false to disable.
@@ -215,7 +229,10 @@ public abstract class TrcAutoTask<T>
 
         if (state != null)
         {
-            tracer.tracePreStateInfo(sm.toString(), state);
+            if (stateTracingEnabled)
+            {
+                tracer.tracePreStateInfo(sm.toString(), state);
+            }
             runTaskState(currOwner, taskParams, state, taskType, runMode, slowPeriodicLoop);
         }
     }   //autoTask
