@@ -148,6 +148,8 @@ public abstract class TrcAutoTask<T>
 
     /**
      * This method is called to cancel the auto task operation in progress if any.
+     *
+     * @param completed specifies true if the task was completed, false if the task was canceled.
      */
     protected void stopAutoTask(boolean completed)
     {
