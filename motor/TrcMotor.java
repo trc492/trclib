@@ -1892,17 +1892,18 @@ public abstract class TrcMotor implements TrcMotorController, TrcExclusiveSubsys
         {
             boolean stopIt = false;
             double currPos = getPosition();
-            boolean forward = position > currPos;
             // Stop previous operation if there is one.
             stop(false);
             if (completionEvent != null)
             {
                 completionEvent.clear();
             }
-            // Perform hardware limit switch check. If motor controller supports hardware limit switches, both
-            // revLimitSwitch and fwdLimitSwitch should be null and therefore a no-op.
-            if (lowerLimitSwitchEnabled && !forward && lowerLimitSwitch.isActive() ||
-                upperLimitSwitchEnabled && forward && upperLimitSwitch.isActive())
+            // Perform hardware limit switch check.
+            // If motor controller supports hardware limit switches, both lowerLimitSwitch and upperLimitSwitch should
+            // be null and therefore a no-op.
+            boolean forward = position > currPos;
+            if (!forward && lowerLimitSwitch != null && lowerLimitSwitchEnabled && lowerLimitSwitch.isActive() ||
+                forward && upperLimitSwitch != null && upperLimitSwitchEnabled && upperLimitSwitch.isActive())
             {
                 stopIt = true;
             }
