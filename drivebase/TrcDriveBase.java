@@ -373,6 +373,18 @@ public abstract class TrcDriveBase implements TrcExclusiveSubsystem
     }   //driveTimerHandler
 
     /**
+     * This method resets the field forward heading to the robot's current heading. This is only applicable if the
+     * robot is in FIELD mode.
+     */
+    public void resetFieldForwardHeading()
+    {
+        if (driveOrientation == DriveOrientation.FIELD)
+        {
+            fieldForwardHeading = getHeading();
+        }
+    }   //resetFieldForwardHeading
+
+    /**
      * This method sets the drive orientation mode.
      *
      * @param orientation specifies the drive orientation (FIELD, ROBOT, INVERTED).
@@ -386,9 +398,9 @@ public abstract class TrcDriveBase implements TrcExclusiveSubsystem
             driveOrientation = orientation;
             // If switching to FIELD oriented driving, reset robot heading so that the current robot heading is
             // "forward".
-            if (resetHeading && driveOrientation == DriveOrientation.FIELD)
+            if (resetHeading)
             {
-                fieldForwardHeading = getHeading();
+                resetFieldForwardHeading();
             }
         }
         else
