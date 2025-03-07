@@ -43,7 +43,7 @@ public class TrcPidController
     public static final double DEF_SETTLING_TIME = 0.2;
     private static final double DEF_STALL_DETECTION_DELAY = 0.5;
     private static final double DEF_STALL_DETECTION_TIMEOUT = 0.2;
-    private static final double DEF_STALL_ERR_RATE_THRESHOLD = 1.0;
+    private static final double DEF_STALL_ERR_RATE_THRESHOLD = 0.1;
 
     /**
      * This class encapsulates all the PIDF coefficients into a single object and makes it more efficient to pass
