@@ -3052,6 +3052,10 @@ public abstract class TrcMotor implements TrcMotorController, TrcExclusiveSubsys
                 }
                 tracer.traceWarn(instanceName, "Stalled, lower limit switch might have failed!");
             }
+            else
+            {
+                tracer.traceInfo(instanceName, "Limit switch triggered, zero calibration done.");
+            }
             setControllerMotorPower(0.0, true);
             resetPosition(false);
             taskParams.stalled = false;
