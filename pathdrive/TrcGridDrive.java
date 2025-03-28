@@ -182,24 +182,26 @@ public class TrcGridDrive
      * of the grid cell it's on.
      *
      * @param gridCell specifies the grid cell to adjust in the unit of cells.
+     * @param positionOnly specifies true to adjust position only, false to also adjust heading.
      * @return adjusted gridCell in the unit of cells.
      */
-    public TrcPose2D adjustGridCellCenter(TrcPose2D gridCell)
+    public TrcPose2D adjustGridCellCenter(TrcPose2D gridCell, boolean positionOnly)
     {
         return new TrcPose2D(
             adjustToGridCellCenter(gridCell.x), adjustToGridCellCenter(gridCell.y),
-            adjustGridCellHeading(gridCell.angle));
+            positionOnly? gridCell.angle: adjustGridCellHeading(gridCell.angle));
     }   //adjustGridCellCenter
 
     /**
      * This method adjusts the given pose to the nearest grid cell center pose.
      *
      * @param pose specifies the pose in real world units to be adjusted.
+     * @param positionOnly specifies true to adjust position only, false to also adjust heading.
      * @return adjusted pose in real world units.
      */
-    public TrcPose2D adjustPoseToGridCellCenter(TrcPose2D pose)
+    public TrcPose2D adjustPoseToGridCellCenter(TrcPose2D pose, boolean positionOnly)
     {
-        return gridCellToPose(adjustGridCellCenter(poseToGridCell(pose)));
+        return gridCellToPose(adjustGridCellCenter(poseToGridCell(pose), positionOnly));
     }   //adjustPoseToGridCellCenter
 
     /**
@@ -211,9 +213,8 @@ public class TrcGridDrive
     public void resetGridCellCenter()
     {
         TrcPose2D robotPose = driveBase.getFieldPosition();
-        TrcPose2D cellCenterPose = adjustPoseToGridCellCenter(robotPose);
         // Do not change the heading, use original robot pose heading. We are resetting just the position.
-        cellCenterPose.angle = robotPose.angle;
+        TrcPose2D cellCenterPose = adjustPoseToGridCellCenter(robotPose, true);
         driveBase.setFieldPosition(cellCenterPose);
         tracer.traceDebug(
             moduleName,
@@ -236,16 +237,15 @@ public class TrcGridDrive
 
         if (startCell.x != endCell.x && startCell.y != endCell.y)
         {
-            intermediateCell = startCell.clone();
             if (startCell.angle == 0.0 || startCell.angle == 180.0)
             {
                 // Robot heading is north or south.
-                intermediateCell.y = endCell.y;
+                intermediateCell = new TrcPose2D(startCell.x, endCell.y, startCell.angle);
             }
             else
             {
                 // Robot heading is east or west.
-                intermediateCell.x = endCell.x;
+                intermediateCell = new TrcPose2D(endCell.x, startCell.y, startCell.angle);
             }
         }
 
@@ -303,8 +303,8 @@ public class TrcGridDrive
         if (driveBase.acquireExclusiveAccess(moduleName))
         {
             TrcPose2D robotPose = driveBase.getFieldPosition();
-            TrcPose2D startGridCell = adjustGridCellCenter(poseToGridCell(robotPose));
-            TrcPose2D endGridCell = adjustGridCellCenter(poseToGridCell(endPoint));
+            TrcPose2D startGridCell = adjustGridCellCenter(poseToGridCell(robotPose), false);
+            TrcPose2D endGridCell = adjustGridCellCenter(poseToGridCell(endPoint), false);
             TrcPose2D intermediateGridCell = getIntermediateGridCell(startGridCell, endGridCell);
             TrcPathBuilder pathBuilder = new TrcPathBuilder(robotPose, false).append(gridCellToPose(startGridCell));
 
@@ -355,7 +355,7 @@ public class TrcGridDrive
         if (driveBase.acquireExclusiveAccess(moduleName))
         {
             TrcPose2D robotPose = driveBase.getFieldPosition();
-            TrcPose2D startGridPose = adjustPoseToGridCellCenter(robotPose);
+            TrcPose2D startGridPose = adjustPoseToGridCellCenter(robotPose, false);
             TrcPose2D prevSegment = new TrcPose2D(0.0, 0.0, startGridPose.angle);
             // The first point of the path is center of the grid cell the robot is on.
             TrcPathBuilder pathBuilder = new TrcPathBuilder(robotPose, false).append(startGridPose);
@@ -377,8 +377,8 @@ public class TrcGridDrive
                 if (!willTurn(prevSegment, nextSegment))
                 {
                     // Not turning, can coalesce the nextSegment to the prevSegment.
-                    prevSegment.x += nextSegment.x;
-                    prevSegment.y += nextSegment.y;
+                    prevSegment = new TrcPose2D(
+                        prevSegment.x + nextSegment.x, prevSegment.y + nextSegment.y, prevSegment.angle);
                     gridDriveQueue.remove(nextSegment);
                     tracer.traceVerbose(
                         moduleName,
@@ -388,88 +388,83 @@ public class TrcGridDrive
                 }
                 else
                 {
-                    TrcPose2D prevEndPoint = prevSegment.clone();
+                    TrcPose2D prevEndPoint = prevSegment;
                     TrcPose2D nextStartPoint = new TrcPose2D();
-                    TrcPose2D nextSegmentPoint = nextSegment.clone();
+                    TrcPose2D nextSegmentPoint = nextSegment;
                     double forwardAdj = turnStartAdj > 0.0? 1.0: 0.0;
                     // Turning, create an endpoint for the first segment and a startpoint for the next segment.
                     if (prevSegment.angle == 0.0)
                     {
                         // Heading is North.
-                        prevEndPoint.y += turnStartAdj;
+                        prevEndPoint = new TrcPose2D(
+                            prevEndPoint.x, prevEndPoint.y + turnStartAdj, prevEndPoint.angle);
                         if (nextSegment.x > 0.0)
                         {
-                            nextStartPoint.x = prevSegment.x + turnEndAdj;
-                            nextStartPoint.y = prevSegment.y + forwardAdj;
-                            nextStartPoint.angle = 90.0;
+                            nextStartPoint = new TrcPose2D(
+                                prevSegment.x + turnEndAdj, prevSegment.y + forwardAdj, 90.0);
                         }
                         else
                         {
-                            nextStartPoint.x = prevSegment.x - turnEndAdj;
-                            nextStartPoint.y = prevSegment.y + forwardAdj;
-                            nextStartPoint.angle = 270.0;
+                            nextStartPoint = new TrcPose2D(
+                                prevSegment.x - turnEndAdj, prevSegment.y + forwardAdj, 270.0);
                         }
-                        nextSegmentPoint.x += prevSegment.x;
-                        nextSegmentPoint.y = nextStartPoint.y;
+                        nextSegmentPoint = new TrcPose2D(
+                            nextSegmentPoint.x + prevSegment.x, nextStartPoint.y, nextStartPoint.angle);
                     }
                     else if (prevSegment.angle == 180.0)
                     {
                         // Heading is South.
-                        prevEndPoint.y -= turnStartAdj;
+                        prevEndPoint = new TrcPose2D(
+                            prevEndPoint.x, prevEndPoint.y - turnStartAdj, prevEndPoint.angle);
                         if (nextSegment.x > 0.0)
                         {
-                            nextStartPoint.x = prevSegment.x + turnEndAdj;
-                            nextStartPoint.y = prevSegment.y - forwardAdj;
-                            nextStartPoint.angle = 90.0;
+                            nextStartPoint = new TrcPose2D(
+                                prevSegment.x + turnEndAdj, prevSegment.y - forwardAdj, 90.0);
                         }
                         else
                         {
-                            nextStartPoint.x = prevSegment.x - turnEndAdj;
-                            nextStartPoint.y = prevSegment.y - forwardAdj;
-                            nextStartPoint.angle = 270.0;
+                            nextStartPoint = new TrcPose2D(
+                                prevSegment.x - turnEndAdj, prevSegment.y - forwardAdj, 270.0);
                         }
-                        nextSegmentPoint.x += prevSegment.x;
-                        nextSegmentPoint.y = nextStartPoint.y;
+                        nextSegmentPoint = new TrcPose2D(
+                            nextSegmentPoint.x + prevSegment.x, nextStartPoint.y, nextStartPoint.angle);
                     }
                     else if (prevSegment.angle == 90.0)
                     {
                         // Headihg is East.
-                        prevEndPoint.x += turnStartAdj;
+                        prevEndPoint = new TrcPose2D(
+                            prevEndPoint.x + turnStartAdj, prevEndPoint.y, prevEndPoint.angle);
                         if (nextSegment.y > 0.0)
                         {
-                            nextStartPoint.x = prevSegment.x + forwardAdj;
-                            nextStartPoint.y = prevSegment.y + turnEndAdj;
-                            nextStartPoint.angle = 0.0;
+                            nextStartPoint = new TrcPose2D(
+                                prevSegment.x + forwardAdj, prevSegment.y + turnEndAdj, 0.0);
                         }
                         else
                         {
-                            nextStartPoint.x = prevSegment.x + forwardAdj;
-                            nextStartPoint.y = prevSegment.y - turnEndAdj;
-                            nextStartPoint.angle = 180.0;
+                            nextStartPoint = new TrcPose2D(
+                                prevSegment.x + forwardAdj, prevSegment.y - turnEndAdj, 180.0);
                         }
-                        nextSegmentPoint.x = nextStartPoint.x;
-                        nextSegmentPoint.y += prevSegment.y;
+                        nextSegmentPoint = new TrcPose2D(
+                            nextStartPoint.x, nextSegmentPoint.y + prevSegment.y, nextStartPoint.angle);
                     }
                     else if (prevSegment.angle == 270.0)
                     {
                         // Heading is West.
-                        prevEndPoint.x -= turnStartAdj;
+                        prevEndPoint = new TrcPose2D(
+                            prevEndPoint.x - turnStartAdj, prevEndPoint.y, prevEndPoint.angle);
                         if (nextSegment.y > 0.0)
                         {
-                            nextStartPoint.x = prevSegment.x - forwardAdj;
-                            nextStartPoint.y = prevSegment.y + turnEndAdj;
-                            nextStartPoint.angle = 0.0;
+                            nextStartPoint = new TrcPose2D(
+                                prevSegment.x - forwardAdj, prevSegment.y + turnEndAdj, 0.0);
                         }
                         else
                         {
-                            nextStartPoint.x = prevSegment.x - forwardAdj;
-                            nextStartPoint.y = prevSegment.y - turnEndAdj;
-                            nextStartPoint.angle = 180.0;
+                            nextStartPoint = new TrcPose2D(
+                                prevSegment.x - forwardAdj, prevSegment.y - turnEndAdj, 180.0);
                         }
-                        nextSegmentPoint.x = nextStartPoint.x;
-                        nextSegmentPoint.y += prevSegment.y;
+                        nextSegmentPoint = new TrcPose2D(
+                            nextStartPoint.x, nextSegmentPoint.y + prevSegment.y, nextStartPoint.angle);
                     }
-                    nextSegmentPoint.angle = nextStartPoint.angle;
 
                     // Create endpoint of the previous segment.
                     pathBuilder.append(

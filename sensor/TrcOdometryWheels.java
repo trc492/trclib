@@ -25,6 +25,7 @@ package trclib.sensor;
 import java.util.Arrays;
 
 import trclib.drivebase.TrcDriveBase;
+import trclib.pathdrive.TrcPose2D;
 import trclib.robotcore.TrcDbgTrace;
 import trclib.timer.TrcTimer;
 
@@ -384,13 +385,12 @@ public class TrcOdometryWheels
         // Note: In odometryDelta, only position data is really a delta from previous position.
         // Velocity data IS NOT a delta.
         //
-        TrcDriveBase.Odometry odometryDelta = new TrcDriveBase.Odometry();
-        odometryDelta.position.x = (avgXPos - prevAvgXPos)*xScale;
-        odometryDelta.position.y = (avgYPos - prevAvgYPos)*yScale;
-        odometryDelta.position.angle = (angleOdometry.currPos - angleOdometry.prevPos)*angleScale;
-        odometryDelta.velocity.x = avgXVel*xScale;
-        odometryDelta.velocity.y = avgYVel*yScale;
-        odometryDelta.velocity.angle = angleOdometry.velocity*angleScale;
+        TrcPose2D deltaPosPose = new TrcPose2D(
+            (avgXPos - prevAvgXPos)*xScale,
+            (avgYPos - prevAvgYPos)*yScale,
+            (angleOdometry.currPos - angleOdometry.prevPos)*angleScale);
+        TrcPose2D deltaVelPose = new TrcPose2D(avgXVel*xScale, avgYVel*yScale, angleOdometry.velocity*angleScale);
+        TrcDriveBase.Odometry odometryDelta = new TrcDriveBase.Odometry(deltaPosPose, deltaVelPose);
         tracer.traceDebug(
             moduleName,
             "x=" + Arrays.toString(xSensors) +

@@ -41,9 +41,9 @@ import trclib.dataprocessor.TrcUtil;
  */
 public class TrcPose2D
 {
-    public double x;
-    public double y;
-    public double angle;
+    public final double x;
+    public final double y;
+    public final double angle;
 
     /**
      * Constructor: Create an instance of the object.
@@ -159,6 +159,16 @@ public class TrcPose2D
     }   //loadPosesFromCsv
 
     /**
+     * This method returns the pose data in an array.
+     *
+     * @return pose data in an array.
+     */
+    public double[] getPoseData()
+    {
+        return new double[] {x, y, angle};
+    }   //getPoseData
+
+    /**
      * This method compares this pose with the specified pose for equality.
      *
      * @return true if equal, false otherwise.
@@ -220,18 +230,6 @@ public class TrcPose2D
     }   //distanceTo
 
     /**
-     * This method sets this pose to be the same as the given pose.
-     *
-     * @param pose specifies the pose to make this pose equal to.
-     */
-    public void setAs(TrcPose2D pose)
-    {
-        this.x = pose.x;
-        this.y = pose.y;
-        this.angle = pose.angle;
-    }   //setAs
-
-    /**
      * This method returns a transformed pose relative to the given pose.
      *
      * @param pose           specifies the reference pose.
@@ -274,15 +272,14 @@ public class TrcPose2D
      */
     public TrcPose2D translatePose(double xOffset, double yOffset)
     {
-        TrcPose2D newPose = clone();
-        double angleRadians = Math.toRadians(newPose.angle);
+        double angleRadians = Math.toRadians(angle);
         double cosAngle = Math.cos(angleRadians);
         double sinAngle = Math.sin(angleRadians);
 
-        newPose.x += xOffset * cosAngle + yOffset * sinAngle;
-        newPose.y += -xOffset * sinAngle + yOffset * cosAngle;
-
-        return newPose;
+        return new TrcPose2D(
+            x + xOffset * cosAngle + yOffset * sinAngle,
+            y - xOffset * sinAngle + yOffset * cosAngle,
+            angle);
     }   //translatePose
 
     /**

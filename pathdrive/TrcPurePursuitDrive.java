@@ -739,8 +739,10 @@ public class TrcPurePursuitDrive
                 {
                     TrcWaypoint startPoint = newPath.getWaypoint(i);
                     TrcWaypoint endPoint = newPath.getWaypoint(i + 1);
-                    startPoint.pose.angle = Math.toDegrees(Math.atan2(endPoint.pose.x - startPoint.pose.x,
-                                                                      endPoint.pose.y - startPoint.pose.y));
+                    startPoint.pose = new TrcPose2D(
+                        startPoint.pose.x, startPoint.pose.y,
+                        Math.toDegrees(Math.atan2(
+                            endPoint.pose.x - startPoint.pose.x, endPoint.pose.y - startPoint.pose.y)));
                 }
             }
             yPosPidCtrl.reset();
@@ -1260,7 +1262,7 @@ public class TrcPurePursuitDrive
             targetPose = segmentEnd.pose.relativeTo(relRobotPose, true);
         }
         // Use interpolated heading instead of the end point heading.
-        targetPose.angle = targetHeading;
+        targetPose = new TrcPose2D(targetPose.x, targetPose.y, targetHeading);
         tracer.traceDebug(
             instanceName,
             "RelTargetPose=%s (distToStart=%f, distToEnd=%f)", targetPose, distanceToStart, distanceToEnd);
@@ -1459,8 +1461,7 @@ public class TrcPurePursuitDrive
             // TODO: This is wrong, fix it.
             // For non-holonomic drivebase, maintain the robot heading pointing to the end-waypoint unless the
             // end-waypoint is within the robot's lookahead circle.
-            TrcPose2D endpointPose = point2.pose.clone();
-            endpointPose.angle = point1.pose.angle;
+            TrcPose2D endpointPose = new TrcPose2D(point2.pose.x, point2.pose.y, point1.pose.angle);
             heading = point1.pose.angle + endpointPose.relativeTo(robotPose).angle;
         }
 

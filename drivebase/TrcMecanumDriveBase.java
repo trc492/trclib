@@ -25,6 +25,7 @@ package trclib.drivebase;
 import trclib.robotcore.TrcEvent;
 import trclib.sensor.TrcGyro;
 import trclib.motor.TrcMotor;
+import trclib.pathdrive.TrcPose2D;
 import trclib.sensor.TrcOdometrySensor;
 import trclib.dataprocessor.TrcUtil;
 import trclib.timer.TrcTimer;
@@ -208,7 +209,8 @@ public class TrcMecanumDriveBase extends TrcSimpleDriveBase
         //
         Odometry delta = super.getOdometryDelta(prevOdometries, currOdometries);
 
-        delta.position.x = xScale * TrcUtil.average(
+        delta.position = new TrcPose2D(
+            xScale * TrcUtil.average(
                 currOdometries[MotorType.LEFT_FRONT.value].currPos
                 - prevOdometries[MotorType.LEFT_FRONT.value].currPos,
                 currOdometries[MotorType.RIGHT_BACK.value].currPos
@@ -216,13 +218,18 @@ public class TrcMecanumDriveBase extends TrcSimpleDriveBase
                 -(currOdometries[MotorType.RIGHT_FRONT.value].currPos
                   - prevOdometries[MotorType.RIGHT_FRONT.value].currPos),
                 -(currOdometries[MotorType.LEFT_BACK.value].currPos
-                  - prevOdometries[MotorType.LEFT_BACK.value].currPos));
+                  - prevOdometries[MotorType.LEFT_BACK.value].currPos)),
+            delta.position.y,
+            delta.position.angle);
 
-        delta.velocity.x = xScale * TrcUtil.average(
+        delta.velocity = new TrcPose2D(
+            xScale * TrcUtil.average(
                 currOdometries[MotorType.LEFT_FRONT.value].velocity,
                 currOdometries[MotorType.RIGHT_BACK.value].velocity,
                 -currOdometries[MotorType.RIGHT_FRONT.value].velocity,
-                -currOdometries[MotorType.LEFT_BACK.value].velocity);
+                -currOdometries[MotorType.LEFT_BACK.value].velocity),
+            delta.velocity.y,
+            delta.velocity.angle);
 
         if (Math.abs(delta.velocity.x) > stallVelThreshold)
         {

@@ -25,6 +25,7 @@ package trclib.drivebase;
 import trclib.robotcore.TrcEvent;
 import trclib.sensor.TrcGyro;
 import trclib.motor.TrcMotor;
+import trclib.pathdrive.TrcPose2D;
 import trclib.sensor.TrcOdometrySensor;
 import trclib.timer.TrcTimer;
 import trclib.dataprocessor.TrcUtil;
@@ -347,7 +348,7 @@ public class TrcSimpleDriveBase extends TrcDriveBase
     protected Odometry getOdometryDelta(
         TrcOdometrySensor.Odometry[] prevOdometries, TrcOdometrySensor.Odometry[] currOdometries)
     {
-        Odometry delta = new Odometry();
+        Odometry delta = new Odometry(null, null);
 
         //
         // Calculate heading and turn rate using positional info in case we don't have a gyro.
@@ -379,14 +380,8 @@ public class TrcSimpleDriveBase extends TrcDriveBase
         lVel /= motorsPerSide;
         rVel /= motorsPerSide;
 
-        delta.position.x = 0.0;
-        delta.position.y = (lPos + rPos)/2 * yScale;
-
-        delta.velocity.x = 0.0;
-        delta.velocity.y = (lVel + rVel)/2 * yScale;
-
-        delta.position.angle = (lPos - rPos)/2 * angleScale;
-        delta.velocity.angle = (lVel - rVel)/2 * angleScale;
+        delta.position = new TrcPose2D(0.0, (lPos + rPos)/2 * yScale, (lPos - rPos)/2 * angleScale);
+        delta.velocity = new TrcPose2D(0.0, (lVel + rVel)/2 * yScale, (lVel - rVel)/2 * angleScale);
 
         if (Math.abs(delta.velocity.y) > stallVelThreshold)
         {

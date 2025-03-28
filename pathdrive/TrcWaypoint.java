@@ -98,7 +98,7 @@ public class TrcWaypoint
     {
         this.index = other.index;
         this.timeStep = other.timeStep;
-        this.pose = other.pose.clone();
+        this.pose = other.pose;
         this.encoderPosition = other.encoderPosition;
         this.velocity = other.velocity;
         this.acceleration = other.acceleration;

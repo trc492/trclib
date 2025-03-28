@@ -35,7 +35,8 @@ import java.util.Objects;
 import trclib.dataprocessor.TrcUtil;
 
 /**
- * This class implements a 3D pose object that represents the positional state of an object.
+ * This class implements a 3D pose extension of TrcPose2D with added info such as Z, pitch and roll.
+ * This is different from the regular Pose3d becasue TrcPose3D is anchored on the same ground plane as TrcPose2D.
  */
 public class TrcPose3D
 {
