@@ -111,7 +111,8 @@ public class TrcPath
         for (int i = 0; i < waypoints.length; i++)
         {
             TrcWaypoint wp = new TrcWaypoint(waypoints[i]);
-            wp.pose = new TrcPose2D(wp.pose.x + x, wp.pose.y + y, wp.pose.angle);
+            wp.pose.x += x;
+            wp.pose.y += y;
             points[i] = wp;
         }
         return new TrcPath(inDegrees, points);
@@ -163,7 +164,7 @@ public class TrcPath
         for (int i = 0; i < waypoints.length; i++)
         {
             TrcWaypoint wp = waypoints[i].clone();
-            wp.pose = wp.pose.relativeTo(referencePose, true);
+            wp.pose.setAs(wp.pose.relativeTo(referencePose, true));
             newPoints[i] = wp;
         }
         TrcPath path = new TrcPath(true, newPoints);
@@ -185,7 +186,7 @@ public class TrcPath
         for (int i = 0; i < waypoints.length; i++)
         {
             TrcWaypoint wp = waypoints[i].clone();
-            wp.pose = absoluteStartPose.addRelativePose(wp.pose);
+            wp.pose.setAs(absoluteStartPose.addRelativePose(wp.pose));
             newPoints[i] = wp;
         }
         TrcPath path = new TrcPath(true, newPoints);
@@ -443,10 +444,7 @@ public class TrcPath
         {
             TrcWaypoint waypoint = new TrcWaypoint(this.waypoints[i]);
             // If already in degree mode, don't convert again.
-            if (!inDegrees)
-            {
-                waypoint.pose = new TrcPose2D(waypoint.pose.x, waypoint.pose.y, Math.toDegrees(waypoint.pose.angle));
-            }
+            waypoint.pose.angle = inDegrees ? waypoint.pose.angle : Math.toDegrees(waypoint.pose.angle);
             waypoints[i] = waypoint;
         }
 
@@ -467,10 +465,7 @@ public class TrcPath
         {
             TrcWaypoint waypoint = new TrcWaypoint(this.waypoints[i]);
             // If already in radian mode, don't convert again.
-            if (inDegrees)
-            {
-                waypoint.pose = new TrcPose2D(waypoint.pose.x, waypoint.pose.y, Math.toRadians(waypoint.pose.angle));
-            }
+            waypoint.pose.angle = inDegrees ? Math.toRadians(waypoint.pose.angle) : waypoint.pose.angle;
             waypoints[i] = waypoint;
         }
 
@@ -488,7 +483,7 @@ public class TrcPath
 
             for (TrcWaypoint waypoint : waypoints)
             {
-                waypoint.pose = new TrcPose2D(waypoint.pose.x, waypoint.pose.y, Math.toDegrees(waypoint.pose.angle));
+                waypoint.pose.angle = Math.toDegrees(waypoint.pose.angle);
             }
         }
     }   //mapSelfToDegrees
@@ -504,7 +499,7 @@ public class TrcPath
 
             for (TrcWaypoint waypoint : waypoints)
             {
-                waypoint.pose = new TrcPose2D(waypoint.pose.x, waypoint.pose.y, Math.toRadians(waypoint.pose.angle));
+                waypoint.pose.angle = Math.toRadians(waypoint.pose.angle);
             }
         }
     }   //mapSelfToRadians

@@ -158,8 +158,28 @@ public abstract class TrcDriveBase implements TrcExclusiveSubsystem
         @Override
         public Odometry clone()
         {
-            return new Odometry(position, velocity);
+            return new Odometry(position.clone(), velocity.clone());
         }   //clone
+
+        /**
+         * This method sets the position info of the odometry to the given pose.
+         *
+         * @param pose specifies the pose to set the position info to.
+         */
+        void setPositionAs(TrcPose2D pose)
+        {
+            this.position.setAs(pose);
+        }   //setPositionAs
+
+        /**
+         * This method sets the velocity info of the odometry to the given pose.
+         *
+         * @param pose specifies the pose to set the velocity info to.
+         */
+        void setVelocityAs(TrcPose2D pose)
+        {
+            this.velocity.setAs(pose);
+        }   //setVelocityAs
 
     }   //class Odometry
 
@@ -231,8 +251,8 @@ public abstract class TrcDriveBase implements TrcExclusiveSubsystem
     protected final Odometry odometry;
     private final MotorsState motorsState;
     private final TrcTimer driveTimer;
-    private final TrcTaskMgr.TaskObject odometryTaskObj;
     private TrcEvent driveTimerEvent = null;
+    private final TrcTaskMgr.TaskObject odometryTaskObj;
     protected double xScale, yScale, angleScale;
     private final Stack<Odometry> referenceOdometryStack = new Stack<>();
     private DriveOrientation driveOrientation = DriveOrientation.ROBOT;
@@ -512,7 +532,7 @@ public abstract class TrcDriveBase implements TrcExclusiveSubsystem
     {
         synchronized (odometry)
         {
-            return odometry.position;
+            return odometry.position.clone();
         }
     }   //getFieldPosition
 
@@ -526,7 +546,7 @@ public abstract class TrcDriveBase implements TrcExclusiveSubsystem
     {
         synchronized (odometry)
         {
-            return odometry.velocity;
+            return odometry.velocity.clone();
         }
     }   //getFieldVelocity
 
@@ -544,10 +564,10 @@ public abstract class TrcDriveBase implements TrcExclusiveSubsystem
             if (positionOnly)
             {
                 // Setting position only, so restore the current robot heading.
-                pose = new TrcPose2D(pose.x, pose.y, getHeading());
+                pose.angle = getHeading();
             }
             resetOdometry();
-            odometry.position = pose;
+            odometry.setPositionAs(pose);
             if (absoluteOdometry != null)
             {
                 absoluteOdometry.setPosition(pose);
@@ -608,7 +628,8 @@ public abstract class TrcDriveBase implements TrcExclusiveSubsystem
             // angle of velPose is really the angular velocity not an angle, so we must duplicate velPose to a new
             // pose and change the angle member to be the refAngle and let the caller provide that angle.
             //
-            TrcPose2D pose = new TrcPose2D(velPose.x, velPose.y, refAngle);
+            TrcPose2D pose = velPose.clone();
+            pose.angle = refAngle;
             return odometry.velocity.relativeTo(pose, false);
         }
     }   //getVelocityRelativeTo
@@ -856,6 +877,7 @@ public abstract class TrcDriveBase implements TrcExclusiveSubsystem
         synchronized (odometry)
         {
             clearReferenceOdometry();
+
             if (odometryWheels != null)
             {
                 odometryWheels.resetOdometry(resetPositionOdometry, resetHeadingOdometry, resetHardware);
@@ -891,11 +913,12 @@ public abstract class TrcDriveBase implements TrcExclusiveSubsystem
                     {
                         gyro.resetOdometry(resetHardware);
                     }
+                    odometry.position.angle = odometry.velocity.angle = 0.0;
                 }
             }
-            // Reset odometry data.
-            odometry.position = new TrcPose2D(0.0, 0.0, resetHeadingOdometry? 0.0: odometry.position.angle);
-            odometry.velocity = new TrcPose2D(0.0, 0.0, resetHeadingOdometry? 0.0: odometry.velocity.angle);
+
+            odometry.position.x = odometry.position.y = 0.0;
+            odometry.velocity.x = odometry.velocity.y = 0.0;
         }
     }   //resetOdometry
 
@@ -1971,11 +1994,14 @@ public abstract class TrcDriveBase implements TrcExclusiveSubsystem
             {
                 absoluteOdometry.updateCache();
                 TrcPose2D currPos = absoluteOdometry.getPosition();
-                odometry.position = new TrcPose2D(
-                    currPos.x, currPos.y,
-                    absOdoHeadingWrapConverter != null?
-                        absOdoHeadingWrapConverter.getContinuousValue(): currPos.angle);
-                odometry.velocity = absoluteOdometry.getVelocity();
+                odometry.position.x = currPos.x;
+                odometry.position.y = currPos.y;
+                odometry.position.angle =
+                    absOdoHeadingWrapConverter != null? absOdoHeadingWrapConverter.getContinuousValue(): currPos.angle;
+                TrcPose2D currVel = absoluteOdometry.getVelocity();
+                odometry.velocity.x = currVel.x;
+                odometry.velocity.y = currVel.y;
+                odometry.velocity.angle = currVel.angle;
             }
             else
             {
@@ -2017,11 +2043,8 @@ public abstract class TrcDriveBase implements TrcExclusiveSubsystem
                             ", vel=" + gyroOdometry.velocity);
                     }
                     // Overwrite the angle/turnrate values if gyro present, since that's more accurate
-                    odometryDelta.position = new TrcPose2D(
-                        odometryDelta.position.x, odometryDelta.position.y,
-                        gyroOdometry.currPos - gyroOdometry.prevPos);
-                    odometryDelta.velocity = new TrcPose2D(
-                        odometryDelta.velocity.x, odometryDelta.velocity.y, gyroOdometry.velocity);
+                    odometryDelta.position.angle = gyroOdometry.currPos - gyroOdometry.prevPos;
+                    odometryDelta.velocity.angle = gyroOdometry.velocity;
                 }
 
                 updateOdometry(odometryDelta, odometry.position.angle);
@@ -2155,12 +2178,12 @@ public abstract class TrcDriveBase implements TrcExclusiveSubsystem
             vel = TrcUtil.rotateCW(vel, angle);
 
             // Update the odometry values
-            odometry.position = new TrcPose2D(
-                odometry.position.x + pos.getEntry(0),
-                odometry.position.y + pos.getEntry(1),
-                odometry.position.angle + theta);
-            odometry.velocity = new TrcPose2D(
-                vel.getEntry(0), vel.getEntry(1), delta.velocity.angle);
+            odometry.position.x += pos.getEntry(0);
+            odometry.position.y += pos.getEntry(1);
+            odometry.position.angle += theta;
+            odometry.velocity.x = vel.getEntry(0);
+            odometry.velocity.y = vel.getEntry(1);
+            odometry.velocity.angle = delta.velocity.angle;
         }
         else
         {
@@ -2170,11 +2193,12 @@ public abstract class TrcDriveBase implements TrcExclusiveSubsystem
             pos = TrcUtil.rotateCW(pos, odometry.position.angle);
             vel = TrcUtil.rotateCW(vel, odometry.position.angle);
 
-            odometry.position = new TrcPose2D(
-                odometry.position.x + pos.getEntry(0),
-                odometry.position.y + pos.getEntry(1),
-                odometry.position.angle + delta.position.angle);
-            odometry.velocity = new TrcPose2D(vel.getEntry(0), vel.getEntry(1), delta.velocity.angle);
+            odometry.position.x += pos.getEntry(0);
+            odometry.position.y += pos.getEntry(1);
+            odometry.velocity.x = vel.getEntry(0);
+            odometry.velocity.y = vel.getEntry(1);
+            odometry.position.angle += delta.position.angle;
+            odometry.velocity.angle = delta.velocity.angle;
         }
     }   //updateOdometry
 

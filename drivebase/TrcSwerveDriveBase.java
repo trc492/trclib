@@ -31,7 +31,6 @@ import trclib.robotcore.TrcEvent;
 import trclib.sensor.TrcGyro;
 import trclib.dataprocessor.TrcHashMap;
 import trclib.motor.TrcMotor;
-import trclib.pathdrive.TrcPose2D;
 import trclib.sensor.TrcOdometrySensor;
 import trclib.dataprocessor.TrcUtil;
 import trclib.timer.TrcTimer;
@@ -488,7 +487,7 @@ public class TrcSwerveDriveBase extends TrcSimpleDriveBase
         TrcOdometrySensor.Odometry[] prevOdometries,
         TrcOdometrySensor.Odometry[] currOdometries)
     {
-        Odometry delta = new Odometry(null, null);
+        Odometry delta = new Odometry();
 
         //
         // Average the posDelta vectors and velocity vectors of all four wheels:
@@ -518,8 +517,11 @@ public class TrcSwerveDriveBase extends TrcSimpleDriveBase
         //
         // Calculate the odometry delta.
         //
-        double[] posData = {posSum.getEntry(0), posSum.getEntry(1), 0.0};
-        double[] velData = {velSum.getEntry(0), velSum.getEntry(1), 0.0};
+        delta.position.x = posSum.getEntry(0);
+        delta.position.y = posSum.getEntry(1);
+
+        delta.velocity.x = velSum.getEntry(0);
+        delta.velocity.y = velSum.getEntry(1);
 
         if (TrcUtil.magnitude(delta.velocity.x, delta.velocity.y) > stallVelThreshold)
         {
@@ -538,7 +540,7 @@ public class TrcSwerveDriveBase extends TrcSimpleDriveBase
 
         dRot /= 4 * Math.pow(wheelBaseDiagonal, 2);
         dRot = Math.toDegrees(dRot);
-        posData[2] = dRot;
+        delta.position.angle = dRot;
 
         double rotVel = x * (wheelVelVectors[0].getEntry(1) + wheelVelVectors[2].getEntry(1) -
                              wheelVelVectors[1].getEntry(1) - wheelVelVectors[3].getEntry(1)) +
@@ -546,10 +548,8 @@ public class TrcSwerveDriveBase extends TrcSimpleDriveBase
                              wheelVelVectors[2].getEntry(0) - wheelVelVectors[3].getEntry(0));
         rotVel /= 4 * Math.pow(wheelBaseDiagonal, 2);
         rotVel = Math.toDegrees(rotVel);
-        velData[2] = rotVel;
+        delta.velocity.angle = rotVel;
 
-        delta.position = new TrcPose2D(posData);
-        delta.velocity = new TrcPose2D(velData);
         return delta;
     }   //getOdometryDelta
 

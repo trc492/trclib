@@ -101,7 +101,8 @@ public class TrcPathBuilder
             // Transform it to be in the same reference frame as startingPose by adding it cumulatively to the
             // previous point.
             //
-            waypoint.pose = waypointList.get(waypointList.size() - 1).pose.addRelativePose(waypoint.pose);
+            TrcPose2D prevPose = waypointList.get(waypointList.size() - 1).pose;
+            waypoint.pose.setAs(prevPose.addRelativePose(waypoint.pose));
         }
         waypointList.add(waypoint);
 

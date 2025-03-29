@@ -333,7 +333,7 @@ public class TrcPidDrive
      */
     public synchronized TrcPose2D getAbsoluteTargetPose()
     {
-        return absTargetPose;
+        return absTargetPose.clone();
     }   //getAbsoluteTargetPose
 
     /**
@@ -940,14 +940,16 @@ public class TrcPidDrive
             this.owner = owner;
 
             TrcPose2D newTargetPose = new TrcPose2D(absX, absY, absHeading);
-            TrcPose2D robotPose = driveBase.getFieldPosition();
+            TrcPose2D currRobotPose = driveBase.getFieldPosition();
+            //
             // RelativeTo will calculate delta X and delta Y between the target and current positions relative to the
             // field coordinates and it will rotate the (deltaX, deltaY) vector to the robot's heading, essentially
             // returning deltaX and deltaY relative to the robot's heading instead of the field coordinates.
             // Unfortunately, the current heading of the robot may not be the intended heading due to turn error.
             // Therefore, before passing currRobotPose to relativeTo, we need to adjust the angle to the intended
             // heading or else we will incorporate the heading error into the deltaX and deltaY calculation.
-            TrcPose2D currRobotPose = new TrcPose2D(robotPose.x, robotPose.y, absHeading);
+            //
+            currRobotPose.angle = absHeading;
             TrcPose2D relativePose = newTargetPose.relativeTo(currRobotPose);
             double turnTarget = turnPidCtrl.hasAbsoluteSetPoint()?
                     newTargetPose.angle : newTargetPose.angle - currRobotPose.angle;
