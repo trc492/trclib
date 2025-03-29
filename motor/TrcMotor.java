@@ -1389,7 +1389,7 @@ public abstract class TrcMotor implements TrcMotorController, TrcExclusiveSubsys
      *
      * @param releaseOwnership specifies true to release ownership, false otherwise.
      */
-    private void cancel(boolean releaseOwnership)
+    private void cancelTask(boolean releaseOwnership)
     {
         if (releaseOwnership)
         {
@@ -1411,6 +1411,20 @@ public abstract class TrcMotor implements TrcMotorController, TrcExclusiveSubsys
                 taskParams.notifyEvent = null;
             }
         }
+    }   //cancelTask
+
+    /**
+     * This method stops the motor regardless of the control mode and resets it to power control mode. If
+     * releaseOwnership is false, it is called internally to stop a previous operation either has no owner or by the
+     * same owner in which case we do not want to release the ownership.
+     *
+     * @param releaseOwnership specifies true to release ownership, false otherwise.
+     */
+    private void cancel(boolean releaseOwnership)
+    {
+        cancelTask(releaseOwnership);
+        // In addition to canceling the previous operation states, stop the physical motor.
+        setControllerMotorPower(0.0, true);
     }   //cancel
 
     /**
@@ -1422,28 +1436,6 @@ public abstract class TrcMotor implements TrcMotorController, TrcExclusiveSubsys
     {
         cancel(true);
     }   //cancel
-
-    /**
-     * This method stops the motor regardless of the control mode and resets it to power control mode. If
-     * releaseOwnership is false, it is called internally to stop a previous operation either has no owner or by the
-     * same owner in which case we do not want to release the ownership.
-     *
-     * @param releaseOwnership specifies true to release ownership, false otherwise.
-     */
-    private void stop(boolean releaseOwnership)
-    {
-        cancel(releaseOwnership);
-        // In addition to canceling the previous operation states, stop the physical motor.
-        setControllerMotorPower(0.0, true);
-    }   //stop
-
-    /**
-     * This method stops the motor regardless of the control mode and resets it to power control mode.
-     */
-    public void stop()
-    {
-        stop(true);
-    }   //stop
 
     /**
      * This method is called when set motor value delay timer has expired. It will set the specified motor value.
@@ -1616,7 +1608,7 @@ public abstract class TrcMotor implements TrcMotorController, TrcExclusiveSubsys
         {
             double startValue;
             // Cancel previous operation if there is one but keep the physical motor running for a smoother transition.
-            cancel(false);
+            cancelTask(false);
             // Perform voltage compensation only on power control.
             // If motor controller supports voltage compensation, voltageCompensation will not change the value and
             // therefore a no-op.
@@ -1893,7 +1885,7 @@ public abstract class TrcMotor implements TrcMotorController, TrcExclusiveSubsys
             boolean stopIt = false;
             double currPos = getPosition();
             // Stop previous operation if there is one.
-            stop(false);
+            cancel(false);
             if (completionEvent != null)
             {
                 completionEvent.clear();
@@ -3464,7 +3456,7 @@ public abstract class TrcMotor implements TrcMotorController, TrcExclusiveSubsys
         if (validateOwnership(owner))
         {
             // Stop previous operation if there is one.
-            stop(false);
+            cancel(false);
             if (completionEvent != null)
             {
                 completionEvent.clear();
