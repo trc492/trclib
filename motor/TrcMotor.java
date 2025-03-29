@@ -237,6 +237,17 @@ public abstract class TrcMotor implements TrcMotorController, TrcExclusiveSubsys
         boolean stalled = false;
         double prevPos = 0.0;
         Double prevTime = null;
+
+        void reset()
+        {
+            currControlMode = ControlMode.Power;
+            setToControlMode = ControlMode.Power;
+            softwarePidCtrl = null;
+            softwarePidTolerance = null;
+            powerComp = null;
+            calibrating = false;
+    }   //reset
+
     }   //class TaskParams
 
     //
@@ -1404,7 +1415,7 @@ public abstract class TrcMotor implements TrcMotorController, TrcExclusiveSubsys
 
         synchronized (taskParams)
         {
-            taskParams.calibrating = false;
+            taskParams.reset();
             if (taskParams.notifyEvent != null)
             {
                 taskParams.notifyEvent.cancel();
