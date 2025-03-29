@@ -416,11 +416,6 @@ public class TrcMotorGrabber implements TrcExclusiveSubsystem
             }
             actionParams = null;
         }
-        else if (!completed)
-        {
-            // We are canceling but there was no pending auto action, just stop the motor.
-            params.motor.stop();
-        }
     }   //finishAction
 
     /**
