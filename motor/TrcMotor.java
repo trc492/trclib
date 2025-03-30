@@ -1391,7 +1391,7 @@ public abstract class TrcMotor implements TrcMotorController, TrcExclusiveSubsys
      */
     private void cancelTask(boolean releaseOwnership)
     {
-        tracer.traceDebug(instanceName, "canelTask(releaseOwnership=" + releaseOwnership + ")");
+        tracer.traceDebug(instanceName, "canelTask(releaseOwnership=%f)", releaseOwnership);
         if (releaseOwnership)
         {
             if (releaseOwnershipEvent != null)
@@ -1423,7 +1423,7 @@ public abstract class TrcMotor implements TrcMotorController, TrcExclusiveSubsys
      */
     private void cancel(boolean releaseOwnership)
     {
-        tracer.traceDebug(instanceName, "canel(releaseOwnership=" + releaseOwnership + ")");
+        tracer.traceDebug(instanceName, "canel(releaseOwnership=%f)", releaseOwnership);
         cancelTask(releaseOwnership);
         // In addition to canceling the previous operation states, stop the physical motor.
         setControllerMotorPower(0.0, true);
