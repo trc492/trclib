@@ -1434,6 +1434,7 @@ public abstract class TrcMotor implements TrcMotorController, TrcExclusiveSubsys
      */
     public void cancel()
     {
+        tracer.traceDebug(instanceName, "Canceling...");
         cancel(true);
     }   //cancel
 
