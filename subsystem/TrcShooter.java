@@ -142,12 +142,12 @@ public class TrcShooter implements TrcExclusiveSubsystem
 
         if (tiltMotor != null)
         {
-            tiltMotor.cancel();
+            tiltMotor.stop();
         }
 
         if (panMotor != null)
         {
-            panMotor.cancel();
+            panMotor.stop();
         }
 
         if (currOwner != null)
@@ -551,10 +551,10 @@ public class TrcShooter implements TrcExclusiveSubsystem
      */
     public void stopShooter()
     {
-        shooterMotor1.cancel();
+        shooterMotor1.stop();
         if (shooterMotor2 != null)
         {
-            shooterMotor2.cancel();
+            shooterMotor2.stop();
         }
     }   //stopShooter
 

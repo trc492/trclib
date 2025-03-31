@@ -384,7 +384,7 @@ public class TrcIntake implements TrcExclusiveSubsystem
                 ", delayFinishPending=" + delayFinishPending);
             if (!delayFinishPending)
             {
-                motor.cancel();
+                motor.stop();
             }
         }
     }   //finish

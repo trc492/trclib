@@ -393,6 +393,7 @@ public class TrcMotorGrabber implements TrcExclusiveSubsystem
             {
                 // Operation was canceled, cancel operation to release ownership if any.
                 params.motor.cancel();
+                params.motor.stop();
             }
 
             if (actionParams.completionEvent != null)
@@ -418,7 +419,7 @@ public class TrcMotorGrabber implements TrcExclusiveSubsystem
         else if (!completed)
         {
             // We are canceling but there was no pending auto action, just stop the motor.
-            params.motor.cancel();
+            params.motor.stop();
         }
     }   //finishAction
 
