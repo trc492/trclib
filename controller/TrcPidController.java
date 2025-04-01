@@ -786,6 +786,19 @@ public class TrcPidController
     }   //getError
 
     /**
+     * This method returns the error rate.
+     *
+     * @return error rate.
+     */
+    public double getErrorRate()
+    {
+        synchronized (pidCtrlState)
+        {
+            return pidCtrlState.velError;
+        }
+    }   //getErrorRate
+
+    /**
      * This method resets the PID controller clearing the set point, error, total error and output.
      */
     public void reset()

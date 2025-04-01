@@ -1391,7 +1391,7 @@ public abstract class TrcMotor implements TrcMotorController, TrcExclusiveSubsys
      */
     private void cancelTask(boolean releaseOwnership)
     {
-        tracer.traceDebug(instanceName, "canelTask(releaseOwnership=%f)", releaseOwnership);
+        tracer.traceDebug(instanceName, "canelTask(releaseOwnership=%s)", releaseOwnership);
         if (releaseOwnership)
         {
             if (releaseOwnershipEvent != null)
@@ -1433,7 +1433,7 @@ public abstract class TrcMotor implements TrcMotorController, TrcExclusiveSubsys
      */
     private void stop(boolean releaseOwnership)
     {
-        tracer.traceDebug(instanceName, "canel(releaseOwnership=%f)", releaseOwnership);
+        tracer.traceDebug(instanceName, "canel(releaseOwnership=%s)", releaseOwnership);
         cancelTask(releaseOwnership);
         // In addition to canceling the previous operation states, stop the physical motor.
         setControllerMotorPower(0.0, true);
@@ -3150,10 +3150,6 @@ public abstract class TrcMotor implements TrcMotorController, TrcExclusiveSubsys
                                 double power = taskParams.powerComp != null?
                                     TrcUtil.clipRange(limitedPower + taskParams.powerComp.getCompensation(limitedPower)):
                                     limitedPower;
-                                // Software PID control sets motor power but control mode is not Power, so don't
-                                // overwrite it.
-                                setControllerMotorPower(power, false);
-
                                 tracer.traceDebug(
                                     instanceName,
                                     "\n\tonTarget=%s(%f/%f)\n\texpired=%s, stalled=%s, powerLimit=%f" +
@@ -3167,6 +3163,23 @@ public abstract class TrcMotor implements TrcMotorController, TrcExclusiveSubsys
                                 {
                                     taskParams.softwarePidCtrl.printPidInfo(tracer, verbosePidInfo, battery);
                                 }
+
+                                // double error = taskParams.softwarePidCtrl.getError();
+                                // double errorRate = taskParams.softwarePidCtrl.getErrorRate();
+                                // if (Math.signum(error) * Math.signum(errorRate) > 0.0)
+                                // {
+                                //     // We are moving away from the target.
+                                //     tracer.traceWarn(
+                                //         instanceName,
+                                //         "PID control is moving away from target, " +
+                                //         "motor direction does not agree with position sensor! " +
+                                //         "(err=" + error + ", errRate=" + errorRate + ")");
+                                //     pidPower = limitedPower = power = 0.0;
+                                // }
+                                // Software PID control sets motor power but control mode is not Power, so don't
+                                // overwrite it.
+                                setControllerMotorPower(power, false);
+
                             }
                         }
                         else
