@@ -1415,37 +1415,44 @@ public abstract class TrcMotor implements TrcMotorController, TrcExclusiveSubsys
     }   //cancelTask
 
     /**
+     * This method cancels the operation and stops the motor regardless of the control mode and resets it to power
+     * control mode. If releaseOwnership is false, it is called internally to stop a previous operation either has
+     * no owner or by the same owner in which case we do not want to release the ownership.
+     *
+     * @param releaseOwnership specifies true to release ownership, false otherwise.
+     * @param stopMotor specifies true to stop the motor, false otherwise.
+     */
+    private void cancel(boolean releaseOwnership, boolean stopMotor)
+    {
+        tracer.traceDebug(instanceName, "canel(releaseOwnership=%s, stopMotor=%s)", releaseOwnership, stopMotor);
+        cancelTask(releaseOwnership);
+        if (stopMotor)
+        {
+            // In addition to canceling the previous operation states, stop the physical motor.
+            setControllerMotorPower(0.0, true);
+        }
+    }   //cancel
+
+    /**
+     * This method cancels the operation and optionally stops the motor.
+     *
+     * @param releaseOwnership specifies true to release ownership, false otherwise.
+     * @param stopMotor specifies true to stop the motor, false otherwise.
+     */
+    public void cancel(boolean stopMotor)
+    {
+        cancel(true, stopMotor);
+    }   //cancel
+
+    /**
      * This method cancels a previous operation by resetting the state set by the previous operation. Note: cancel
      * does not stop the motor and therefore it will still hold its position. If you want to stop the motor, call
      * the stop method instead. This could be called by an external caller who may not have ownership.
      */
     public void cancel()
     {
-        cancelTask(true);
+        cancel(true, true);
     }   //cancel
-
-    /**
-     * This method stops the motor regardless of the control mode and resets it to power control mode. If
-     * releaseOwnership is false, it is called internally to stop a previous operation either has no owner or by the
-     * same owner in which case we do not want to release the ownership.
-     *
-     * @param releaseOwnership specifies true to release ownership, false otherwise.
-     */
-    private void stop(boolean releaseOwnership)
-    {
-        tracer.traceDebug(instanceName, "canel(releaseOwnership=%s)", releaseOwnership);
-        cancelTask(releaseOwnership);
-        // In addition to canceling the previous operation states, stop the physical motor.
-        setControllerMotorPower(0.0, true);
-    }   //stop
-
-    /**
-     * This method stops the motor regardless of the control mode and resets it to power control mode.
-     */
-    public void stop()
-    {
-        stop(true);
-    }   //stop
 
     /**
      * This method is called when set motor value delay timer has expired. It will set the specified motor value.
@@ -1895,7 +1902,7 @@ public abstract class TrcMotor implements TrcMotorController, TrcExclusiveSubsys
             boolean stopIt = false;
             double currPos = getPosition();
             // Stop previous operation if there is one.
-            stop(false);
+            cancel(false);
             if (completionEvent != null)
             {
                 completionEvent.clear();
@@ -3148,7 +3155,8 @@ public abstract class TrcMotor implements TrcMotorController, TrcExclusiveSubsys
                                 double limitedPower = taskParams.powerLimit != null?
                                     TrcUtil.clipRange(pidPower, taskParams.powerLimit): pidPower;
                                 double power = taskParams.powerComp != null?
-                                    TrcUtil.clipRange(limitedPower + taskParams.powerComp.getCompensation(limitedPower)):
+                                    TrcUtil.clipRange(
+                                        limitedPower + taskParams.powerComp.getCompensation(limitedPower)):
                                     limitedPower;
                                 tracer.traceDebug(
                                     instanceName,
@@ -3157,8 +3165,8 @@ public abstract class TrcMotor implements TrcMotorController, TrcExclusiveSubsys
                                     onTarget,
                                     taskParams.softwarePidCtrl == posPidCtrl ? getPosition() :
                                         taskParams.softwarePidCtrl == velPidCtrl ? getVelocity() : getCurrent(),
-                                    taskParams.softwarePidCtrl.getPositionSetpoint(), expired, stalled,
-                                    taskParams.powerLimit, pidPower, limitedPower, power);
+                                    taskParams.softwarePidCtrl.getPositionSetpoint(),
+                                    expired, stalled, taskParams.powerLimit, pidPower, limitedPower, power);
                                 if (tracePidInfo)
                                 {
                                     taskParams.softwarePidCtrl.printPidInfo(tracer, verbosePidInfo, battery);
@@ -3166,7 +3174,8 @@ public abstract class TrcMotor implements TrcMotorController, TrcExclusiveSubsys
 
                                 // double error = taskParams.softwarePidCtrl.getError();
                                 // double errorRate = taskParams.softwarePidCtrl.getErrorRate();
-                                // if (Math.signum(error) * Math.signum(errorRate) > 0.0)
+                                // if (error != 0.0 && errorRate != 0.00 &&
+                                //     Math.signum(error) * Math.signum(errorRate) > 0.0)
                                 // {
                                 //     // We are moving away from the target.
                                 //     tracer.traceWarn(
@@ -3179,7 +3188,6 @@ public abstract class TrcMotor implements TrcMotorController, TrcExclusiveSubsys
                                 // Software PID control sets motor power but control mode is not Power, so don't
                                 // overwrite it.
                                 setControllerMotorPower(power, false);
-
                             }
                         }
                         else
@@ -3479,7 +3487,7 @@ public abstract class TrcMotor implements TrcMotorController, TrcExclusiveSubsys
         if (validateOwnership(owner))
         {
             // Stop previous operation if there is one.
-            stop(false);
+            cancel(false);
             if (completionEvent != null)
             {
                 completionEvent.clear();
