@@ -3165,7 +3165,7 @@ public abstract class TrcMotor implements TrcMotorController, TrcExclusiveSubsys
                                 }
 
                                 // double error = taskParams.softwarePidCtrl.getError();
-                                double errorRate = taskParams.softwarePidCtrl.getErrorRate();
+                                // double errorRate = taskParams.softwarePidCtrl.getErrorRate();
                                 // if (Math.signum(error) * Math.signum(errorRate) > 0.0)
                                 // {
                                 //     // We are moving away from the target.
