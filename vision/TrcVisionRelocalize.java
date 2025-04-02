@@ -60,7 +60,8 @@ public class TrcVisionRelocalize
     }   //addTimedPose
 
     /**
-     * This method re-localizes the robot with the given vision timestamp and vision determined robot pose.
+     * This method calculates the re-localized pose accounting for robot movement with the given vision timestamp
+     * and vision determined robot pose.
      *
      * @param visionTimestamp specifies the vision timestamp.
      * @param visionPose specifies the vision determined robot pose at the time of the processed vision frame.
@@ -87,11 +88,16 @@ public class TrcVisionRelocalize
                     minTimeDeltaPose = timedPose;
                     minIndex = i;
                 }
+                else
+                {
+                    break;
+                }
             }
             // Determine the relative position from the time of the vision frame to current robot pose.
             // Adjust the vision re-localized pose with the same amount of travel.
             TrcPose2D deltaPose = robotPose.relativeTo(minTimeDeltaPose.pose);
             relocalizedPose = visionPose.addRelativePose(deltaPose);
+            // Remove the processed timed poses from the head of queue.
             for (int i = minIndex; i >= 0; i--)
             {
                 timedPoses.remove(i);
