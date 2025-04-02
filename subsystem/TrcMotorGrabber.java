@@ -377,7 +377,7 @@ public class TrcMotorGrabber implements TrcExclusiveSubsystem
         if (actionParams != null)
         {
             boolean gotObject = hasObject();
-            tracer.traceDebug(
+            tracer.traceInfo(
                 instanceName, "FinishAction(completed=%s): isOn=%s, hasObject=%s, actionParams=%s",
                 completed, isOn(), gotObject, actionParams);
 
