@@ -836,11 +836,11 @@ public class TrcPidController
                     {
                         tracer.traceInfo(
                             instanceName,
-                            "PID stalled (currTime=" + currTime +
-                            ", stallStartTime=" + pidCtrlState.stallDetectionStartTime +
-                            ", timeout=" + pidCtrlState.stallDetectionTimeout +
-                            ", velError=" + pidCtrlState.velError +
-                            ", errRateThreshold=" + pidCtrlState.stallErrorRateThreshold + ").");
+                            "PID stalled (stallTime=" + (currTime - pidCtrlState.stallDetectionStartTime) +
+                            "/" + pidCtrlState.stallDetectionTimeout +
+                            ", error=" + pidCtrlState.posError +
+                            ", errorRate=" + pidCtrlState.velError +
+                            "/" + pidCtrlState.stallErrorRateThreshold + ").");
                     }
                 }
             }
