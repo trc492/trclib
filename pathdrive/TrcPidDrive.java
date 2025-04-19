@@ -255,21 +255,19 @@ public class TrcPidDrive
     }   //setNoOscillation
 
     /**
-     * This method enables/disables the mode that square rooting all PID output. By square rooting the PID output,
-     * it gives a boost to the output when the error is smaller. That means it will make PID stronger to reach
-     * target.
+     * This method enables/disables SQUID mode of the PID controllers.
      *
      * @param enable specifies true to enable and false to disable.
      */
-    public synchronized void setSquareRootPidEnabled(boolean enable)
+    public synchronized void setSquidModeEnabled(boolean enable)
     {
         if (xPidCtrl != null)
         {
-            xPidCtrl.setSquareRootOutputEnabled(enable);
+            xPidCtrl.setSquidModeEnabled(enable);
         }
-        yPidCtrl.setSquareRootOutputEnabled(enable);
-        turnPidCtrl.setSquareRootOutputEnabled(enable);
-    }   //setSquareRootPidEnabled
+        yPidCtrl.setSquidModeEnabled(enable);
+        turnPidCtrl.setSquidModeEnabled(enable);
+    }   //setSquidModeEnabled
 
     /**
      * This method sets the message tracer for logging trace messages.

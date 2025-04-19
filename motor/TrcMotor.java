@@ -2238,11 +2238,11 @@ public abstract class TrcMotor implements TrcMotorController, TrcExclusiveSubsys
      * @param pidCoeff specifies the PID coefficients to set.
      * @param tolerance specifies the PID tolerance.
      * @param softwarePid specifies true to use software PID control, false to use native motor PID control.
-     * @param enableSquareRootPid specifies true to enable square root PID control mode, false to disable (only
-     *        applicable if softwarePid is true).
+     * @param enableSquid specifies true to enable SQUID control mode, false to disable (only applicable if
+     *        softwarePid is true).
      */
     public void setVelocityPidParameters(
-        TrcPidController.PidCoefficients pidCoeff, double tolerance, boolean softwarePid, boolean enableSquareRootPid)
+        TrcPidController.PidCoefficients pidCoeff, double tolerance, boolean softwarePid, boolean enableSquid)
     {
         softwarePidEnabled = softwarePid;
         if (softwarePidEnabled)
@@ -2257,7 +2257,7 @@ public abstract class TrcMotor implements TrcMotorController, TrcExclusiveSubsys
                 // Set to absolute setpoint because velocity PID control is generally absolute.
                 velPidCtrl.setAbsoluteSetPoint(true);
             }
-            velPidCtrl.setSquareRootOutputEnabled(enableSquareRootPid);
+            velPidCtrl.setSquidModeEnabled(enableSquid);
         }
         else
         {
@@ -2293,15 +2293,15 @@ public abstract class TrcMotor implements TrcMotorController, TrcExclusiveSubsys
      * @param iZone specifies IZone, can be 0.0 if not provided.
      * @param tolerance specifies the PID tolerance.
      * @param softwarePid specifies true to use software PID control, false to use native motor PID control.
-     * @param enableSquareRootPid specifies true to enable square root PID control mode, false to disable (only
-     *        applicable if softwarePid is true).
+     * @param enableSquid specifies true to enable SQUID control mode, false to disable (only applicable if
+     *        softwarePid is true).
      */
     public void setVelocityPidParameters(
         double kP, double kI, double kD, double kF, double iZone, double tolerance, boolean softwarePid,
-        boolean enableSquareRootPid)
+        boolean enableSquid)
     {
         setVelocityPidParameters(
-            new TrcPidController.PidCoefficients(kP, kI, kD, kF, iZone), tolerance, softwarePid, enableSquareRootPid);
+            new TrcPidController.PidCoefficients(kP, kI, kD, kF, iZone), tolerance, softwarePid, enableSquid);
     }   //setVelocityPidParameters
 
     /**
@@ -2334,14 +2334,14 @@ public abstract class TrcMotor implements TrcMotorController, TrcExclusiveSubsys
      * @param kF specifies the Kf coefficient.
      * @param tolerance specifies the PID tolerance.
      * @param softwarePid specifies true to use software PID control, false to use native motor PID control.
-     * @param enableSquareRootPid specifies true to enable square root PID control mode, false to disable (only
-     *        applicable if softwarePid is true).
+     * @param enableSquid specifies true to enable SQUID control mode, false to disable (only applicable if
+     *        softwarePid is true).
      */
     public void setVelocityPidParameters(
-        double kP, double kI, double kD, double kF, double tolerance, boolean softwarePid, boolean enableSquareRootPid)
+        double kP, double kI, double kD, double kF, double tolerance, boolean softwarePid, boolean enableSquid)
     {
         setVelocityPidParameters(
-            new TrcPidController.PidCoefficients(kP, kI, kD, kF, 0.0), tolerance, softwarePid, enableSquareRootPid);
+            new TrcPidController.PidCoefficients(kP, kI, kD, kF, 0.0), tolerance, softwarePid, enableSquid);
     }   //setVelocityPidParameters
 
     /**
@@ -2474,12 +2474,12 @@ public abstract class TrcMotor implements TrcMotorController, TrcExclusiveSubsys
      *        softwarePid is true).
      * @param tolerance specifies the PID tolerance.
      * @param softwarePid specifies true to use software PID control, false to use native motor PID control.
-     * @param enableSquareRootPid specifies true to enable square root PID control mode, false to disable (only
-     *        applicable if softwarePid is true).
+     * @param enableSquid specifies true to enable SQUID control mode, false to disable (only applicable if
+     *        softwarePid is true).
      */
     public void setPositionPidParameters(
         TrcPidController.PidCoefficients pidCoeff, TrcPidController.FFCoefficients ffCoeff, double tolerance,
-        boolean softwarePid, boolean enableSquareRootPid)
+        boolean softwarePid, boolean enableSquid)
     {
         softwarePidEnabled = softwarePid;
         if (softwarePidEnabled)
@@ -2494,7 +2494,7 @@ public abstract class TrcMotor implements TrcMotorController, TrcExclusiveSubsys
                 // Set to absolute setpoint because position PID control is generally absolute.
                 posPidCtrl.setAbsoluteSetPoint(true);
             }
-            posPidCtrl.setSquareRootOutputEnabled(enableSquareRootPid);
+            posPidCtrl.setSquidModeEnabled(enableSquid);
         }
         else
         {
@@ -2530,16 +2530,15 @@ public abstract class TrcMotor implements TrcMotorController, TrcExclusiveSubsys
      * @param iZone specifies IZone, can be 0.0 if not provided.
      * @param tolerance specifies the PID tolerance.
      * @param softwarePid specifies true to use software PID control, false to use native motor PID control.
-     * @param enableSquareRootPid specifies true to enable square root PID control mode, false to disable (only
-     *        applicable if softwarePid is true).
+     * @param enableSquid specifies true to enable SQUID control mode, false to disable (only applicable if
+     *        softwarePid is true).
      */
     public void setPositionPidParameters(
         double kP, double kI, double kD, double kF, double iZone, double tolerance, boolean softwarePid,
-        boolean enableSquareRootPid)
+        boolean enableSquid)
     {
         setPositionPidParameters(
-            new TrcPidController.PidCoefficients(kP, kI, kD, kF, iZone), null, tolerance, softwarePid,
-            enableSquareRootPid);
+            new TrcPidController.PidCoefficients(kP, kI, kD, kF, iZone), null, tolerance, softwarePid, enableSquid);
     }   //setPositionPidParameters
 
     /**
@@ -2572,15 +2571,14 @@ public abstract class TrcMotor implements TrcMotorController, TrcExclusiveSubsys
      * @param kF specifies the Kf coefficient.
      * @param tolerance specifies the PID tolerance.
      * @param softwarePid specifies true to use software PID control, false to use native motor PID control.
-     * @param enableSquareRootPid specifies true to enable square root PID control mode, false to disable (only
-     *        applicable if softwarePid is true).
+     * @param enableSquid specifies true to enable SQUID control mode, false to disable (only applicable if
+     *        softwarePid is true).
      */
     public void setPositionPidParameters(
-        double kP, double kI, double kD, double kF, double tolerance, boolean softwarePid, boolean enableSquareRootPid)
+        double kP, double kI, double kD, double kF, double tolerance, boolean softwarePid, boolean enableSquid)
     {
         setPositionPidParameters(
-            new TrcPidController.PidCoefficients(kP, kI, kD, kF, 0.0), null, tolerance, softwarePid,
-            enableSquareRootPid);
+            new TrcPidController.PidCoefficients(kP, kI, kD, kF, 0.0), null, tolerance, softwarePid, enableSquid);
     }   //setPositionPidParameters
 
     /**
@@ -2713,11 +2711,11 @@ public abstract class TrcMotor implements TrcMotorController, TrcExclusiveSubsys
      * @param pidCoeff specifies the PID coefficients to set.
      * @param tolerance specifies the PID tolerance.
      * @param softwarePid specifies true to use software PID control, false to use native motor PID control.
-     * @param enableSquareRootPid specifies true to enable square root PID control mode, false to disable (only
-     *        applicable if softwarePid is true).
+     * @param enableSquid specifies true to enable SQUID control mode, false to disable (only applicable if
+     *        softwarePid is true).
      */
     public void setCurrentPidParameters(
-        TrcPidController.PidCoefficients pidCoeff, double tolerance, boolean softwarePid, boolean enableSquareRootPid)
+        TrcPidController.PidCoefficients pidCoeff, double tolerance, boolean softwarePid, boolean enableSquid)
     {
         softwarePidEnabled = softwarePid;
         if (softwarePidEnabled)
@@ -2732,7 +2730,7 @@ public abstract class TrcMotor implements TrcMotorController, TrcExclusiveSubsys
                 // Set to absolute setpoint because current PID control is generally absolute.
                 currentPidCtrl.setAbsoluteSetPoint(true);
             }
-            currentPidCtrl.setSquareRootOutputEnabled(enableSquareRootPid);
+            currentPidCtrl.setSquidModeEnabled(enableSquid);
         }
         else
         {
@@ -2768,15 +2766,15 @@ public abstract class TrcMotor implements TrcMotorController, TrcExclusiveSubsys
      * @param iZone specifies IZone, can be 0.0 if not provided.
      * @param tolerance specifies the PID tolerance.
      * @param softwarePid specifies true to use software PID control, false to use native motor PID control.
-     * @param enableSquareRootPid specifies true to enable square root PID control mode, false to disable (only
-     *        applicable if softwarePid is true).
+     * @param enableSquid specifies true to enable SQUID control mode, false to disable (only applicable if
+     *        softwarePid is true).
      */
     public void setCurrentPidParameters(
         double kP, double kI, double kD, double kF, double iZone, double tolerance, boolean softwarePid,
-        boolean enableSquareRootPid)
+        boolean enableSquid)
     {
         setCurrentPidParameters(
-            new TrcPidController.PidCoefficients(kP, kI, kD, kF, iZone), tolerance, softwarePid, enableSquareRootPid);
+            new TrcPidController.PidCoefficients(kP, kI, kD, kF, iZone), tolerance, softwarePid, enableSquid);
     }   //setCurrentPidParameters
 
     /**
@@ -2809,14 +2807,14 @@ public abstract class TrcMotor implements TrcMotorController, TrcExclusiveSubsys
      * @param kF specifies the Kf coefficient.
      * @param tolerance specifies the PID tolerance.
      * @param softwarePid specifies true to use software PID control, false to use native motor PID control.
-     * @param enableSquareRootPid specifies true to enable square root PID control mode, false to disable (only
-     *        applicable if softwarePid is true).
+     * @param enableSquid specifies true to enable SQUID control mode, false to disable (only applicable if
+     *        softwarePid is true).
      */
     public void setCurrentPidParameters(
-        double kP, double kI, double kD, double kF, double tolerance, boolean softwarePid, boolean enableSquareRootPid)
+        double kP, double kI, double kD, double kF, double tolerance, boolean softwarePid, boolean enableSquid)
     {
         setCurrentPidParameters(
-            new TrcPidController.PidCoefficients(kP, kI, kD, kF, 0.0), tolerance, softwarePid, enableSquareRootPid);
+            new TrcPidController.PidCoefficients(kP, kI, kD, kF, 0.0), tolerance, softwarePid, enableSquid);
     }   //setCurrentPidParameters
 
     /**

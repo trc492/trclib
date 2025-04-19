@@ -242,7 +242,7 @@ public class TrcPidController
     private boolean inverted = false;
     private boolean absSetPoint = false;
     private boolean noOscillation = false;
-    private boolean squareRootOutput = false;
+    private boolean squidModeEnabled = false;
     private double minOutput = -1.0;
     private double maxOutput = 1.0;
     private double minIntegral = -1.0;
@@ -403,20 +403,17 @@ public class TrcPidController
     }   //setNoOscillation
 
     /**
-     * This method enables/disables the mode that square rooting the PID output. By square rooting the PID output,
-     * it gives a boost to the output when the error is smaller. That means it will make PID stronger to reach
-     * target. Apparently, this strategy is widely used in Washington state teams and rumored that it came from
-     * the team Escape Velocity.
+     * This method enables/disables SQUID mode.
      *
      * @param enable specifies true to enable and false to disable.
      */
-    public void setSquareRootOutputEnabled(boolean enable)
+    public void setSquidModeEnabled(boolean enable)
     {
         synchronized (pidCtrlState)
         {
-            this.squareRootOutput = enable;
+            this.squidModeEnabled = enable;
         }
-    }   //setSquareRootOutputEnabled
+    }   //setSquidModeEnabled
 
     /**
      * This method enables/disables stall detection.
@@ -1052,22 +1049,30 @@ public class TrcPidController
                 pidCtrlState.totalPosError = 0.0;
             }
 
-            // Calculate PIDF output.
-            pidCtrlState.pTerm = pidCtrlState.pidCoeffs.kP * pidCtrlState.posError;
-            pidCtrlState.iTerm = pidCtrlState.pidCoeffs.kI * pidCtrlState.totalPosError;
-            pidCtrlState.dTerm = pidCtrlState.pidCoeffs.kD * pidCtrlState.velError;
-            pidCtrlState.fTerm = pidCtrlState.pidCoeffs.kF * pidCtrlState.posSetpoint;
-            double output = pidCtrlState.pTerm + pidCtrlState.iTerm + pidCtrlState.dTerm + pidCtrlState.fTerm;
-
-            // Calculate FeedForward if any.
-            if (pidCtrlState.ffCoeffs != null)
+            double output;
+            if (squidModeEnabled)
             {
-                pidCtrlState.sTerm = pidCtrlState.ffCoeffs.kS * Math.signum(pidCtrlState.velSetpoint);
-                pidCtrlState.vTerm = pidCtrlState.ffCoeffs.kV * pidCtrlState.velSetpoint;
-                pidCtrlState.aTerm = pidCtrlState.ffCoeffs.kA * pidCtrlState.accelSetpoint;
-                output += pidCtrlState.sTerm + pidCtrlState.vTerm + pidCtrlState.aTerm;
+                output = pidCtrlState.pidCoeffs.kP * Math.sqrt(absPosError) * Math.signum(pidCtrlState.posError);
             }
-            output = TrcUtil.clipRange(output, minOutput, maxOutput);
+            else
+            {
+                // Calculate PIDF output.
+                pidCtrlState.pTerm = pidCtrlState.pidCoeffs.kP*pidCtrlState.posError;
+                pidCtrlState.iTerm = pidCtrlState.pidCoeffs.kI*pidCtrlState.totalPosError;
+                pidCtrlState.dTerm = pidCtrlState.pidCoeffs.kD*pidCtrlState.velError;
+                pidCtrlState.fTerm = pidCtrlState.pidCoeffs.kF*pidCtrlState.posSetpoint;
+                output = pidCtrlState.pTerm + pidCtrlState.iTerm + pidCtrlState.dTerm + pidCtrlState.fTerm;
+
+                // Calculate FeedForward if any.
+                if (pidCtrlState.ffCoeffs != null)
+                {
+                    pidCtrlState.sTerm = pidCtrlState.ffCoeffs.kS*Math.signum(pidCtrlState.velSetpoint);
+                    pidCtrlState.vTerm = pidCtrlState.ffCoeffs.kV*pidCtrlState.velSetpoint;
+                    pidCtrlState.aTerm = pidCtrlState.ffCoeffs.kA*pidCtrlState.accelSetpoint;
+                    output += pidCtrlState.sTerm + pidCtrlState.vTerm + pidCtrlState.aTerm;
+                }
+                output = TrcUtil.clipRange(output, minOutput, maxOutput);
+            }
 
             // Apply Ramp Rate limit if any.
             if (rampRate != null)
@@ -1075,11 +1080,6 @@ public class TrcPidController
                 double maxChange = rampRate * pidCtrlState.deltaTime;
                 double change = TrcUtil.clipRange(output - pidCtrlState.output, -maxChange, maxChange);
                 output = pidCtrlState.output + change;
-            }
-
-            if (squareRootOutput)
-            {
-                output = Math.signum(output) * Math.sqrt(Math.abs(output));
             }
             pidCtrlState.output = output;
 

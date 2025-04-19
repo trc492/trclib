@@ -288,25 +288,23 @@ public class TrcPurePursuitDrive
     }   //getTurnPidCtrl
 
     /**
-     * This method enables/disables the mode that square rooting all PID output. By square rooting the PID output,
-     * it gives a boost to the output when the error is smaller. That means it will make PID stronger to reach
-     * target.
+     * This method enables/disables SQUID mode of the PID controllers.
      *
      * @param enable specifies true to enable and false to disable.
      */
-    public synchronized void setSquareRootPidEnabled(boolean enable)
+    public synchronized void setSquidModeEnabled(boolean enable)
     {
         if (xPosPidCtrl != null)
         {
-            xPosPidCtrl.setSquareRootOutputEnabled(enable);
+            xPosPidCtrl.setSquidModeEnabled(enable);
         }
-        yPosPidCtrl.setSquareRootOutputEnabled(enable);
-        turnPidCtrl.setSquareRootOutputEnabled(enable);
+        yPosPidCtrl.setSquidModeEnabled(enable);
+        turnPidCtrl.setSquidModeEnabled(enable);
         if (applySquidOnVel)
         {
-            velPidCtrl.setSquareRootOutputEnabled(enable);
+            velPidCtrl.setSquidModeEnabled(enable);
         }
-    }   //setSquareRootPidEnabled
+    }   //setSquidModeEnabled
 
     /**
      * This method sets the message tracer for logging trace messages.
@@ -1440,29 +1438,40 @@ public class TrcPurePursuitDrive
         double jerk = interpolate(point1.jerk, point2.jerk, weight);
 
         double heading;
-        double turningRadius = lookaheadRadius + posTolerance;
-        if (robotPose == null || robotPose.distanceTo(point2.pose) <= turningRadius)
+//        double turningRadius = lookaheadRadius + posTolerance;
+        if (robotPose == null)
         {
-            if (robotPose != null)
-            {
-                // For non-holonomic drivebase and the end-waypoint is within the robot's lookahead circle +
-                // posTolerance, we will interpolate the heading weight differently than holonomic drivebase.
-                // The heading weight is the percentage distance of the robot position to the end-waypoint over
-                // lookahead radius.
-                weight = 1 - point2.pose.distanceTo(point1.pose)*(1 - weight)/turningRadius;
-            }
+            // For holonomic drivebase with incremental turn.
             heading = interpolate(
                 point1.pose.angle, warpSpace.getOptimizedTarget(point2.pose.angle, point1.pose.angle), weight);
         }
         else
         {
-            // TODO: This is wrong, fix it.
-            // For non-holonomic drivebase, maintain the robot heading pointing to the end-waypoint unless the
-            // end-waypoint is within the robot's lookahead circle.
-            TrcPose2D endpointPose = point2.pose.clone();
-            endpointPose.angle = point1.pose.angle;
-            heading = point1.pose.angle + endpointPose.relativeTo(robotPose).angle;
+            // For non-holonomic drivebase or holonomic drivebase but without incremental turn.
+            heading = point1.pose.angle;
         }
+//        if (robotPose == null || robotPose.distanceTo(point2.pose) <= turningRadius)
+//        {
+//            if (robotPose != null)
+//            {
+//                // For non-holonomic drivebase and the end-waypoint is within the robot's lookahead circle +
+//                // posTolerance, we will interpolate the heading weight differently than holonomic drivebase.
+//                // The heading weight is the percentage distance of the robot position to the end-waypoint over
+//                // lookahead radius.
+//                weight = 1 - point2.pose.distanceTo(point1.pose)*(1 - weight)/turningRadius;
+//            }
+//            heading = interpolate(
+//                point1.pose.angle, warpSpace.getOptimizedTarget(point2.pose.angle, point1.pose.angle), weight);
+//        }
+//        else
+//        {
+//            // TODO: This is wrong, fix it.
+//            // For non-holonomic drivebase, maintain the robot heading pointing to the end-waypoint unless the
+//            // end-waypoint is within the robot's lookahead circle.
+//            TrcPose2D endpointPose = point2.pose.clone();
+//            endpointPose.angle = point1.pose.angle;
+//            heading = point1.pose.angle + endpointPose.relativeTo(robotPose).angle;
+//        }
 
         return new TrcWaypoint(timestep, new TrcPose2D(x, y, heading), position, velocity, acceleration, jerk);
     }   //interpolate
@@ -1545,12 +1554,14 @@ public class TrcPurePursuitDrive
      */
     private TrcWaypoint getFollowingPoint(TrcPose2D robotPose)
     {
-        TrcWaypoint lastWaypoint = path.getLastWaypoint();
-        if (robotPose.distanceTo(lastWaypoint.pose) < lookaheadRadius)
-        {
-            pathIndex = path.getSize() - 1;
-            return lastWaypoint;
-        }
+//        TrcWaypoint lastWaypoint = path.getLastWaypoint();
+//        if (robotPose.distanceTo(lastWaypoint.pose) < lookaheadRadius)
+//        {
+//            // TODO: This may not be a desirable behavior. It basically said if the end target point is within the
+//            // lookahead circle, it will skip all points on the path and just jump to the end target.
+//            pathIndex = path.getSize() - 1;
+//            return lastWaypoint;
+//        }
         // Find the next segment that intersects with the lookahead circle of the robot.
         // If there are tiny segments that are completely within the lookahead circle, we will skip them all.
         for (int i = Math.max(pathIndex, 1); i < path.getSize(); i++)
