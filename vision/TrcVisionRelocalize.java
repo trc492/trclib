@@ -22,8 +22,6 @@
 
  package trclib.vision;
 
-import java.util.ArrayList;
-
 import trclib.pathdrive.TrcPose2D;
 
 /**
@@ -43,7 +41,18 @@ public class TrcVisionRelocalize
         }   //TimedPose
     }   //class TimedPose
 
-    private final ArrayList<TimedPose> timedPoses = new ArrayList<>();
+    private final TimedPose[] timedPoses;
+    private int index;
+
+    public TrcVisionRelocalize(int bufferSize)
+    {
+        timedPoses = new TimedPose[bufferSize];
+        for (int i = 0; i < bufferSize; i++)
+        {
+            timedPoses[i] = null;
+        }
+        index = 0;
+    }   //TrcVisionRelocalize
 
     /**
      * This method adds the current timestamp and robot pose in a history queue.
@@ -55,7 +64,8 @@ public class TrcVisionRelocalize
     {
         synchronized (timedPoses)
         {
-            timedPoses.add(new TimedPose(timestamp, pose));
+            timedPoses[index] = new TimedPose(timestamp, pose);
+            index = (index + 1)%timedPoses.length;
         }
     }   //addTimedPose
 
@@ -76,17 +86,22 @@ public class TrcVisionRelocalize
         {
             double minTimeDelta = Double.MAX_VALUE;
             TimedPose minTimeDeltaPose = null;
-            int minIndex = -1;
             // Find the robot pose with a timestamp closest to the vision timestamp.
-            for (int i = 0; i < timedPoses.size(); i++)
+            for (int offset = 1; offset < timedPoses.length; offset++)
             {
-                TimedPose timedPose = timedPoses.get(i);
-                double timeDelta = Math.abs(visionTimestamp - timedPose.timestamp);
+                // Searching backward from the current index.
+                int i = index - offset;
+                if (i < 0) i += timedPoses.length;
+                if (i == index || timedPoses[i] == null)
+                {
+                    break;
+                }
+
+                double timeDelta = Math.abs(visionTimestamp - timedPoses[i].timestamp);
                 if (timeDelta < minTimeDelta)
                 {
                     minTimeDelta = timeDelta;
-                    minTimeDeltaPose = timedPose;
-                    minIndex = i;
+                    minTimeDeltaPose = timedPoses[i];
                 }
                 else
                 {
@@ -97,11 +112,6 @@ public class TrcVisionRelocalize
             // Adjust the vision re-localized pose with the same amount of travel.
             TrcPose2D deltaPose = robotPose.relativeTo(minTimeDeltaPose.pose);
             relocalizedPose = visionPose.addRelativePose(deltaPose);
-            // Remove the processed timed poses from the head of queue.
-            for (int i = minIndex; i >= 0; i--)
-            {
-                timedPoses.remove(i);
-            }
         }
 
         return relocalizedPose;
