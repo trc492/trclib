@@ -211,6 +211,12 @@ public class TrcOpenCvColorBlobPipeline implements TrcOpenCvPipeline<TrcOpenCvDe
             return tvec;
         }   //cameraTVec
 
+        /**
+         * This method orders the array of 4 points in the order: top-left, top-right, bottom-right, bottom-left.
+         *
+         * @param pts specifies the points before ordering.
+         * @return ordered points.
+         */
         private Point[] orderPoints(Point[] pts)
         {
             // Orders the array of 4 points in the order: top-left, top-right, bottom-right, bottom-left
@@ -243,8 +249,14 @@ public class TrcOpenCvColorBlobPipeline implements TrcOpenCvPipeline<TrcOpenCvDe
             orderedPts[3] = pts[blIndex];
 
             return orderedPts;
-        }
+        }   //orderPoints
 
+        /**
+         * This method finds the min value in the given array and return its index.
+         *
+         * @param array specifies the array to search for min value.
+         * @return index of min value found.
+         */
         private int indexOfMin(double[] array)
         {
             int index = 0;
@@ -259,8 +271,14 @@ public class TrcOpenCvColorBlobPipeline implements TrcOpenCvPipeline<TrcOpenCvDe
                 }
             }
             return index;
-        }
+        }   //indexOfMin
 
+        /**
+         * This method finds the max value in the given array and return its index.
+         *
+         * @param array specifies the array to search for max value.
+         * @return index of max value found.
+         */
         private int indexOfMax(double[] array)
         {
             int index = 0;
@@ -275,7 +293,7 @@ public class TrcOpenCvColorBlobPipeline implements TrcOpenCvPipeline<TrcOpenCvDe
                 }
             }
             return index;
-        }
+        }   //indexOfMax
 
         /**
          * This method returns the rect of the detected object.
