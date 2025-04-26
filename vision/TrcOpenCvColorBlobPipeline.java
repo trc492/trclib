@@ -459,6 +459,19 @@ public class TrcOpenCvColorBlobPipeline implements TrcOpenCvPipeline<TrcOpenCvDe
         }   //setAspectRatioRange
 
         @Override
+        public FilterContourParams clone()
+        {
+            return new FilterContourParams()
+                .setMinArea(minArea)
+                .setMinPerimeter(minPerimeter)
+                .setWidthRange(widthRange[0], widthRange[1])
+                .setHeightRange(heightRange[0], heightRange[1])
+                .setSolidityRange(solidityRange[0], solidityRange[1])
+                .setVerticesRange(verticesRange[0], verticesRange[1])
+                .setAspectRatioRange(aspectRatioRange[0], aspectRatioRange[1]);
+        }   //clone
+
+        @Override
         public String toString()
         {
             return "minArea=" + minArea +
