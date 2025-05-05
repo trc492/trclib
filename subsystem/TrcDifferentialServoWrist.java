@@ -34,9 +34,9 @@ import trclib.timer.TrcTimer;
 
 /**
  * This class implements a platform independent Differential Servo Wrist Subsystem. A Differential Servo Wrist consists
- * of two servos controlling two degrees of freedom. The wrist can tilt as well as rotate. When the two servos turn
- * in the same direction on the mounted axis, the wrist tilts up and down. When the two servos turn in opposite
- * directions, the wrist rotates.
+ * of two servos controlling a 2-DOF wrist. The wrist can tilt as well as rotate. When the two servos turn in the same
+ * direction on the mounted axis, the wrist tilts up and down. When the two servos turn in opposite directions, the
+ * wrist rotates.
  */
 public class TrcDifferentialServoWrist implements TrcExclusiveSubsystem
 {
@@ -86,7 +86,7 @@ public class TrcDifferentialServoWrist implements TrcExclusiveSubsystem
         }   //toString
 
         /**
-         * This methods sets the parameters of servo 1.
+         * This methods sets the two servos.
          *
          * @param servo1 specifies the servo1 object.
          * @param servo2 specifies the servo2 object.
@@ -97,7 +97,7 @@ public class TrcDifferentialServoWrist implements TrcExclusiveSubsystem
             this.servo1 = servo1;
             this.servo2 = servo2;
             return this;
-        }   //setServo1
+        }   //setServos
 
         /**
          * This method sets the physical tilt and rotate position range of the wrist. Because of the nature of
@@ -445,7 +445,7 @@ public class TrcDifferentialServoWrist implements TrcExclusiveSubsystem
     }   //actionTimedOut
 
     /**
-     * This method sets the wrist tilting power.
+     * This method sets the wrist tilting/rotating power.
      *
      * @param owner specifies the owner ID to check if the caller has ownership of the subsystem.
      * @param delay specifies the delay in seconds before setting the power of the wrist, can be zero if no delay.
@@ -473,7 +473,7 @@ public class TrcDifferentialServoWrist implements TrcExclusiveSubsystem
     }   //setPower
 
     /**
-     * This method sets the wrist tilting power.
+     * This method sets the wrist tilting/rotating power.
      *
      * @param delay specifies the delay in seconds before setting the power of the wrist, can be zero if no delay.
      * @param tiltPower specifies how fast the wrist will tilt.
@@ -485,7 +485,7 @@ public class TrcDifferentialServoWrist implements TrcExclusiveSubsystem
     }   //setPower
 
     /**
-     * This method sets the wrist tilting power.
+     * This method sets the wrist tilting/rotating power.
      *
      * @param tiltPower specifies how fast the wrist will tilt.
      * @param rotatePower specifies how fast the wrist will rotate.
@@ -641,7 +641,7 @@ public class TrcDifferentialServoWrist implements TrcExclusiveSubsystem
     public double getTiltPosition()
     {
         return getTiltPosition(wristParams.servo1.getPosition(), wristParams.servo2.getPosition());
-    }   //getRotatePosition
+    }   //getTiltPosition
 
     /**
      * This method returns the physical rotate position value of the wrist. Generally, servo do not provide real time
@@ -673,7 +673,7 @@ public class TrcDifferentialServoWrist implements TrcExclusiveSubsystem
     private double getServo2Position(double tiltPos, double rotatePos)
     {
         return ((tiltPos - wristParams.tiltPosOffset) - (rotatePos - wristParams.rotatePosOffset));
-    }   //getServ21Position
+    }   //getServo2Position
 
     //
     // Presets.
