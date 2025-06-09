@@ -736,11 +736,15 @@ public abstract class TrcGyro extends TrcSensor<TrcGyro.DataType> implements Trc
         odometry.prevPos = odometry.currPos;
         odometry.currTimestamp = zHeading.timestamp;
         odometry.currPos = zHeading.value - zZeroPos;
-        double timeDelta = odometry.currTimestamp - odometry.prevTimestamp;
-        if (timeDelta != 0.0)
-        {
-            odometry.velocity = (odometry.currPos - odometry.prevPos) / timeDelta;
-        }
+        // Assuming the IMU hardware supports rotation rate. If not, either the IMU driver should calculate the
+        // rotation rate (i.e. headingDelta/timeDelta) or the IMU driver can throw an exception and we catch
+        // it and do the calculation here.
+        odometry.velocity = getZRotationRate().value;
+        // double timeDelta = odometry.currTimestamp - odometry.prevTimestamp;
+        // if (timeDelta != 0.0)
+        // {
+        //     odometry.velocity = (odometry.currPos - odometry.prevPos) / timeDelta;
+        // }
     }   //updateOdometry
 
     //

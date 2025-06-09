@@ -29,6 +29,8 @@ import trclib.pathdrive.TrcPose2D;
  */
 public class TrcVisionRelocalize
 {
+    private static final int DEF_BUFFER_SIZE = 100;
+
     public static class TimedPose
     {
         double timestamp;
@@ -44,6 +46,12 @@ public class TrcVisionRelocalize
     private final TimedPose[] timedPoses;
     private int index;
 
+    /**
+     * Constructor: Create an instance of the object.
+     *
+     * @param bufferSize specifies the circular buffer size. The buffer should be large enough to contain data to
+     *        cover the worst case period of processing a vision frame.
+     */
     public TrcVisionRelocalize(int bufferSize)
     {
         timedPoses = new TimedPose[bufferSize];
@@ -52,6 +60,14 @@ public class TrcVisionRelocalize
             timedPoses[i] = null;
         }
         index = 0;
+    }   //TrcVisionRelocalize
+
+    /**
+     * Constructor: Create an instance of the object.
+     */
+    public TrcVisionRelocalize()
+    {
+        this(DEF_BUFFER_SIZE);
     }   //TrcVisionRelocalize
 
     /**
