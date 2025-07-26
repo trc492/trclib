@@ -242,13 +242,23 @@ public class TrcIntake implements TrcExclusiveSubsystem
     }   //toString
 
     /**
-     * This method returns the current motor power.
+     * This method returns the primary motor current.
      *
-     * @return current motor power.
+     * @return primary motor current.
+     */
+    public double getCurrent()
+    {
+        return motor.getCurrent();
+    }   //getCurrent
+
+    /**
+     * This method returns the primary motor power.
+     *
+     * @return primary motor power.
      */
     public double getPower()
     {
-        return motor.getMotorPower();
+        return motor.getPower();
     }   //getPower
 
     /**

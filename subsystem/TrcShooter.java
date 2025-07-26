@@ -415,9 +415,9 @@ public class TrcShooter implements TrcExclusiveSubsystem
     }   //getShooterMotor2
 
     /**
-     * This methods returns the shooter motor 1 current power.
+     * This methods returns the shooter motor 1 power.
      *
-     * @return shooter motor 1 current power.
+     * @return shooter motor 1 power.
      */
     public double getShooterMotor1Power()
     {
@@ -425,15 +425,36 @@ public class TrcShooter implements TrcExclusiveSubsystem
     }   //getShooterMotor1Power
 
     /**
-     * This methods returns the shooter motor 2 current power if any.
+     * This methods returns the shooter motor 2 power if any.
      *
-     * @return shooter motor 2 current power, null if none.
+     * @return shooter motor 2 power, null if none.
      */
     public Double getShooterMotor2Power()
     {
         TrcMotor motor2 = getShooterMotor2();
         return motor2 != null? motor2.getPower(): null;
     }   //getShooterMotor2Power
+
+    /**
+     * This methods returns the shooter motor 1 current.
+     *
+     * @return shooter motor 1 current.
+     */
+    public double getShooterMotor1Current()
+    {
+        return shooterMotor1.getCurrent();
+    }   //getShooterMotor1Current
+
+    /**
+     * This methods returns the shooter motor 2 current if any.
+     *
+     * @return shooter motor 2 current, null if none.
+     */
+    public Double getShooterMotor2Current()
+    {
+        TrcMotor motor2 = getShooterMotor2();
+        return motor2 != null? motor2.getCurrent(): null;
+    }   //getShooterMotor2Current
 
     /**
      * This method returns the shooter motor 1 current velocity.
