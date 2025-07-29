@@ -257,6 +257,7 @@ public abstract class TrcDriveBase implements TrcExclusiveSubsystem
     private final Stack<Odometry> referenceOdometryStack = new Stack<>();
     private DriveOrientation driveOrientation = DriveOrientation.ROBOT;
     private double fieldForwardHeading;
+    protected Double maxMotorVel = null;
 
     private String driveOwner = null;
     protected double stallStartTime = 0.0;
@@ -1212,6 +1213,19 @@ public abstract class TrcDriveBase implements TrcExclusiveSubsystem
     {
         return motors.length;
     }   //getNumMotors
+
+    /**
+     * This method enables/disables velocity control on the drive motors. If enabled, instead of sending percentage
+     * power to the motors, we will send percentage of max motor velocity to the motors.
+     *
+     * @param maxMotorVel specifies the maximum velocity of the motor in scaled unit/sec if enabled, null if disabled.
+     *        Generally, drive motors are not scaled, so the unit is really motor native unit. In FRC, this would be
+     *        rotation/sec. In FTC, this would be encoder counts/sec.
+     */
+    public void setMotorVelocityControlEnabled(Double maxMotorVel)
+    {
+        this.maxMotorVel = maxMotorVel;
+    }   //setMotorVelocityControlEnabled
 
     /**
      * This method inverts direction of a given motor in the drive train.

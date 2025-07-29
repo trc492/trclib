@@ -280,7 +280,14 @@ public class TrcSimpleDriveBase extends TrcDriveBase
                 {
                     wheelPower = motorPowerMapper.translateMotorPower(wheelPower, lfMotor.getVelocity());
                 }
-                lfMotor.setPower(wheelPower);
+                if (maxMotorVel != null)
+                {
+                    lfMotor.setVelocity(wheelPower * maxMotorVel);
+                }
+                else
+                {
+                    lfMotor.setPower(wheelPower);
+                }
             }
 
             if (rfMotor != null)
@@ -290,7 +297,14 @@ public class TrcSimpleDriveBase extends TrcDriveBase
                 {
                     wheelPower = motorPowerMapper.translateMotorPower(wheelPower, rfMotor.getVelocity());
                 }
-                rfMotor.setPower(wheelPower);
+                if (maxMotorVel != null)
+                {
+                    rfMotor.setVelocity(wheelPower * maxMotorVel);
+                }
+                else
+                {
+                    rfMotor.setPower(wheelPower);
+                }
             }
 
             if (lbMotor != null)
@@ -300,7 +314,14 @@ public class TrcSimpleDriveBase extends TrcDriveBase
                 {
                     wheelPower = motorPowerMapper.translateMotorPower(wheelPower, lbMotor.getVelocity());
                 }
-                lbMotor.setPower(wheelPower);
+                if (maxMotorVel != null)
+                {
+                    lbMotor.setVelocity(wheelPower * maxMotorVel);
+                }
+                else
+                {
+                    lbMotor.setPower(wheelPower);
+                }
             }
 
             if (rbMotor != null)
@@ -310,7 +331,14 @@ public class TrcSimpleDriveBase extends TrcDriveBase
                 {
                     wheelPower = motorPowerMapper.translateMotorPower(wheelPower, rbMotor.getVelocity());
                 }
-                rbMotor.setPower(wheelPower);
+                if (maxMotorVel != null)
+                {
+                    rbMotor.setVelocity(wheelPower * maxMotorVel);
+                }
+                else
+                {
+                    rbMotor.setPower(wheelPower);
+                }
             }
 
             if (lcMotor != null)
@@ -320,7 +348,14 @@ public class TrcSimpleDriveBase extends TrcDriveBase
                 {
                     wheelPower = motorPowerMapper.translateMotorPower(wheelPower, lcMotor.getVelocity());
                 }
-                lcMotor.setPower(wheelPower);
+                if (maxMotorVel != null)
+                {
+                    lcMotor.setVelocity(wheelPower * maxMotorVel);
+                }
+                else
+                {
+                    lcMotor.setPower(wheelPower);
+                }
             }
 
             if (rcMotor != null)
@@ -330,7 +365,14 @@ public class TrcSimpleDriveBase extends TrcDriveBase
                 {
                     wheelPower = motorPowerMapper.translateMotorPower(wheelPower, rcMotor.getVelocity());
                 }
-                rcMotor.setPower(wheelPower);
+                if (maxMotorVel != null)
+                {
+                    rcMotor.setVelocity(wheelPower * maxMotorVel);
+                }
+                else
+                {
+                    rcMotor.setPower(wheelPower);
+                }
             }
             setDriveTime(owner, driveTime, event);
         }

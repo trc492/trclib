@@ -254,6 +254,16 @@ public class TrcSwerveModule
     public void setPower(double power)
     {
         driveMotor.setPower(power * optimizedWheelDir);
-    }   //set
+    }   //setPower
+
+    /**
+     * This method sets the motor power.
+     *
+     * @param power specifies the percentage power (range -1.0 to 1.0) to be set.
+     */
+    public void setVelocity(double velocity)
+    {
+        driveMotor.setVelocity(velocity * optimizedWheelDir);
+    }   //setVelocity
 
 }   //class TrcSwerveModule
