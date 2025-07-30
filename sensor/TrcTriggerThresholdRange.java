@@ -199,17 +199,17 @@ public class TrcTriggerThresholdRange implements TrcTrigger
     /**
      * This method arms the trigger. It enables the task that monitors the sensor value.
      *
-     * @param triggerDelay specifies the delay for arming the trigger.
+     * @param triggerDelay specifies the delay in seconds before enabling trigger, null if none.
      * @param triggerMode specifies the trigger mode that will signal the event.
      * @param event specifies the event to signal when the trigger state changed.
      */
     @Override
-    public void enableTrigger(double triggerDelay, TriggerMode triggerMode, TrcEvent event)
+    public void enableTrigger(Double triggerDelay, TriggerMode triggerMode, TrcEvent event)
     {
         synchronized (triggerState)
         {
             setTriggerParams(triggerMode, event);
-            if (triggerDelay > 0.0)
+            if (triggerDelay != null)
             {
                 timer.set(triggerDelay, (c) -> {setEnabled(true);});
             }
@@ -223,17 +223,17 @@ public class TrcTriggerThresholdRange implements TrcTrigger
     /**
      * This method arms the trigger. It enables the task that monitors the sensor value.
      *
-     * @param triggerDelay specifies the delay for arming the trigger.
+     * @param triggerDelay specifies the delay in seconds before enabling trigger, null if none.
      * @param triggerMode specifies the trigger mode that will trigger a callback.
      * @param callback specifies the callback handler to notify when the trigger state changed.
      */
     @Override
-    public void enableTrigger(double triggerDelay, TriggerMode triggerMode, TrcEvent.Callback callback)
+    public void enableTrigger(Double triggerDelay, TriggerMode triggerMode, TrcEvent.Callback callback)
     {
         synchronized (triggerState)
         {
             setTriggerParams(triggerMode, callback);
-            if (triggerDelay > 0.0)
+            if (triggerDelay != null)
             {
                 timer.set(triggerDelay, (c) -> {setEnabled(true);});
             }
