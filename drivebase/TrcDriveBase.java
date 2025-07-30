@@ -1215,17 +1215,34 @@ public abstract class TrcDriveBase implements TrcExclusiveSubsystem
     }   //getNumMotors
 
     /**
-     * This method enables/disables velocity control on the drive motors. If enabled, instead of sending percentage
-     * power to the motors, we will send percentage of max motor velocity to the motors.
+     * This method enables velocity control on the drive motors. When enabled, instead of sending percentage power to
+     * the motors, we will send percentage of max motor velocity to the motors.
      *
      * @param maxMotorVel specifies the maximum velocity of the motor in scaled unit/sec if enabled, null if disabled.
      *        Generally, drive motors are not scaled, so the unit is really motor native unit. In FRC, this would be
      *        rotation/sec. In FTC, this would be encoder counts/sec.
+     * @param velPidCoeffs specifies the velocity control PID coefficients.
+     * @param velPidTolerance specifies the PID tolerance.
+     * @param softwarePid specifies true to use software PID, false to use motor native PID.
      */
-    public void setMotorVelocityControlEnabled(Double maxMotorVel)
+    public void enableMotorVelocityControl(
+        Double maxMotorVel, TrcPidController.PidCoefficients velPidCoeffs, double velPidTolerance, boolean softwarePid)
     {
         this.maxMotorVel = maxMotorVel;
-    }   //setMotorVelocityControlEnabled
+        for (int i = 0; i < motors.length; i++)
+        {
+            motors[i].setVelocityPidParameters(velPidCoeffs, velPidTolerance, softwarePid);
+        }
+    }   //enableMotorVelocityControl
+
+    /**
+     * This method disables velocity control on the drive motors. When disabled, we will send percentage power to the
+     * motors.
+     */
+    public void disableMotorVelocityControl()
+    {
+        this.maxMotorVel = null;
+    }   //disableMotorVelocityControl
 
     /**
      * This method inverts direction of a given motor in the drive train.
