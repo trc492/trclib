@@ -24,6 +24,7 @@ package trclib.subsystem;
 
 import java.util.ArrayList;
 
+import trclib.controller.TrcPidController;
 import trclib.robotcore.TrcEvent;
 
 /**
@@ -80,6 +81,16 @@ public abstract class TrcSubsystem
     public abstract int updateStatus(int lineNum);
 
     /**
+     * This method is called to prep the subsystem for tuning.
+     *
+     * @param pidCoeffs specifies the PID coefficients for the subsystem.
+     * @param pidTolerance specifies the PID tolerance.
+     * @param gravityCompPower specifies the gravity compensation power for the subsystem.
+     */
+    public abstract void prepSubsystemForTuning(
+        TrcPidController.PidCoefficients pidCoeffs, double pidTolerance, double gravityCompPower);
+
+    /**
      * Constructor: Creates an instance of the object.
      *
      * @param instanceName specifies the hardware name.
@@ -101,6 +112,25 @@ public abstract class TrcSubsystem
     {
         return instanceName;
     }   //toString
+
+    /**
+     * This method returns the subsystem matches the given name.
+     *
+     * @param name specifies the subsystem name to look for.
+     * @return subsystem matching the given name.
+     */
+    public static TrcSubsystem getSubsystem(String name)
+    {
+        for (SubsystemInfo subsystemInfo: subsystemList)
+        {
+            if (subsystemInfo.subsystem.instanceName.equals(name))
+            {
+                return subsystemInfo.subsystem;
+            }
+        }
+
+        return null;
+    }   //getSubsystem
 
     /**
      * This method enumerates all subsystems and calls their cancel method.
