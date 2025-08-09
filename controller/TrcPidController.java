@@ -1174,6 +1174,34 @@ public class TrcPidController
     }   //displayPidInfo
 
     /**
+     * This method returns the PID controller state info in an array of doubles.
+     *  [0] - pid info
+     *  [1] - pid target
+     *  [2] - pid error
+     *  [3] - pid output
+     *  [4] - min output
+     *  [5] - max output
+     *
+     * @return PID state info.
+     */
+    public double[] getPidStateInfo()
+    {
+        double[] pidInfo = new double[6];
+
+        synchronized (pidCtrlState)
+        {
+            pidInfo[0] = pidCtrlState.input;
+            pidInfo[1] = pidCtrlState.posSetpoint;
+            pidInfo[2] = pidCtrlState.posError;
+            pidInfo[3] = pidCtrlState.output;
+            pidInfo[4] = minOutput;
+            pidInfo[5] = maxOutput;
+        }
+
+        return pidInfo;
+    }   //getPidStateInfo
+
+    /**
      * This method prints the PID information to the tracer console. If no tracer is provided, it will attempt to
      * use the debug tracer in this module but if the debug tracer is not enabled, no output will be produced.
      *
