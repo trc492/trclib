@@ -123,7 +123,7 @@ public abstract class TrcSubsystem
     {
         for (SubsystemInfo subsystemInfo: subsystemList)
         {
-            if (subsystemInfo.subsystem.instanceName.equals(name))
+            if (subsystemInfo.subsystem.instanceName.equalsIgnoreCase(name))
             {
                 return subsystemInfo.subsystem;
             }
