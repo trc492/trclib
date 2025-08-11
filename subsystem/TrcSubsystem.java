@@ -24,7 +24,6 @@ package trclib.subsystem;
 
 import java.util.ArrayList;
 
-import trclib.controller.TrcPidController;
 import trclib.robotcore.TrcEvent;
 
 /**
@@ -83,12 +82,9 @@ public abstract class TrcSubsystem
     /**
      * This method is called to prep the subsystem for tuning.
      *
-     * @param pidCoeffs specifies the PID coefficients for the subsystem.
-     * @param pidTolerance specifies the PID tolerance.
-     * @param gravityCompPower specifies the gravity compensation power for the subsystem.
+     * @params tuneParams specifies tuning parameters in an array of doubles.
      */
-    public abstract void prepSubsystemForTuning(
-        TrcPidController.PidCoefficients pidCoeffs, double pidTolerance, double gravityCompPower);
+    public abstract void prepSubsystemForTuning(double... tuneParams);
 
     /**
      * Constructor: Creates an instance of the object.
