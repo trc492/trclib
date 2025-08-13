@@ -93,6 +93,25 @@ public class TrcDiscreteValue
     }   //getIncrement
 
     /**
+     * This method sets the value if it is within value range.
+     *
+     * @param value specifies the value.
+     * @return true if given value is within valid range, false otherwise.
+     */
+    public boolean setValue(double value)
+    {
+        boolean success = false;
+
+        if (value >= valueMin && value <= valueMax)
+        {
+            this.value = value;
+            success = true;
+        }
+
+        return success;
+    }   //setValue
+
+    /**
      * This method increases the value by the increment amount only if the resulting value does not go above valueMax.
      *
      * @return the resulting value.
