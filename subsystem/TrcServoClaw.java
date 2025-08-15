@@ -212,7 +212,7 @@ public class TrcServoClaw implements TrcExclusiveSubsystem
      * @param event specifies an event object to signal when the timeout event has expired.
      * @param timeout specifies a maximum time value the operation should be completed in seconds.
      */
-    private void setPosition(
+    public void setPosition(
         String owner, double delay, double position, TrcEvent event, double timeout)
     {
         tracer.traceDebug(
