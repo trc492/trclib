@@ -204,8 +204,8 @@ public class TrcShooter implements TrcExclusiveSubsystem
      *        ownership aware.
      * @param velocity1 specifies the shooter motor 1 velocity in revolutions per second.
      * @param velocity2 specifies the shooter motor 2 velocity in revolutions per second, ignored if none.
-     * @param tiltAngle specifies the absolute tilt angle in degrees.
-     * @param panAngle specifies the absolute pan angle in degrees.
+     * @param tiltAngle specifies the absolute tilt angle in degrees, null if no tilting.
+     * @param panAngle specifies the absolute pan angle in degrees, null if no panning.
      * @param event specifies an event to signal when both reached target, can be null if not provided.
      * @param timeout specifies maximum timeout period, can be zero if no timeout.
      * @param shootOp specifies the shoot method, can be null if aim only.
@@ -214,7 +214,7 @@ public class TrcShooter implements TrcExclusiveSubsystem
      *        on.
      */
     public void aimShooter(
-        String owner, double velocity1, double velocity2, double tiltAngle, double panAngle, TrcEvent event,
+        String owner, double velocity1, double velocity2, Double tiltAngle, Double panAngle, TrcEvent event,
         double timeout, ShootOperation shootOp, Double shootOffDelay)
     {
         tracer.traceDebug(
@@ -251,18 +251,26 @@ public class TrcShooter implements TrcExclusiveSubsystem
                 shooterMotor2.setVelocity(0.0, velocity2, 0.0, shooter2OnTargetEvent);
             }
 
-            if (tiltMotor != null)
+            if (tiltMotor != null && tiltAngle != null)
             {
                 tiltOnTargetEvent = new TrcEvent(instanceName + ".tiltOnTarget");
                 tiltOnTargetEvent.setCallback(this::onTarget, null);
                 tiltMotor.setPosition(0.0, tiltAngle, true, tiltParams.powerLimit, tiltOnTargetEvent);
             }
+            else
+            {
+                tiltOnTargetEvent = null;
+            }
 
-            if (panMotor != null)
+            if (panMotor != null && panAngle != null)
             {
                 panOnTargetEvent = new TrcEvent(instanceName + ".panOnTarget");
                 panOnTargetEvent.setCallback(this::onTarget, null);
                 panMotor.setPosition(0.0, panAngle, true, panParams.powerLimit, panOnTargetEvent);
+            }
+            else
+            {
+                panOnTargetEvent = null;
             }
 
             if (timeout > 0.0)
@@ -283,13 +291,13 @@ public class TrcShooter implements TrcExclusiveSubsystem
      *        ownership aware.
      * @param velocity1 specifies the shooter motor 1 velocity in revolutions per second.
      * @param velocity2 specifies the shooter motor 2 velocity in revolutions per second, ignored if none.
-     * @param tiltAngle specifies the absolute tilt angle in degrees.
-     * @param panAngle specifies the absolute pan angle in degrees.
+     * @param tiltAngle specifies the absolute tilt angle in degrees, null if no tilting.
+     * @param panAngle specifies the absolute pan angle in degrees, null if no panning.
      * @param event specifies an event to signal when both reached target, can be null if not provided.
      * @param timeout specifies maximum timeout period, can be zero if no timeout.
      */
     public void aimShooter(
-        String owner, double velocity1, double velocity2, double tiltAngle, double panAngle, TrcEvent event,
+        String owner, double velocity1, double velocity2, Double tiltAngle, Double panAngle, TrcEvent event,
         double timeout)
     {
         aimShooter(owner, velocity1, velocity2, tiltAngle, panAngle, event, timeout, null, null);
@@ -302,10 +310,10 @@ public class TrcShooter implements TrcExclusiveSubsystem
      *
      * @param velocity1 specifies the shooter motor 1 velocity in revolutions per second.
      * @param velocity2 specifies the shooter motor 2 velocity in revolutions per second, ignored if none.
-     * @param tiltAngle specifies the absolute tilt angle in degrees.
-     * @param panAngle specifies the absolute pan angle in degrees.
+     * @param tiltAngle specifies the absolute tilt angle in degrees, null if no tilting.
+     * @param panAngle specifies the absolute pan angle in degrees, null if no panning.
      */
-    public void aimShooter(double velocity1, double velocity2, double tiltAngle, double panAngle)
+    public void aimShooter(double velocity1, double velocity2, Double tiltAngle, Double panAngle)
     {
         aimShooter(null, velocity1, velocity2, tiltAngle, panAngle, null, 0.0, null, null);
     }   //aimShooter
