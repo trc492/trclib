@@ -373,12 +373,12 @@ public class TrcShooter implements TrcExclusiveSubsystem
         {
             tracer.traceInfo(
                 instanceName, "Shoot completed, delay stopping shooter motor for " + shootOffDelay + "s.");
-            // Even if we have a shootOffDelay, don't delay signaling completion.
-            if (completionEvent != null)
-            {
-                completionEvent.signal();
-                completionEvent = null;
-            }
+            // // Even if we have a shootOffDelay, don't delay signaling completion.
+            // if (completionEvent != null)
+            // {
+            //     completionEvent.signal();
+            //     completionEvent = null;
+            // }
             shootTimer.set(shootOffDelay, this::timedOut, true);
         }
     }   //shootCompleted
