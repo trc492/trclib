@@ -31,15 +31,17 @@ public class TrcShootParamTable
     {
         public final String loc;
         public final double distance;
-        public final double shooterVelocity;
+        public final double shooter1Velocity;
+        public final double shooter2Velocity;
         public final double tiltAngle;
 
         public Params(
-            String loc, double distance, double shooterVelocity, double tiltAngle)
+            String loc, double distance, double shooter1Velocity, double shooter2Velocity, double tiltAngle)
         {
             this.loc = loc;
             this.distance = distance;
-            this.shooterVelocity = shooterVelocity;
+            this.shooter1Velocity = shooter1Velocity;
+            this.shooter2Velocity = shooter2Velocity;
             this.tiltAngle = tiltAngle;
         }   //Params
 
@@ -48,7 +50,8 @@ public class TrcShootParamTable
         {
             return "{loc=" + loc +
                    ", distance=" + distance +
-                   ", shooterVel=" + shooterVelocity +
+                   ", shooter1Vel=" + shooter1Velocity +
+                   ", shooter2Vel=" + shooter2Velocity +
                    ", tiltAngle=" + tiltAngle + "}";
         }   //toString
 
@@ -71,14 +74,16 @@ public class TrcShootParamTable
      *
      * @param loc specifies the shoot location for the entry.
      * @param distance specifies the target distance.
-     * @param shooterVel specifies the shooter velocity in RPS.
+     * @param shooter1Vel specifies the shooter 1 velocity in RPS.
+     * @param shooter2Vel specifies the shooter 1 velocity in RPS.
      * @param tiltAngle specifies the tilt angle in degrees.
      *
      * @return this instance object.
      */
-    public TrcShootParamTable add(String loc, double distance, double shooterVel, double tiltAngle)
+    public TrcShootParamTable add(
+        String loc, double distance, double shooter1Vel, double shooter2Vel, double tiltAngle)
     {
-        Params newEntry = new Params(loc, distance, shooterVel, tiltAngle);
+        Params newEntry = new Params(loc, distance, shooter1Vel, shooter2Vel, tiltAngle);
         int insertPoint = paramTable.size();
 
         for (int i = 0; i < paramTable.size(); i++)
@@ -124,9 +129,10 @@ public class TrcShootParamTable
 
         if (params != null)
         {
-            shootParams = new double[2];
-            shootParams[0] = params.shooterVelocity;
-            shootParams[1] = params.tiltAngle;
+            shootParams = new double[3];
+            shootParams[0] = params.shooter1Velocity;
+            shootParams[1] = params.shooter2Velocity;
+            shootParams[2] = params.tiltAngle;
         }
 
         return shootParams;
@@ -161,7 +167,8 @@ public class TrcShootParamTable
             {
                 foundEntry = new Params(
                     "Extrapolated", distance,
-                    firstEntry.shooterVelocity,
+                    firstEntry.shooter1Velocity,
+                    firstEntry.shooter2Velocity,
                     extrapolateValue(
                         distance, firstEntry.distance, nextEntry.distance,
                         firstEntry.tiltAngle, nextEntry.tiltAngle));
@@ -172,7 +179,10 @@ public class TrcShootParamTable
                     "Extrapolated", distance,
                     extrapolateValue(
                         distance, firstEntry.distance, nextEntry.distance,
-                        firstEntry.shooterVelocity, nextEntry.shooterVelocity),
+                        firstEntry.shooter1Velocity, nextEntry.shooter1Velocity),
+                    extrapolateValue(
+                        distance, firstEntry.distance, nextEntry.distance,
+                        firstEntry.shooter2Velocity, nextEntry.shooter2Velocity),
                     firstEntry.tiltAngle);
             }
         }
@@ -184,7 +194,8 @@ public class TrcShootParamTable
             {
                 foundEntry = new Params(
                     "Extrapolated", distance,
-                    lastEntry.shooterVelocity,
+                    lastEntry.shooter1Velocity,
+                    lastEntry.shooter2Velocity,
                     extrapolateValue(
                         distance, prevEntry.distance, lastEntry.distance,
                         prevEntry.tiltAngle, lastEntry.tiltAngle));
@@ -195,7 +206,10 @@ public class TrcShootParamTable
                     "Extrapolated", distance,
                     extrapolateValue(
                         distance, prevEntry.distance, lastEntry.distance,
-                        prevEntry.shooterVelocity, lastEntry.shooterVelocity),
+                        prevEntry.shooter1Velocity, lastEntry.shooter1Velocity),
+                    extrapolateValue(
+                        distance, prevEntry.distance, lastEntry.distance,
+                        prevEntry.shooter2Velocity, lastEntry.shooter2Velocity),
                     lastEntry.tiltAngle);
             }
         }
@@ -212,7 +226,8 @@ public class TrcShootParamTable
                     {
                         foundEntry = new Params(
                             "Interpolated", distance,
-                            entry.shooterVelocity,
+                            entry.shooter1Velocity,
+                            entry.shooter2Velocity,
                             interpolateValue(
                                 distance, prevEntry.distance, entry.distance,
                                 prevEntry.tiltAngle, entry.tiltAngle));
@@ -223,7 +238,10 @@ public class TrcShootParamTable
                             "Interpolated", distance,
                             interpolateValue(
                                 distance, prevEntry.distance, entry.distance,
-                                prevEntry.shooterVelocity, entry.shooterVelocity),
+                                prevEntry.shooter1Velocity, entry.shooter1Velocity),
+                            interpolateValue(
+                                distance, prevEntry.distance, entry.distance,
+                                prevEntry.shooter2Velocity, entry.shooter2Velocity),
                             entry.tiltAngle);
                     }
                     break;
