@@ -199,16 +199,14 @@ public class TrcRollerIntake implements TrcExclusiveSubsystem
         String owner;
         TrcEvent completionEvent;
         double timeout;
-        TrcEvent callbackEvent;
 
         ActionParams(
-            boolean intakeAction, String owner, TrcEvent completionEvent, double timeout, TrcEvent callbackEvent)
+            boolean intakeAction, String owner, TrcEvent completionEvent, double timeout)
         {
             this.intakeAction = intakeAction;
             this.owner = owner;
             this.completionEvent = completionEvent;
             this.timeout = timeout;
-            this.callbackEvent = callbackEvent;
         }   //ActionParams
 
         @Override
@@ -217,8 +215,7 @@ public class TrcRollerIntake implements TrcExclusiveSubsystem
             return "(intakeAction=" + intakeAction +
                    ",owner=" + owner +
                    ",completionEvent=" + completionEvent +
-                   ",timeout=" + timeout +
-                   ",callbackEvent=" + callbackEvent + ")";
+                   ",timeout=" + timeout + ")";
         }   //toString
 
     }   //class ActionParams
@@ -671,12 +668,6 @@ public class TrcRollerIntake implements TrcExclusiveSubsystem
                 }
                 actionParams.completionEvent = null;
             }
-
-            if (actionParams.callbackEvent != null)
-            {
-                actionParams.callbackEvent.signal();
-                actionParams.callbackEvent = null;
-            }
             actionParams = null;
         }
         else if (!completed)
@@ -752,19 +743,11 @@ public class TrcRollerIntake implements TrcExclusiveSubsystem
      * @param intakeAction specifies true if the action is intake, false if eject.
      * @param owner specifies the owner ID to check if the caller has ownership of the grabber subsystem.
      * @param delay specifies the delay time in seconds before executing the action.
-     * @param finishDelay specifies the delay in seconds between sensor trigger and finishing the operation, can
-     *        be 0.0 for no delay. This is useful to make sure the grabber has a good grasp of the object before
-     *        we turn off the motor.
      * @param completionEvent specifies the event to signal when the action is completed.
      * @param timeout specifies a timeout value at which point it will give up and signal completion. The caller
      *        must call hasObject() to figure out if it has given up.
-     * @param completionCallback specifies the method to call when the action is completed or canceled, can be null if
-     *        not provided.
-     * @param callbackContext specifies the context object to be passed back to the callback, can be null if none.
      */
-    private void autoAction(
-        boolean intakeAction, String owner, double delay, double finishDelay, TrcEvent completionEvent, double timeout,
-        TrcEvent.Callback completionCallback, Object callbackContext)
+    private void autoAction(boolean intakeAction, String owner, double delay, TrcEvent completionEvent, double timeout)
     {
         if ((params.frontTriggerParams == null || params.frontTriggerParams.triggerAction == TriggerAction.NoAction) &&
             (params.backTriggerParams == null || params.backTriggerParams.triggerAction == TriggerAction.NoAction))
@@ -779,14 +762,7 @@ public class TrcRollerIntake implements TrcExclusiveSubsystem
         {
             // In case there is an existing auto operation still pending, cancel it first.
             finishAction(false);
-            // If there is a triggerCallback, set it up to callback on the same thread of this caller.
-            TrcEvent callbackEvent = null;
-            if (completionCallback != null)
-            {
-                callbackEvent = new TrcEvent(instanceName + ".callback");
-                callbackEvent.setCallback(completionCallback, callbackContext);
-            }
-            actionParams = new ActionParams(intakeAction, owner, completionEvent, timeout, callbackEvent);
+            actionParams = new ActionParams(intakeAction, owner, completionEvent, timeout);
             if (delay > 0.0)
             {
                 timer.set(delay, this::performAction, actionParams);
@@ -805,17 +781,13 @@ public class TrcRollerIntake implements TrcExclusiveSubsystem
      *
      * @param owner specifies the owner ID to check if the caller has ownership of the grabber subsystem.
      * @param delay specifies the delay time in seconds before executing the action.
-     * @param event specifies the event to signal when object is detected in the intake.
+     * @param completionEvent specifies the event to signal when the action is completed.
      * @param timeout specifies a timeout value at which point it will give up and signal completion. The caller
      *        must call hasObject() to figure out if it has given up.
-     * @param triggerCallback specifies the method to call when a trigger occurred, can be null if not provided.
-     * @param callbackContext specifies the context object to be passed back to the callback, can be null if none.
      */
-    public void autoIntake(
-        String owner, double delay, TrcEvent event, double timeout, TrcEvent.Callback triggerCallback,
-        Object callbackContext)
+    public void autoIntake(String owner, double delay, TrcEvent completionEvent, double timeout)
     {
-        autoAction(true, owner, delay, params.intakeFinishDelay, event, timeout, triggerCallback, callbackContext);
+        autoAction(true, owner, delay, completionEvent, timeout);
     }   //autoIntake
 
     /**
@@ -824,35 +796,13 @@ public class TrcRollerIntake implements TrcExclusiveSubsystem
      * it will also signal the event when the operation is completed.
      *
      * @param owner specifies the owner ID to check if the caller has ownership of the grabber subsystem.
-     * @param delay specifies the delay time in seconds before executing the action.
-     * @param finishDelay specifies the delay in seconds between sensor trigger and finishing the operation, can
-     *        be 0.0 for no delay. This is useful to make sure the grabber has a good grasp of the object before
-     *        we turn off the motor.
-     * @param event specifies the event to signal when object is detected in the intake.
+     * @param completionEvent specifies the event to signal when the action is completed.
      * @param timeout specifies a timeout value at which point it will give up and signal completion. The caller
      *        must call hasObject() to figure out if it has given up.
      */
-    public void autoIntake(String owner, double delay, double finishDelay, TrcEvent event, double timeout)
+    public void autoIntake(String owner, TrcEvent completionEvent, double timeout)
     {
-        autoAction(true, owner, delay, finishDelay, event, timeout, null, null);
-    }   //autoIntake
-
-    /**
-     * This method enables auto intake. It allows the caller to start monitoring the trigger sensor for the object
-     * in the grabber. If the operation is completed, it will automatically stop the motor. If an event is provided,
-     * it will also signal the event when the operation is completed.
-     *
-     * @param owner specifies the owner ID to check if the caller has ownership of the grabber subsystem.
-     * @param finishDelay specifies the delay in seconds between sensor trigger and finishing the operation, can
-     *        be 0.0 for no delay. This is useful to make sure the grabber has a good grasp of the object before
-     *        we turn off the motor.
-     * @param event specifies the event to signal when object is detected in the intake.
-     * @param timeout specifies a timeout value at which point it will give up and signal completion. The caller
-     *        must call hasObject() to figure out if it has given up.
-     */
-    public void autoIntake(String owner, double finishDelay, TrcEvent event, double timeout)
-    {
-        autoAction(true, owner, 0.0, finishDelay, event, timeout, null, null);
+        autoAction(true, owner, 0.0, completionEvent, timeout);
     }   //autoIntake
 
     /**
@@ -864,7 +814,7 @@ public class TrcRollerIntake implements TrcExclusiveSubsystem
      */
     public void autoIntake(String owner)
     {
-        autoAction(true, owner, 0.0, 0.0, null, 0.0, null, null);
+        autoAction(true, owner, 0.0, null, 0.0);
     }   //autoIntake
 
     /**
@@ -874,20 +824,13 @@ public class TrcRollerIntake implements TrcExclusiveSubsystem
      *
      * @param owner specifies the owner ID to check if the caller has ownership of the grabber subsystem.
      * @param delay specifies the delay time in seconds before executing the action.
-     * @param finishDelay specifies the delay in seconds between sensor trigger and finishing the operation, can
-     *        be 0.0 for no delay. This is useful to make sure the grabber has a good grasp of the object before
-     *        we turn off the motor.
-     * @param event specifies the event to signal when object is detected in the intake.
+     * @param completionEvent specifies the event to signal when the action is completed.
      * @param timeout specifies a timeout value at which point it will give up and signal completion. The caller
      *        must call hasObject() to figure out if it has given up.
-     * @param triggerCallback specifies the method to call when a trigger occurred, can be null if not provided.
-     * @param callbackContext specifies the context object to be passed back to the callback, can be null if none.
      */
-    public void autoEject(
-        String owner, double delay, double finishDelay, TrcEvent event, double timeout,
-        TrcEvent.Callback triggerCallback, Object callbackContext)
+    public void autoEject(String owner, double delay, TrcEvent completionEvent, double timeout)
     {
-        autoAction(false, owner, delay, finishDelay, event, timeout, triggerCallback, callbackContext);
+        autoAction(false, owner, delay, completionEvent, timeout);
     }   //autoEject
 
     /**
@@ -896,35 +839,13 @@ public class TrcRollerIntake implements TrcExclusiveSubsystem
      * it will also signal the event when the operation is completed.
      *
      * @param owner specifies the owner ID to check if the caller has ownership of the grabber subsystem.
-     * @param delay specifies the delay time in seconds before executing the action.
-     * @param finishDelay specifies the delay in seconds between sensor trigger and finishing the operation, can
-     *        be 0.0 for no delay. This is useful to make sure the grabber has a good grasp of the object before
-     *        we turn off the motor.
-     * @param event specifies the event to signal when object is detected in the intake.
+     * @param completionEvent specifies the event to signal when the action is completed.
      * @param timeout specifies a timeout value at which point it will give up and signal completion. The caller
      *        must call hasObject() to figure out if it has given up.
      */
-    public void autoEject(String owner, double delay, double finishDelay, TrcEvent event, double timeout)
+    public void autoEject(String owner, TrcEvent completionEvent, double timeout)
     {
-        autoAction(false, owner, delay, finishDelay, event, timeout, null, null);
-    }   //autoEject
-
-    /**
-     * This method enables auto eject. It allows the caller to start monitoring the trigger sensor for the object
-     * in the grabber. If the operation is completed, it will automatically stop the motor. If an event is provided,
-     * it will also signal the event when the operation is completed.
-     *
-     * @param owner specifies the owner ID to check if the caller has ownership of the grabber subsystem.
-     * @param finishDelay specifies the delay in seconds between sensor trigger and finishing the operation, can
-     *        be 0.0 for no delay. This is useful to make sure the grabber has a good grasp of the object before
-     *        we turn off the motor.
-     * @param event specifies the event to signal when object is detected in the intake.
-     * @param timeout specifies a timeout value at which point it will give up and signal completion. The caller
-     *        must call hasObject() to figure out if it has given up.
-     */
-    public void autoEject(String owner, double finishDelay, TrcEvent event, double timeout)
-    {
-        autoAction(false, owner, 0.0, finishDelay, event, timeout, null, null);
+        autoAction(false, owner, 0.0, completionEvent, timeout);
     }   //autoEject
 
     /**
@@ -936,7 +857,7 @@ public class TrcRollerIntake implements TrcExclusiveSubsystem
      */
     public void autoEject(String owner)
     {
-        autoAction(false, owner, 0.0, 0.0, null, 0.0, null, null);
+        autoAction(false, owner, 0.0, null, 0.0);
     }   //autoEject
 
     /**
