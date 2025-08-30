@@ -260,14 +260,14 @@ public class TrcTriggerDigitalInput implements TrcTrigger
     }   //isEnabled
 
     /**
-     * This method reads the current analog sensor value (not supported).
+     * This method reads the digital sensor state and will return 1.0 for active and 0.0 for inactive.
      *
-     * @return current sensor value.
+     * @return 1.0 for active and 0.0 for inactive.
      */
     @Override
     public double getSensorValue()
     {
-        throw new UnsupportedOperationException("Digital sensor does not support analog value.");
+        return sensor.isActive()? 1.0: 0.0;
     }   //getSensorValue
 
     /**
@@ -276,10 +276,10 @@ public class TrcTriggerDigitalInput implements TrcTrigger
      * @return current sensor state.
      */
     @Override
-    public boolean getSensorState()
+    public boolean getTriggerState()
     {
         return sensor.isActive();
-    }   //getSensorState
+    }   //getTriggerState
 
     /**
      * This method is called periodically to check the current sensor state. If it has changed from the previous
@@ -292,7 +292,7 @@ public class TrcTriggerDigitalInput implements TrcTrigger
      */
     private void triggerTask(TrcTaskMgr.TaskType taskType, TrcRobot.RunMode runMode, boolean slowPeriodicLoop)
     {
-        boolean currState = getSensorState();
+        boolean currState = sensor.isActive();
         boolean triggered = false;
         boolean prevState = false;
         TrcEvent.Callback callback = null;

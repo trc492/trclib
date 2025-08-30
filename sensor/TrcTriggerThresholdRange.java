@@ -274,7 +274,7 @@ public class TrcTriggerThresholdRange implements TrcTrigger
     }   //isEnabled
 
     /**
-     * This method reads the current analog sensor value. It may return null if it failed to read the sensor.
+     * This method reads the current analog sensor value.
      *
      * @return current sensor value.
      */
@@ -282,18 +282,19 @@ public class TrcTriggerThresholdRange implements TrcTrigger
     public double getSensorValue()
     {
         return valueSource.getValue();
-    }   //getValue
+    }   //getSensorValue
 
     /**
-     * This method reads the current digital sensor state (not supported).
+     * This method reads the current trigger state. It returns triggered if the analog sensor value is within the
+     * trigger zone.
      *
-     * @return current sensor state.
+     * @return current trigger state.
      */
     @Override
-    public boolean getSensorState()
+    public boolean getTriggerState()
     {
         return triggerState.triggerActive;
-    }   //getState
+    }   //getTriggerState
 
     /**
      * This method sets the lower/upper threshold values within which the sensor reading must stay for at least the

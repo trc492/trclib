@@ -48,8 +48,6 @@ public class TrcServoClaw implements TrcExclusiveSubsystem
     {
         private TrcServo servo;
         private TrcTrigger sensorTrigger;
-        private boolean triggerInverted = false;
-        private Double triggerThreshold = null;
         private double openPos = 0.0;
         private double openTime = 0.5;
         private double closePos = 1.0;
@@ -65,8 +63,6 @@ public class TrcServoClaw implements TrcExclusiveSubsystem
         {
             return "servo=" + servo +
                    ",sensorTrigger=" + sensorTrigger +
-                   ",triggerInverted=" + triggerInverted +
-                   ",triggerThreshold=" + triggerThreshold +
                    ",openPos=" + openPos +
                    ",openTime=" + openTime +
                    ",closePos=" + closePos +
@@ -89,15 +85,11 @@ public class TrcServoClaw implements TrcExclusiveSubsystem
          * This method sets the sensor trigger object with optional trigger callback.
          *
          * @param trigger specifies the sensor trigger object.
-         * @param inverted specifies true to invert the trigger, false otherwise.
-         * @param triggerThreshold specifies the trigger threshold value.
          * @return this parameter object.
          */
-        public Params setSensorTrigger(TrcTrigger trigger, boolean inverted, Double triggerThreshold)
+        public Params setSensorTrigger(TrcTrigger trigger)
         {
             this.sensorTrigger = trigger;
-            this.triggerInverted = inverted;
-            this.triggerThreshold = triggerThreshold;
             return this;
         }   //setSensorTrigger
 
@@ -386,7 +378,7 @@ public class TrcServoClaw implements TrcExclusiveSubsystem
      */
     private void sensorTriggerCallback(Object context)
     {
-        if (sensorTriggered())
+        if (getTriggerState())
         {
             tracer.traceDebug(instanceName, "Triggered: callbackEvent=" + actionParams.callbackEvent);
             // If callback is provided, callback is responsible for grabbing the object.
@@ -416,7 +408,7 @@ public class TrcServoClaw implements TrcExclusiveSubsystem
     private void performAction(Object context)
     {
         ActionParams ap = (ActionParams) context;
-        boolean triggered = sensorTriggered();
+        boolean triggered = getTriggerState();
         boolean clawClosed = isClosed();
         boolean finished = false;
 
@@ -572,44 +564,14 @@ public class TrcServoClaw implements TrcExclusiveSubsystem
     }   //getSensorValue
 
     /**
-     * This method returns the sensor state read from the digital sensor.
+     * This method returns the trigger state read from the sensor.
      *
-     * @return digital sensor state.
+     * @return sensor trigger state.
      */
-    public boolean getSensorState()
+    public boolean getTriggerState()
     {
-        return params.sensorTrigger != null && params.sensorTrigger.getSensorState();
-    }   //getSensorState
-
-    /**
-     *
-     * This method checks if the sensor has detected the object.
-     *
-     * @return true if object is detected, false otherwise.
-     */
-    public boolean sensorTriggered()
-    {
-        boolean triggered = false;
-
-        if (params.sensorTrigger != null)
-        {
-            if (params.triggerThreshold != null)
-            {
-                triggered = getSensorValue() > params.triggerThreshold;
-            }
-            else
-            {
-                triggered = getSensorState();
-            }
-
-            if (params.triggerInverted)
-            {
-                triggered = !triggered;
-            }
-        }
-
-        return triggered;
-    }   //sensorTriggered
+        return params.sensorTrigger != null && params.sensorTrigger.getTriggerState();
+    }   //getTriggerState
 
     /**
      * This method checks if the claw has the object.
@@ -618,7 +580,7 @@ public class TrcServoClaw implements TrcExclusiveSubsystem
      */
     public boolean hasObject()
     {
-        return isClosed() && sensorTriggered();
+        return isClosed() && getTriggerState();
     }   //hasObject
 
     /**

@@ -306,7 +306,7 @@ public class TrcTriggerThresholdZones implements TrcTrigger
     }   //isEnabled
 
     /**
-     * This method reads the current sensor value. It may return null if it failed to read the sensor.
+     * This method reads the current analog sensor value.
      *
      * @return current sensor value.
      */
@@ -317,15 +317,16 @@ public class TrcTriggerThresholdZones implements TrcTrigger
     }   //getSensorValue
 
     /**
-     * This method reads the current digital sensor state (not supported).
+     * This method reads the current trigger state. TrcTriggerThresholdZones does not support getTriggerState and
+     * will throw an exception.
      *
-     * @return current sensor state.
+     * @return current trigger state.
      */
     @Override
-    public boolean getSensorState()
+    public boolean getTriggerState()
     {
-        throw new UnsupportedOperationException("Analog sensor does not support digital state.");
-    }   //getSensorState
+        throw new UnsupportedOperationException("TrcTriggerThresholdZones does not support trigger state.");
+    }   //getTriggerState
 
     /**
      * This method returns the current zone it is in.

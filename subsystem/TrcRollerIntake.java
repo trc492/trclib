@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024 Titan Robotics Club (http://www.titanrobotics.com)
+ * Copyright (c) 2025 Titan Robotics Club (http://www.titanrobotics.com)
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -22,6 +22,8 @@
 
 package trclib.subsystem;
 
+import java.util.concurrent.atomic.AtomicBoolean;
+
 import trclib.motor.TrcMotor;
 import trclib.robotcore.TrcDbgTrace;
 import trclib.robotcore.TrcEvent;
@@ -31,28 +33,45 @@ import trclib.sensor.TrcTrigger.TriggerMode;
 import trclib.timer.TrcTimer;
 
 /**
- * This class implements a platform independent auto-assist motor grabber subsystem. It contains one or two motors
- * and optionally a sensor that detects if the object is within grasp of the grabber. It provides the autoAssist
- * methods that allow the caller to pickup or dump objects on a press of a button and the grabber subsystem will
- * automatically grab the object once it is within grasp. While it provides the auto-assist functionality to pickup
- * or dump objects, it also supports exclusive subsystem access by implementing TrcExclusiveSubsystem. This enables the
- * grabber subsystem to be aware of multiple callers' access to the subsystem. While one caller starts the subsystem
+ * This class implements a platform independent auto-assist roller intake subsystem. It contains one or two motors
+ * and optionally one or two sensors that detects the position of the object. It provides the autoAssist methods
+ * that allow the caller to intake or eject objects on a press of a button and the intake subsystem will automatically
+ * grab the object once it is within grasp. While it provides the auto-assist functionality to intake or eject
+ * objects, it also supports exclusive subsystem access by implementing TrcExclusiveSubsystem. This enables the
+ * intake subsystem to be aware of multiple callers' access to the subsystem. While one caller starts the subsystem
  * for an operation, nobody can access it until the previous caller is done with the operation.
  */
-public class TrcMotorGrabber implements TrcExclusiveSubsystem
+public class TrcRollerIntake implements TrcExclusiveSubsystem
 {
-    /**
-     * This class contains all the parameters for the motor grabber.
-     */
-    public static class Params
+    public enum TriggerAction
     {
-        private TrcMotor motor;
-        private TrcTrigger sensorTrigger;
-        private boolean triggerInverted = false;
-        private Double triggerThreshold = null;
-        private double intakePower = 0.0;
-        private double ejectPower = 0.0;
-        private double retainPower = 0.0;
+        NoAction,       // Do nothing when trigger occurs.
+        StartOnTrigger, // Start roller intake when trigger occurs.
+        FinishOnTrigger // Finish roller intake operation when trigger occurs.
+    }   //enum TriggerAction
+
+    /**
+     * This class contains all the parameters of the Intake Trigger. The parameters specify the action it will take
+     * when the trigger occurs. The trigger can optionally provide a notification callback.
+     */
+    public static class TriggerParams
+    {
+        private final TrcTrigger trigger;
+        private final TriggerAction triggerAction;
+        private final TriggerMode triggerMode;
+        private TrcEvent.Callback triggerCallback;
+        private Object callbackContext;
+
+        public TriggerParams(
+            TrcTrigger trigger, TriggerAction triggerAction, TriggerMode triggerMode, TrcEvent.Callback callback,
+            Object callbackContext)
+        {
+            this.trigger = trigger;
+            this.triggerAction = triggerAction;
+            this.triggerMode = triggerMode;
+            this.triggerCallback = callback;
+            this.callbackContext = callbackContext;
+        }   //TriggerParams
 
         /**
          * This method returns the string form of all the parameters.
@@ -62,15 +81,47 @@ public class TrcMotorGrabber implements TrcExclusiveSubsystem
         @Override
         public String toString()
         {
-            return "motor=" + motor +
-                   ",sensorTrigger=" + sensorTrigger +
-                   ",triggerInverted=" + triggerInverted +
-                   ",triggerThreshold=" + triggerThreshold +
-                   ",intakePower=" + intakePower +
-                   ",ejectPower=" + ejectPower +
-                   ",retainPower=" + retainPower;
+            return "trigger=" + trigger +
+                   ", triggerAction=" + triggerAction +
+                   ", triggerMode=" + triggerMode +
+                   ", triggerCallback=" + (triggerCallback != null) +
+                   ", callbackContext=" + (callbackContext != null);
         }   //toString
 
+    }   //class TriggerParams
+
+   /**
+    * This class contains all the parameters for the Roller Intake.
+    */
+    public static class Params
+    {
+        private TrcMotor motor = null;
+        private TriggerParams frontTriggerParams = null;
+        private TriggerParams backTriggerParams = null;
+        private double intakePower = 0.0;
+        private double ejectPower = 0.0;
+        private double retainPower = 0.0;
+        private double intakeFinishDelay = 0.0;
+        private double ejectFinishDelay = 0.0;
+ 
+        /**
+         * This method returns the string form of all the parameters.
+         *
+         * @return string form of all the parameters.
+         */
+        @Override
+        public String toString()
+        {
+            return "motor=" + motor +
+                   ",frontTriggerParams=" + frontTriggerParams +
+                   ",backTriggerParams=" + backTriggerParams +
+                   ",intakePower=" + intakePower +
+                   ",ejectPower=" + ejectPower +
+                   ",retainPower=" + retainPower +
+                   ",intakeFinishDelay=" + intakeFinishDelay +
+                   ",ejectFinishDelay=" + ejectFinishDelay;
+        }   //toString
+ 
         /**
          * This method sets the motor object for the grabber.
          *
@@ -82,41 +133,63 @@ public class TrcMotorGrabber implements TrcExclusiveSubsystem
             this.motor = motor;
             return this;
         }   //setMotor
-
+ 
         /**
-         * This method sets the sensor trigger object with optional trigger callback.
+         * This method sets the front trigger and its parameters.
          *
-         * @param trigger specifies the sensor trigger object.
-         * @param inverted specifies true to invert the trigger, false otherwise.
-         * @param triggerThreshold specifies the trigger threshold value.
+         * @param triggerParams specifies the trigger parameters.
          * @return this parameter object.
          */
-        public Params setSensorTrigger(TrcTrigger trigger, boolean inverted, Double triggerThreshold)
+        public Params setFrontTrigger(TriggerParams triggerParams)
         {
-            this.sensorTrigger = trigger;
-            this.triggerInverted = inverted;
-            this.triggerThreshold = triggerThreshold;
+            this.frontTriggerParams = triggerParams;
             return this;
-        }   //setSensorTrigger
+        }   //setFrontTrigger
 
         /**
-         * This method sets all the different power level for the operation.
+         * This method sets the back trigger and its parameters.
          *
-         * @param intakePower specifies the power level for intaking the object.
-         * @param ejectPower specifies the power level for ejecting the object.
-         * @param retainPower specifies the power level for retaining the object.
+         * @param triggerParams specifies the trigger parameters.
          * @return this parameter object.
          */
-        public Params setPowerParams(double intakePower, double ejectPower, double retainPower)
+        public Params setBackTrigger(TriggerParams triggerParams)
+        {
+            this.backTriggerParams = triggerParams;
+            return this;
+        }   //setBackTrigger
+
+        /**
+         * This method sets various power levels of the Roller Intake.
+         *
+         * @param intakePower specifies the intake power.
+         * @param ejectPower specifies the eject power.
+         * @param retainPower specifies the retain power.
+         * @return this parameter object.
+         */
+        public Params setPowerLevels(double intakePower, double ejectPower, double retainPower)
         {
             this.intakePower = intakePower;
             this.ejectPower = ejectPower;
             this.retainPower = retainPower;
             return this;
-        }   //setPowerParams
+        }   //setPowerLevels
+
+        /**
+         * This method sets various power levels of the Roller Intake.
+         *
+         * @param intakeFinishDelay specifies the intake finish delay in seconds.
+         * @param ejectFinishDelay specifies the eject finish delay in seconds.
+         * @return this parameter object.
+         */
+        public Params setFinishDelays(double intakeFinishDelay, double ejectFinishDelay)
+        {
+            this.intakeFinishDelay = intakeFinishDelay;
+            this.ejectFinishDelay = ejectFinishDelay;
+            return this;
+        }   //setFinishDelays
 
     }   //class Params
-
+ 
     /**
      * This class encapsulates all the parameters required to perform the action.
      */
@@ -124,18 +197,15 @@ public class TrcMotorGrabber implements TrcExclusiveSubsystem
     {
         boolean intakeAction;
         String owner;
-        double finishDelay;
         TrcEvent completionEvent;
         double timeout;
         TrcEvent callbackEvent;
 
         ActionParams(
-            boolean intakeAction, String owner, double finishDelay, TrcEvent completionEvent, double timeout,
-            TrcEvent callbackEvent)
+            boolean intakeAction, String owner, TrcEvent completionEvent, double timeout, TrcEvent callbackEvent)
         {
             this.intakeAction = intakeAction;
             this.owner = owner;
-            this.finishDelay = finishDelay;
             this.completionEvent = completionEvent;
             this.timeout = timeout;
             this.callbackEvent = callbackEvent;
@@ -144,9 +214,8 @@ public class TrcMotorGrabber implements TrcExclusiveSubsystem
         @Override
         public String toString()
         {
-            return "(intake=" + intakeAction +
+            return "(intakeAction=" + intakeAction +
                    ",owner=" + owner +
-                   ",finishDelay=" + finishDelay +
                    ",completionEvent=" + completionEvent +
                    ",timeout=" + timeout +
                    ",callbackEvent=" + callbackEvent + ")";
@@ -158,22 +227,34 @@ public class TrcMotorGrabber implements TrcExclusiveSubsystem
     private final String instanceName;
     private final Params params;
     private final TrcTimer timer;
-
     private ActionParams actionParams = null;
 
     /**
      * Constructor: Create an instance of the object.
      *
      * @param instanceName specifies the instance name.
-     * @param params specifies the motor grabber parameters.
+     * @param params specifies the RollerIntake params.
      */
-    public TrcMotorGrabber(String instanceName, Params params)
+    public TrcRollerIntake(String instanceName, Params params)
     {
         this.tracer = new TrcDbgTrace();
         this.instanceName = instanceName;
         this.params = params;
+
+        if (params.frontTriggerParams != null && params.frontTriggerParams.trigger != null)
+        {
+            params.frontTriggerParams.trigger.enableTrigger(
+                TriggerMode.OnBoth, (c)->processTrigger(((AtomicBoolean) c).get(), params.frontTriggerParams));
+        }
+
+        if (params.backTriggerParams != null && params.backTriggerParams.trigger != null)
+        {
+            params.backTriggerParams.trigger.enableTrigger(
+                TriggerMode.OnBoth, (c)->processTrigger(((AtomicBoolean) c).get(), params.backTriggerParams));
+        }
+
         timer = new TrcTimer(instanceName);
-    }   //TrcMotorGrabber
+    }   //TrcRollerIntake
 
     /**
      * This method returns the instance name.
@@ -187,29 +268,119 @@ public class TrcMotorGrabber implements TrcExclusiveSubsystem
     }   //toString
 
     /**
-     * This method returns the grabber motor current.
+     * This method processes a trigger event.
      *
-     * @return grabber motor current.
+     * @param active specifies the trigger state.
+     * @param triggerParams specifies the trigger parameters.
      */
-    public double getCurrent()
+    private void processTrigger(boolean active, TriggerParams triggerParams)
     {
-        return params.motor.getCurrent();
-    }   //getCurrent
+        tracer.traceDebug(
+            instanceName, "Trigger: active=%s, triggerParams=%s, actionParams=%s",
+            active, triggerParams, actionParams);
+
+        if (actionParams != null)
+        {
+            if (triggerParams.triggerAction == TriggerAction.StartOnTrigger)
+            {
+                performAction(actionParams);
+            }
+            else if (triggerParams.triggerAction == TriggerAction.FinishOnTrigger)
+            {
+                double finishDelay = actionParams.intakeAction? params.intakeFinishDelay: params.ejectFinishDelay;
+
+                if (finishDelay > 0.0)
+                {
+                    timer.set(finishDelay, (c)-> finishAction(true));
+                }
+                else
+                {
+                    finishAction(true);
+                }
+            }
+        }
+
+        if (triggerParams.triggerCallback != null &&
+            (triggerParams.triggerMode == TriggerMode.OnBoth ||
+             triggerParams.triggerMode == TriggerMode.OnActive && active ||
+             triggerParams.triggerMode == TriggerMode.OnInactive && !active))
+        {
+            // Caller has registered a callback with a specified trigger mode, call it.
+            triggerParams.triggerCallback.notify(triggerParams.callbackContext);
+        }
+    }   //processTrigger
 
     /**
-     * This method returns the current grabber motor power.
+     * This method checks if auto operation is active.
      *
-     * @return current grabber motor power.
+     * @return true if auto operation is in progress, false otherwise.
      */
-    public double getPower()
+    public boolean isAutoActive()
     {
-        return params.motor.getPower();
-    }   //getPower
+        return actionParams != null;
+    }   //isAutoActive
 
     /**
-     * This method checks if the motor grabber is ON.
+     * This method returns the front trigger state.
      *
-     * @return true if grabber is ON, false if open.
+     * @return front trigger state, false if there is no front trigger.
+     */
+    public boolean getFrontTriggerState()
+    {
+        return params.frontTriggerParams != null &&
+               params.frontTriggerParams.trigger != null &&
+               params.frontTriggerParams.trigger.getTriggerState();
+    }   //getFrontTriggerState
+
+    /**
+     * This method returns the back trigger state.
+     *
+     * @return back trigger state, false if there is no back trigger.
+     */
+    public boolean getBackTriggerState()
+    {
+        return params.backTriggerParams != null &&
+               params.backTriggerParams.trigger != null &&
+               params.backTriggerParams.trigger.getTriggerState();
+    }   //getBackTriggerState
+
+    /**
+     *
+     * This method checks if object is detected.
+     *
+     * @return true if object is detected, false otherwise.
+     */
+    public boolean hasObject()
+    {
+        return getFrontTriggerState() || getBackTriggerState();
+    }   //hasObject
+
+    /**
+     * This method returns the sensor value read from the front analog sensor.
+     *
+     * @return front analog sensor value, or zero if there is no front sensor.
+     */
+    public double getFrontSensorValue()
+    {
+        return params.frontTriggerParams != null && params.frontTriggerParams.trigger != null?
+                params.frontTriggerParams.trigger.getSensorValue(): 0.0;
+    }   //getFrontSensorValue
+
+    /**
+     * This method returns the sensor value read from the back analog sensor.
+     *
+     * @return back analog sensor value, or zero if there is no back sensor.
+     */
+    public double getBackSensorValue()
+    {
+        return params.backTriggerParams != null && params.backTriggerParams.trigger != null?
+                params.backTriggerParams.trigger.getSensorValue(): 0.0;
+    }   //getBackSensorValue
+
+    /**
+     * This method checks if the intake motor is ON.
+     *
+     * @return true if intake motor is ON, false if open.
      */
     public boolean isOn()
     {
@@ -217,7 +388,31 @@ public class TrcMotorGrabber implements TrcExclusiveSubsystem
     }   //isOn
 
     /**
-     * This method spins the motor grabber with the specified power and optional duration.
+     * This method returns the intake motor current.
+     *
+     * @return intake motor current.
+     */
+    public double getCurrent()
+    {
+        return params.motor.getCurrent();
+    }   //getCurrent
+
+    /**
+     * This method returns the current intake motor power.
+     *
+     * @return current intake motor power.
+     */
+    public double getPower()
+    {
+        return params.motor.getPower();
+    }   //getPower
+
+    //
+    // Primitive actions.
+    //
+
+    /**
+     * This method spins the intake motor with the specified power and optional duration.
      *
      * @param owner specifies the ID string of the caller for checking ownership, can be null if caller is not
      *        ownership aware.
@@ -227,7 +422,7 @@ public class TrcMotorGrabber implements TrcExclusiveSubsystem
      *        turning off.
      * @param event specifies the event to signal when the motor operation is completed.
      */
-    private void setPower(String owner, double delay, double power, double duration, TrcEvent event)
+    public void setPower(String owner, double delay, double power, double duration, TrcEvent event)
     {
         tracer.traceDebug(
             instanceName, "owner=%s,delay=%.3f,power=%.3f,duration=%.3f,event=%s",
@@ -248,7 +443,70 @@ public class TrcMotorGrabber implements TrcExclusiveSubsystem
     }   //setPower
 
     /**
-     * This method stops the grabber motor.
+     * This method sets the motor output value for the set period of time. The motor will be turned off after the
+     * set time expires.
+     *
+     * @param delay specifies the delay in seconds to wait before setting the power of the motor.
+     * @param power specifies the percentage power or velocity (range -1.0 to 1.0) to be set.
+     * @param duration specifies the duration in seconds to have power set.
+     * @param event specifies the event to signal when time has expired.
+     */
+    public void setPower(double delay, double power, double duration, TrcEvent event)
+    {
+        setPower(null, delay, power, duration, event);
+    }   //setPower
+
+    /**
+     * This method sets the motor output value for the set period of time. The motor will be turned off after the
+     * set time expires.
+     *
+     * @param power specifies the percentage power or velocity (range -1.0 to 1.0) to be set.
+     * @param duration specifies the duration in seconds to have power set.
+     * @param event specifies the event to signal when time has expired.
+     */
+    public void setPower(double power, double duration, TrcEvent event)
+    {
+        setPower(null, 0.0, power, duration, event);
+    }   //setPower
+
+    /**
+     * This method sets the motor output value for the set period of time. The motor will be turned off after the
+     * set time expires.
+     *
+     * @param delay specifies the delay in seconds to wait before setting the power of the motor.
+     * @param power specifies the percentage power or velocity (range -1.0 to 1.0) to be set.
+     * @param duration specifies the duration in seconds to have power set.
+     */
+    public void setPower(double delay, double power, double duration)
+    {
+        setPower(null, delay, power, duration, null);
+    }   //setPower
+
+    /**
+     * This method sets the motor output value for the set period of time. The motor will be turned off after the
+     * set time expires.
+     *
+     * @param power specifies the percentage power or velocity (range -1.0 to 1.0) to be set.
+     * @param duration specifies the duration in seconds to have power set.
+     */
+    public void setPower(double power, double duration)
+    {
+        setPower(null, 0.0, power, duration, null);
+    }   //setPower
+
+    /**
+     * This method sets the motor output value for the set period of time. The motor will be turned off after the
+     * set time expires.
+     *
+     * @param power specifies the percentage power or velocity (range -1.0 to 1.0) to be set.
+     */
+    public void setPower(double power)
+    {
+        setPower(null, 0.0, power, 0.0, null);
+    }   //setPower
+
+    /**
+     * This method stops the intake motor.
      *
      * @param owner specifies the ID string of the caller for checking ownership, can be null if caller is not
      *        ownership aware.
@@ -259,16 +517,20 @@ public class TrcMotorGrabber implements TrcExclusiveSubsystem
     }   //stop
 
     /**
-     * This method stops the grabber motor.
+     * This method stops the intake motor.
      */
     public void stop()
     {
         setPower(null, 0.0, 0.0, 0.0, null);
     }   //stop
 
+    //
+    // Manual actions.
+    //
+
     /**
-     * This method starts the grabber motor with intake power and optionally specifies the duration after which to
-     * turn off the motor automatically and signal an event if provided.
+     * This method starts the motor with intake power and optionally specifies the duration after which to turn off
+     * the motor automatically and signal an event if provided.
      *
      * @param owner specifies the owner ID to check if the caller has ownership of the subsystem.
      * @param delay specifies the time in seconds to delay before setting the power, 0.0 if no delay.
@@ -282,8 +544,8 @@ public class TrcMotorGrabber implements TrcExclusiveSubsystem
     }   //intake
 
     /**
-     * This method starts the grabber motor with intake power and optionally specifies the duration after which to
-     * turn off the motor automatically and signal an event if provided.
+     * This method starts the motor with intake power and optionally specifies the duration after which to turn off
+     * the motor automatically and signal an event if provided.
      *
      * @param owner specifies the owner ID to check if the caller has ownership of the subsystem.
      * @param duration specifies the duration in seconds to run the motor and turns it off afterwards, 0.0 if not
@@ -296,8 +558,8 @@ public class TrcMotorGrabber implements TrcExclusiveSubsystem
     }   //intake
 
     /**
-     * This method starts the grabber motor with intake power and optionally specifies the duration after which to
-     * turn off the motor automatically and signal an event if provided.
+     * This method starts the motor with intake power and optionally specifies the duration after which to turn off
+     * the motor automatically and signal an event if provided.
      *
      * @param duration specifies the duration in seconds to run the motor and turns it off afterwards, 0.0 if not
      *        turning off.
@@ -309,7 +571,7 @@ public class TrcMotorGrabber implements TrcExclusiveSubsystem
     }   //intake
 
     /**
-     * This method starts the grabber motor with intake power.
+     * This method starts the motor with intake power.
      */
     public void intake()
     {
@@ -317,8 +579,8 @@ public class TrcMotorGrabber implements TrcExclusiveSubsystem
     }   //intake
 
     /**
-     * This method starts the grabber motor with eject power and optionally specifies the duration after which to
-     * turn off the motor automatically and signal an event if provided.
+     * This method starts the motor with eject power and optionally specifies the duration after which to turn off
+     * the motor automatically and signal an event if provided.
      *
      * @param owner specifies the owner ID to check if the caller has ownership of the subsystem.
      * @param delay specifies the time in seconds to delay before setting the power, 0.0 if no delay.
@@ -332,8 +594,8 @@ public class TrcMotorGrabber implements TrcExclusiveSubsystem
     }   //eject
 
     /**
-     * This method starts the grabber motor with eject power and optionally specifies the duration after which to
-     * turn off the motor automatically and signal an event if provided.
+     * This method starts the motor with eject power and optionally specifies the duration after which to turn off
+     * the motor automatically and signal an event if provided.
      *
      * @param owner specifies the owner ID to check if the caller has ownership of the subsystem.
      * @param duration specifies the duration in seconds to run the motor and turns it off afterwards, 0.0 if not
@@ -346,8 +608,8 @@ public class TrcMotorGrabber implements TrcExclusiveSubsystem
     }   //eject
 
     /**
-     * This method starts the grabber motor with eject power and optionally specifies the duration after which to
-     * turn off the motor automatically and signal an event if provided.
+     * This method starts the motor with eject power and optionally specifies the duration after which to turn off
+     * the motor automatically and signal an event if provided.
      *
      * @param duration specifies the duration in seconds to run the motor and turns it off afterwards, 0.0 if not
      *        turning off.
@@ -359,15 +621,19 @@ public class TrcMotorGrabber implements TrcExclusiveSubsystem
     }   //eject
 
     /**
-     * This method starts the grabber motor with eject power.
+     * This method starts the motor with eject power.
      */
     public void eject()
     {
         setPower(null, 0.0, params.ejectPower, 0.0, null);
     }   //eject
 
+    //
+    // Auto actions.
+    //
+
     /**
-     * This method is called to finish and clean up the action.
+     * This method is called to finish and clean up the auto action.
      *
      * @param completed specifies true to complete the action, false to cancel.
      */
@@ -377,17 +643,15 @@ public class TrcMotorGrabber implements TrcExclusiveSubsystem
         if (actionParams != null)
         {
             boolean gotObject = hasObject();
+
             tracer.traceInfo(
                 instanceName, "FinishAction(completed=%s): isOn=%s, hasObject=%s, actionParams=%s",
                 completed, isOn(), gotObject, actionParams);
-
             timer.cancel();
-            params.sensorTrigger.disableTrigger();
             if (completed)
             {
-                params.motor.setPower(
-                    actionParams.owner, 0.0, actionParams.intakeAction && gotObject? params.retainPower: 0.0,
-                    0.0, null);
+                double power = actionParams.intakeAction && gotObject? params.retainPower: 0.0;
+                params.motor.setPower(actionParams.owner, 0.0, power, 0.0, null);
             }
             else
             {
@@ -437,24 +701,6 @@ public class TrcMotorGrabber implements TrcExclusiveSubsystem
     }   //actionTimedOut
 
     /**
-     * This method is called when the grabber sensor is triggered.
-     *
-     * @param context not used.
-     */
-    private void sensorTriggerCallback(Object context)
-    {
-        tracer.traceDebug(instanceName, "Triggered: callbackEvent=%s", actionParams.callbackEvent);
-        if (actionParams.finishDelay > 0.0)
-        {
-            timer.set(actionParams.finishDelay, (c)-> finishAction(true));
-        }
-        else
-        {
-            finishAction(true);
-        }
-    }   //sensorTriggerCallback
-
-    /**
      * This method performs the auto action which is to spin the motor for intake if we don't have the object or eject
      * if we still have the object. It arms the sensor trigger to detect object possession. If there is a timeout, it
      * arms the timeout timer for canceling the auto action when the timer expires.
@@ -469,14 +715,14 @@ public class TrcMotorGrabber implements TrcExclusiveSubsystem
 
         if (ap.intakeAction && !gotObject)
         {
-            // Grabber is intaking and we don't have the object yet.
+            // We are intaking but we don't have the object yet.
             tracer.traceDebug(instanceName, "Start Intake.");
             params.motor.setPower(ap.owner, 0.0, params.intakePower, 0.0, null);
             actionPending = true;
         }
         else if (!ap.intakeAction && gotObject)
         {
-            // Grabber is ejecting and we still have the object.
+            // We are ejecting and we still have the object.
             tracer.traceDebug(instanceName, "Start Eject.");
             params.motor.setPower(ap.owner, 0.0, params.ejectPower, 0.0, null);
             actionPending = true;
@@ -484,9 +730,6 @@ public class TrcMotorGrabber implements TrcExclusiveSubsystem
 
         if (actionPending)
         {
-            // Arm the sensor trigger as long as Action is pending.
-            tracer.traceDebug(instanceName, "Arm sensor trigger.");
-            params.sensorTrigger.enableTrigger(TriggerMode.OnBoth, this::sensorTriggerCallback);
             if (ap.timeout > 0.0)
             {
                 // Set a timeout and cancel auto-assist if timeout has expired.
@@ -512,23 +755,25 @@ public class TrcMotorGrabber implements TrcExclusiveSubsystem
      * @param finishDelay specifies the delay in seconds between sensor trigger and finishing the operation, can
      *        be 0.0 for no delay. This is useful to make sure the grabber has a good grasp of the object before
      *        we turn off the motor.
-     * @param event specifies the event to signal when object is detected in the intake.
+     * @param completionEvent specifies the event to signal when the action is completed.
      * @param timeout specifies a timeout value at which point it will give up and signal completion. The caller
      *        must call hasObject() to figure out if it has given up.
-     * @param triggerCallback specifies the method to call when a trigger occurred, can be null if not provided.
+     * @param completionCallback specifies the method to call when the action is completed or canceled, can be null if
+     *        not provided.
      * @param callbackContext specifies the context object to be passed back to the callback, can be null if none.
      */
     private void autoAction(
-        boolean intakeAction, String owner, double delay, double finishDelay, TrcEvent event, double timeout,
-        TrcEvent.Callback triggerCallback, Object callbackContext)
+        boolean intakeAction, String owner, double delay, double finishDelay, TrcEvent completionEvent, double timeout,
+        TrcEvent.Callback completionCallback, Object callbackContext)
     {
-        if (params.sensorTrigger == null)
+        if ((params.frontTriggerParams == null || params.frontTriggerParams.triggerAction == TriggerAction.NoAction) &&
+            (params.backTriggerParams == null || params.backTriggerParams.triggerAction == TriggerAction.NoAction))
         {
             throw new RuntimeException("Must have sensor to perform Auto Operation.");
         }
         // This is an auto operation, make sure the caller has ownership.
-        TrcEvent releaseOwnershipEvent = acquireOwnership(owner, event, tracer);
-        if (releaseOwnershipEvent != null) event = releaseOwnershipEvent;
+        TrcEvent releaseOwnershipEvent = acquireOwnership(owner, completionEvent, tracer);
+        if (releaseOwnershipEvent != null) completionEvent = releaseOwnershipEvent;
 
         if (validateOwnership(owner))
         {
@@ -536,12 +781,12 @@ public class TrcMotorGrabber implements TrcExclusiveSubsystem
             finishAction(false);
             // If there is a triggerCallback, set it up to callback on the same thread of this caller.
             TrcEvent callbackEvent = null;
-            if (triggerCallback != null)
+            if (completionCallback != null)
             {
                 callbackEvent = new TrcEvent(instanceName + ".callback");
-                callbackEvent.setCallback(triggerCallback, callbackContext);
+                callbackEvent.setCallback(completionCallback, callbackContext);
             }
-            actionParams = new ActionParams(intakeAction, owner, finishDelay, event, timeout, callbackEvent);
+            actionParams = new ActionParams(intakeAction, owner, completionEvent, timeout, callbackEvent);
             if (delay > 0.0)
             {
                 timer.set(delay, this::performAction, actionParams);
@@ -560,9 +805,6 @@ public class TrcMotorGrabber implements TrcExclusiveSubsystem
      *
      * @param owner specifies the owner ID to check if the caller has ownership of the grabber subsystem.
      * @param delay specifies the delay time in seconds before executing the action.
-     * @param finishDelay specifies the delay in seconds between sensor trigger and finishing the operation, can
-     *        be 0.0 for no delay. This is useful to make sure the grabber has a good grasp of the object before
-     *        we turn off the motor.
      * @param event specifies the event to signal when object is detected in the intake.
      * @param timeout specifies a timeout value at which point it will give up and signal completion. The caller
      *        must call hasObject() to figure out if it has given up.
@@ -570,10 +812,10 @@ public class TrcMotorGrabber implements TrcExclusiveSubsystem
      * @param callbackContext specifies the context object to be passed back to the callback, can be null if none.
      */
     public void autoIntake(
-        String owner, double delay, double finishDelay, TrcEvent event, double timeout,
-        TrcEvent.Callback triggerCallback, Object callbackContext)
+        String owner, double delay, TrcEvent event, double timeout, TrcEvent.Callback triggerCallback,
+        Object callbackContext)
     {
-        autoAction(true, owner, delay, finishDelay, event, timeout, triggerCallback, callbackContext);
+        autoAction(true, owner, delay, params.intakeFinishDelay, event, timeout, triggerCallback, callbackContext);
     }   //autoIntake
 
     /**
@@ -706,64 +948,4 @@ public class TrcMotorGrabber implements TrcExclusiveSubsystem
         finishAction(false);
     }   //cancel
 
-    /**
-     * This method returns the sensor value read from the analog sensor.
-     *
-     * @return analog sensor value.
-     */
-    public double getSensorValue()
-    {
-        return params.sensorTrigger != null? params.sensorTrigger.getSensorValue(): 0.0;
-    }   //getSensorValue
-
-    /**
-     * This method returns the sensor state read from the digital sensor.
-     *
-     * @return digital sensor state.
-     */
-    public boolean getSensorState()
-    {
-        return params.sensorTrigger != null && params.sensorTrigger.getSensorState();
-    }   //getSensorState
-
-    /**
-     *
-     * This method checks if object is detected.
-     *
-     * @return true if object is detected, false otherwise.
-     */
-    public boolean hasObject()
-    {
-        boolean gotObject = false;
-
-        if (params.sensorTrigger != null)
-        {
-            if (params.triggerThreshold != null)
-            {
-                gotObject = getSensorValue() > params.triggerThreshold;
-            }
-            else
-            {
-                gotObject = getSensorState();
-            }
-
-            if (params.triggerInverted)
-            {
-                gotObject = !gotObject;
-            }
-        }
-
-        return gotObject;
-    }   //hasObject
-
-    /**
-     * This method checks if auto operation is active.
-     *
-     * @return true if auto operation is in progress, false otherwise.
-     */
-    public boolean isAutoActive()
-    {
-        return actionParams != null;
-    }   //isAutoActive
-
-}   //class TrcMotorGrabber
+}   //class TrcRollerIntake
