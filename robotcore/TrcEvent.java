@@ -110,9 +110,9 @@ public class TrcEvent
      */
     public void cancel()
     {
+        // If the event was signaled, don't overwrite it.
+        // Only set to CANCELED if it was CLEARED.
         eventState.compareAndSet(EventState.CLEARED, EventState.CANCELED);
-        // We are canceling an event, remove the callback. We only do callbacks on signaled events, not canceled ones.
-        setCallback(null, null);
     }   //cancel
 
     /**
