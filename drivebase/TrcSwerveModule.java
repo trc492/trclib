@@ -148,8 +148,9 @@ public class TrcSwerveModule
      * This method is called when zero calibration is done.
      *
      * @param context not used.
+     * @param canceled not used.
      */
-    private void doneZeroCalibrate(Object context)
+    private void doneZeroCalibrate(Object context, boolean canceled)
     {
         setSteerAngle(0.0, false, true);
     }   //doneZeroCalibrate

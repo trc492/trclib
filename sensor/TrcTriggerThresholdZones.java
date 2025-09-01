@@ -241,7 +241,7 @@ public class TrcTriggerThresholdZones implements TrcTrigger
             setTriggerParams(triggerMode, event);
             if (triggerDelay != null)
             {
-                timer.set(triggerDelay, (c) -> {setEnabled(true);});
+                timer.set(triggerDelay, (context, canceled) -> {if (!canceled) setEnabled(true);});
             }
             else
             {
@@ -267,7 +267,7 @@ public class TrcTriggerThresholdZones implements TrcTrigger
             setTriggerParams(triggerMode, callback);
             if (triggerDelay != null)
             {
-                timer.set(triggerDelay, (c) -> {setEnabled(true);});
+                timer.set(triggerDelay, (context, canceled) -> {if (!canceled) setEnabled(true);});
             }
             else
             {

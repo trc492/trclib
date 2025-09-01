@@ -376,43 +376,47 @@ public abstract class TrcEmic2TextToSpeech
      * This method is called when the read request is completed.
      *
      * @param context specifies the read request.
+     * @param canceled specifies true if canceled.
      */
-    protected void notify(Object context)
+    protected void notify(Object context, boolean canceled)
     {
-        TrcSerialBusDevice.Request request = (TrcSerialBusDevice.Request) context;
-        String reply = null;
-
-        if (request.readRequest && request.buffer != null)
+        if (!canceled)
         {
-            reply = new String(request.buffer, StandardCharsets.US_ASCII);
-            tracer.traceDebug(instanceName, "reply=<" + reply + ">");
-        }
+            TrcSerialBusDevice.Request request = (TrcSerialBusDevice.Request) context;
+            String reply = null;
 
-        if (reply != null)
-        {
-            switch ((RequestId)request.requestId)
+            if (request.readRequest && request.buffer != null)
             {
-                case PROMPT:
-                    if (reply.equals("."))
-                    {
-                        //
-                        // There was a pause/unpause command, retry the prompt request.
-                        //
-                        asyncReadString(RequestId.PROMPT);
-                    }
-                    break;
+                reply = new String(request.buffer, StandardCharsets.US_ASCII);
+                tracer.traceDebug(instanceName, "reply=<" + reply + ">");
+            }
 
-                case CONFIG_MSG:
-                    configMsg = reply;
-                    break;
+            if (reply != null)
+            {
+                switch ((RequestId)request.requestId)
+                {
+                    case PROMPT:
+                        if (reply.equals("."))
+                        {
+                            //
+                            // There was a pause/unpause command, retry the prompt request.
+                            //
+                            asyncReadString(RequestId.PROMPT);
+                        }
+                        break;
 
-                case VERSION_MSG:
-                    versionMsg = reply;
-                    break;
+                    case CONFIG_MSG:
+                        configMsg = reply;
+                        break;
 
-                case HELP_MSG:
-                    helpMsg = reply;
-                    break;
+                    case VERSION_MSG:
+                        versionMsg = reply;
+                        break;
+
+                    case HELP_MSG:
+                        helpMsg = reply;
+                        break;
+                }
             }
         }
     }   //notify

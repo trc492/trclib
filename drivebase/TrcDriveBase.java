@@ -361,13 +361,21 @@ public abstract class TrcDriveBase implements TrcExclusiveSubsystem
      * This method is called when the drivebase drive timer has expired. It will stop the drivebase.
      *
      * @param context specifies the timer object (not used).
+     * @param canceled specifies true if timer is canceled.
      */
-    private void driveTimerHandler(Object context)
+    private void driveTimerHandler(Object context, boolean canceled)
     {
         stop(driveOwner);
         if (driveTimerEvent != null)
         {
-            driveTimerEvent.signal();
+            if (canceled)
+            {
+                driveTimerEvent.cancel();
+            }
+            else
+            {
+                driveTimerEvent.signal();
+            }
             driveTimerEvent = null;
         }
         driveOwner = null;

@@ -456,46 +456,50 @@ public class TrcLidarLite
      * This method is called when the read request is completed.
      *
      * @param context specifies the read request.
+     * @param canceled specifies true if canceled.
      */
-    public void notify(Object context)
+    public void notify(Object context, boolean canceled)
     {
-        TrcSerialBusDevice.Request request = (TrcSerialBusDevice.Request) context;
-
-        if (request.readRequest)
+        if (!canceled)
         {
-            if (request.buffer != null)
+            TrcSerialBusDevice.Request request = (TrcSerialBusDevice.Request) context;
+
+            if (request.readRequest)
             {
-                switch ((RequestId)request.requestId)
+                if (request.buffer != null)
                 {
-                    case READ_DISTANCE:
-                        notifyEvent.setCallback(this::notify, null);
-                        if ((request.buffer[0] & 0x1) == 0x1)
-                        {
-                            // Not ready yet, read status again.
-                            device.asyncRead(request.requestId, REG_STATUS, 1, notifyEvent);
-                        }
-                        else
-                        {
-                            device.asyncRead(RequestId.GET_DISTANCE, REG_FULL_DELAY_HIGH, 2, notifyEvent);
-                        }
-                        break;
+                    switch ((RequestId)request.requestId)
+                    {
+                        case READ_DISTANCE:
+                            notifyEvent.setCallback(this::notify, null);
+                            if ((request.buffer[0] & 0x1) == 0x1)
+                            {
+                                // Not ready yet, read status again.
+                                device.asyncRead(request.requestId, REG_STATUS, 1, notifyEvent);
+                            }
+                            else
+                            {
+                                device.asyncRead(RequestId.GET_DISTANCE, REG_FULL_DELAY_HIGH, 2, notifyEvent);
+                            }
+                            break;
 
-                    case GET_DISTANCE:
-                        distance.timestamp = TrcTimer.getCurrentTime();
-                        distance.value = (double)TrcUtil.bytesToInt(request.buffer[1], request.buffer[0]);
-                        break;
+                        case GET_DISTANCE:
+                            distance.timestamp = TrcTimer.getCurrentTime();
+                            distance.value = (double)TrcUtil.bytesToInt(request.buffer[1], request.buffer[0]);
+                            break;
 
-                    default:
-                        break;
+                        default:
+                            break;
+                    }
                 }
             }
-        }
-        else
-        {
-            if (request.requestId == RequestId.READ_DISTANCE)
+            else
             {
-                notifyEvent.setCallback(this::notify, null);
-                device.asyncRead(request.requestId, REG_STATUS, 1, notifyEvent);
+                if (request.requestId == RequestId.READ_DISTANCE)
+                {
+                    notifyEvent.setCallback(this::notify, null);
+                    device.asyncRead(request.requestId, REG_STATUS, 1, notifyEvent);
+                }
             }
         }
     }   //notify

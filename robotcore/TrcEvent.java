@@ -140,11 +140,17 @@ public class TrcEvent
     //
 
     /**
-     * This interface is implemented by the caller so that it can be notified when the event is signaled.
+     * This interface is implemented by the caller so that it can be notified when the event is signaled or canceled.
      */
     public interface Callback
     {
-        void notify(Object context);
+        /**
+         * This method notifies the caller the event is either signaled or canceled.
+         *
+         * @param context specifies the callback context.
+         * @param canceled specifies true if event was canceled, false if signaled.
+         */
+        void notify(Object context, boolean canceled);
     }   //interface Callback
 
     private static class CallbackEventList
@@ -154,8 +160,8 @@ public class TrcEvent
     }   //class CallbackEventList
 
     private static final HashMap<Thread, CallbackEventList> callbackEventListMap = new HashMap<>();
-    private Callback callback;
-    private Object callbackContext;
+    private Callback callback = null;
+    private Object callbackContext = null;
 
     /**
      * This method sets a callback handler so that when the event is signaled, the callback handler is called on
@@ -354,7 +360,7 @@ public class TrcEvent
                 // another callback.
                 event.callback = null;
                 event.callbackContext = null;
-                callback.notify(context);
+                callback.notify(context, event.isCanceled());
             }
         }
         else

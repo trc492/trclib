@@ -524,39 +524,43 @@ public abstract class TrcSerialBusDevice
      * This method processes a request.
      *
      * @param context specifies the request entry to be processed.
+     * @param canceled specifies true if canceled.
      */
-    private void requestHandler(Object context)
+    private void requestHandler(Object context, boolean canceled)
     {
-        TrcRequestQueue<Request>.RequestEntry entry = (TrcRequestQueue<Request>.RequestEntry) context;
-        Request request = entry.getRequest();
-
-        request.canceled = entry.isCanceled();
-        if (!request.canceled)
+        if (!canceled)
         {
-            if (request.readRequest)
+            TrcRequestQueue<Request>.RequestEntry entry = (TrcRequestQueue<Request>.RequestEntry) context;
+            Request request = entry.getRequest();
+
+            request.canceled = entry.isCanceled();
+            if (!request.canceled)
             {
-                request.buffer = readData(request.address, request.length);
-                if (request.buffer != null)
+                if (request.readRequest)
                 {
-                    tracer.traceDebug(
-                        instanceName,
-                        "readData(addr=0x" + Integer.toHexString(request.address) +
-                        ",len=" + request.length +
-                        ")=" + Arrays.toString(request.buffer));
+                    request.buffer = readData(request.address, request.length);
+                    if (request.buffer != null)
+                    {
+                        tracer.traceDebug(
+                            instanceName,
+                            "readData(addr=0x" + Integer.toHexString(request.address) +
+                            ",len=" + request.length +
+                            ")=" + Arrays.toString(request.buffer));
+                    }
+                }
+                else
+                {
+                    request.length = writeData(request.address, request.buffer, request.length);
                 }
             }
-            else
-            {
-                request.length = writeData(request.address, request.buffer, request.length);
-            }
-        }
 
-        if (request.completionEvent != null)
-        {
-            request.completionEvent.setCallbackContext(request);
-            request.completionEvent.signal();
+            if (request.completionEvent != null)
+            {
+                request.completionEvent.setCallbackContext(request);
+                request.completionEvent.signal();
+            }
+            tracer.traceDebug(instanceName, "request=" + request);
         }
-        tracer.traceDebug(instanceName, "request=" + request);
     }   //requestHandler
 
 }   //class TrcSerialBusDevice

@@ -229,6 +229,7 @@ public abstract class TrcMotor implements TrcMotorController, TrcExclusiveSubsys
         Double prevPosTarget = null;
         double calPower;
         boolean calibrating = false;
+        TrcEvent zeroCalCallbackEvent = null;
         // Stall protection.
         double stallMinPower = 0.0;
         double stallTolerance = 0.0;
@@ -1406,6 +1407,13 @@ public abstract class TrcMotor implements TrcMotorController, TrcExclusiveSubsys
         synchronized (taskParams)
         {
             taskParams.calibrating = false;
+
+            if (taskParams.zeroCalCallbackEvent != null)
+            {
+                taskParams.zeroCalCallbackEvent.cancel();
+                taskParams.zeroCalCallbackEvent = null;
+            }
+
             if (taskParams.notifyEvent != null)
             {
                 taskParams.notifyEvent.cancel();
@@ -1457,56 +1465,60 @@ public abstract class TrcMotor implements TrcMotorController, TrcExclusiveSubsys
     /**
      * This method is called when set motor value delay timer has expired. It will set the specified motor value.
      *
-     * @param context specifies the timer object (not used).
+     * @param context specifies the TaskParams object.
+     * @param canceled specifies true if delay timer was canceled.
      */
-    private void delayValueExpiredCallback(Object context)
+    private void delayValueExpiredCallback(Object context, boolean canceled)
     {
-        // Delay timer has expired, set the motor value now.
-        // Note: if delay timer is canceled, there is no callback.
-        TaskParams params = (TaskParams) context;
-
-        synchronized (params)
+        if (!canceled)
         {
-            switch (params.setToControlMode)
+            // Delay timer has expired, set the motor value now.
+            // Note: if delay timer is canceled, there is no callback.
+            TaskParams params = (TaskParams) context;
+
+            synchronized (params)
             {
-                case Power:
-                    setControllerMotorPower(params.motorValue, true);
-                    break;
+                switch (params.setToControlMode)
+                {
+                    case Power:
+                        setControllerMotorPower(params.motorValue, true);
+                        break;
 
-                case Velocity:
-                    closeLoopControlTarget = params.motorValue;
-                    if (softwarePidEnabled)
-                    {
-                        setSoftwarePidVelocity(params.motorValue);
-                    }
-                    else
-                    {
-                        double feedforward =
-                            params.powerComp != null? params.powerComp.getCompensation(params.motorValue): 0.0;
-                        setControllerMotorVelocity(params.motorValue, feedforward);
-                    }
-                    break;
+                    case Velocity:
+                        closeLoopControlTarget = params.motorValue;
+                        if (softwarePidEnabled)
+                        {
+                            setSoftwarePidVelocity(params.motorValue);
+                        }
+                        else
+                        {
+                            double feedforward =
+                                params.powerComp != null? params.powerComp.getCompensation(params.motorValue): 0.0;
+                            setControllerMotorVelocity(params.motorValue, feedforward);
+                        }
+                        break;
 
-                case Current:
-                    closeLoopControlTarget = params.motorValue;
-                    if (softwarePidEnabled)
-                    {
-                        setSoftwarePidCurrent(params.motorValue);
-                    }
-                    else
-                    {
-                        setControllerMotorCurrent(params.motorValue);
-                    }
-                    break;
+                    case Current:
+                        closeLoopControlTarget = params.motorValue;
+                        if (softwarePidEnabled)
+                        {
+                            setSoftwarePidCurrent(params.motorValue);
+                        }
+                        else
+                        {
+                            setControllerMotorCurrent(params.motorValue);
+                        }
+                        break;
 
-                default:
-                    break;
-            }
+                    default:
+                        break;
+                }
 
-            if (params.duration > 0.0)
-            {
-                // We have set a duration, set up a timer for it.
-                timer.set(params.duration, this::durationExpiredCallback, params);
+                if (params.duration > 0.0)
+                {
+                    // We have set a duration, set up a timer for it.
+                    timer.set(params.duration, this::durationExpiredCallback, params);
+                }
             }
         }
     }   //delayValueExpiredCallback
@@ -1515,8 +1527,9 @@ public abstract class TrcMotor implements TrcMotorController, TrcExclusiveSubsys
      * This method is called when set motor power duration timer has expired. It will turn the motor off.
      *
      * @param context specifies the timer object (not used).
+     * @param canceled specifies true if duration timer was canceled.
      */
-    private void durationExpiredCallback(Object context)
+    private void durationExpiredCallback(Object context, boolean canceled)
     {
         // The duration timer has expired, turn everything off and clean up.
         TaskParams params = (TaskParams) context;
@@ -1528,7 +1541,14 @@ public abstract class TrcMotor implements TrcMotorController, TrcExclusiveSubsys
             setControllerMotorPower(0.0, true);
             if (params.notifyEvent != null)
             {
-                params.notifyEvent.signal();
+                if (canceled)
+                {
+                    params.notifyEvent.cancel();
+                }
+                else
+                {
+                    params.notifyEvent.signal();
+                }
                 params.notifyEvent = null;
             }
         }
@@ -1672,7 +1692,7 @@ public abstract class TrcMotor implements TrcMotorController, TrcExclusiveSubsys
             }
             else
             {
-                delayValueExpiredCallback(taskParams);
+                delayValueExpiredCallback(taskParams, false);
             }
         }
     }   //setMotorValue
@@ -1849,27 +1869,31 @@ public abstract class TrcMotor implements TrcMotorController, TrcExclusiveSubsys
      * This method is called when set motor position delay timer has expired. It will set the specified motor position.
      *
      * @param context specifies the timer object (not used).
+     * @param canceled specifies true if delay timer was canceled.
      */
-    private void delayPositionExpiredCallback(Object context)
+    private void delayPositionExpiredCallback(Object context, boolean canceled)
     {
-        // Delay timer has expired, set the motor value now.
-        TaskParams params = (TaskParams) context;
-
-        synchronized (params)
+        if (!canceled)
         {
-            closeLoopControlTarget = params.motorValue;
-            if (softwarePidEnabled)
+            // Delay timer has expired, set the motor value now.
+            TaskParams params = (TaskParams) context;
+
+            synchronized (params)
             {
-                // Doing software PID control.
-                // powerLimit is already set in taskParams.
-                setSoftwarePidPosition(params.motorValue);
-                profiledVelocity = null;
-            }
-            else
-            {
-                double feedforward =
-                    params.powerComp != null? params.powerComp.getCompensation(params.motorValue): 0.0;
-                setControllerMotorPosition(params.motorValue, params.powerLimit, feedforward);
+                closeLoopControlTarget = params.motorValue;
+                if (softwarePidEnabled)
+                {
+                    // Doing software PID control.
+                    // powerLimit is already set in taskParams.
+                    setSoftwarePidPosition(params.motorValue);
+                    profiledVelocity = null;
+                }
+                else
+                {
+                    double feedforward =
+                        params.powerComp != null? params.powerComp.getCompensation(params.motorValue): 0.0;
+                    setControllerMotorPosition(params.motorValue, params.powerLimit, feedforward);
+                }
             }
         }
     }   //delayPositionExpiredCallback
@@ -1939,7 +1963,7 @@ public abstract class TrcMotor implements TrcMotorController, TrcExclusiveSubsys
                 }
                 else
                 {
-                    delayPositionExpiredCallback(taskParams);
+                    delayPositionExpiredCallback(taskParams, false);
                 }
             }
         }
@@ -3115,6 +3139,11 @@ public abstract class TrcMotor implements TrcMotorController, TrcExclusiveSubsys
                 {
                     // Done with zero calibration.
                     taskParams.calibrating = false;
+                    if (taskParams.zeroCalCallbackEvent != null)
+                    {
+                        taskParams.zeroCalCallbackEvent.signal();
+                        taskParams.zeroCalCallbackEvent = null;
+                    }
                     completionEvent = taskParams.notifyEvent;
                     taskParams.notifyEvent = null;
                     tracer.traceInfo(instanceName, "Zero calibration done, event=" + completionEvent);
@@ -3434,20 +3463,24 @@ public abstract class TrcMotor implements TrcMotorController, TrcExclusiveSubsys
      * This method is called when the digital input device has changed state.
      *
      * @param context specifies true if the digital device state is active, false otherwise.
+     * @param canceled specifies true if trigger was disabled.
      */
-    private void resetTriggerCallback(Object context)
+    private void resetTriggerCallback(Object context, boolean canceled)
     {
-        boolean active = ((AtomicBoolean) context).get();
-
-        tracer.traceDebug(instanceName, "trigger=%s, active=%s", digitalTrigger, active);
-        tracer.traceInfo(instanceName, "Reset position on digital trigger! (BeforePos=" + getPosition() + ")");
-        resetPosition(false);
-
-        if (triggerCallbackEvent != null)
+        if (!canceled)
         {
-            triggerCallbackContext.set(active);
-            triggerCallbackEvent.setCallback(triggerCallback, triggerCallbackContext);
-            triggerCallbackEvent.signal();
+            boolean active = ((AtomicBoolean) context).get();
+
+            tracer.traceDebug(instanceName, "trigger=%s, active=%s", digitalTrigger, active);
+            tracer.traceInfo(instanceName, "Reset position on digital trigger! (BeforePos=" + getPosition() + ")");
+            resetPosition(false);
+
+            if (triggerCallbackEvent != null)
+            {
+                triggerCallbackContext.set(active);
+                triggerCallbackEvent.setCallback(triggerCallback, triggerCallbackContext);
+                triggerCallbackEvent.signal();
+            }
         }
     }   //resetTriggerCallback
 
@@ -3497,6 +3530,15 @@ public abstract class TrcMotor implements TrcMotorController, TrcExclusiveSubsys
                 taskParams.notifyEvent = completionEvent;
                 taskParams.calibrating = true;
                 taskParams.prevTime = null;
+                if (callback != null)
+                {
+                    taskParams.zeroCalCallbackEvent = new TrcEvent(instanceName + ".zeroCalCallback");
+                    taskParams.zeroCalCallbackEvent.setCallback(callback, null);
+                }
+                else
+                {
+                    taskParams.zeroCalCallbackEvent = null;
+                }
             }
         }
     }   //zeroCalibrate

@@ -241,13 +241,17 @@ public class TrcRollerIntake implements TrcExclusiveSubsystem
         if (params.frontTriggerParams != null && params.frontTriggerParams.trigger != null)
         {
             params.frontTriggerParams.trigger.enableTrigger(
-                TriggerMode.OnBoth, (c)->processTrigger(((AtomicBoolean) c).get(), params.frontTriggerParams));
+                TriggerMode.OnBoth,
+                (context, canceled)->processTrigger(
+                    ((AtomicBoolean) context).get(), params.frontTriggerParams, canceled));
         }
 
         if (params.backTriggerParams != null && params.backTriggerParams.trigger != null)
         {
             params.backTriggerParams.trigger.enableTrigger(
-                TriggerMode.OnBoth, (c)->processTrigger(((AtomicBoolean) c).get(), params.backTriggerParams));
+                TriggerMode.OnBoth,
+                (context, canceled)->processTrigger(
+                    ((AtomicBoolean) context).get(), params.backTriggerParams, canceled));
         }
 
         timer = new TrcTimer(instanceName);
@@ -269,18 +273,19 @@ public class TrcRollerIntake implements TrcExclusiveSubsystem
      *
      * @param active specifies the trigger state.
      * @param triggerParams specifies the trigger parameters.
+     * @param canceled specifies true if trigger was disabled (doesn't really happen, handle it regardless).
      */
-    private void processTrigger(boolean active, TriggerParams triggerParams)
+    private void processTrigger(boolean active, TriggerParams triggerParams, boolean canceled)
     {
         tracer.traceDebug(
-            instanceName, "Trigger: active=%s, triggerParams=%s, actionParams=%s",
-            active, triggerParams, actionParams);
+            instanceName, "Trigger: active=%s, triggerParams=%s, actionParams=%s, canceled=%s",
+            active, triggerParams, actionParams, canceled);
 
-        if (actionParams != null)
+        if (!canceled && actionParams != null)
         {
             if (triggerParams.triggerAction == TriggerAction.StartOnTrigger)
             {
-                performAction(actionParams);
+                performAction(actionParams, false);
             }
             else if (triggerParams.triggerAction == TriggerAction.FinishOnTrigger)
             {
@@ -288,7 +293,7 @@ public class TrcRollerIntake implements TrcExclusiveSubsystem
 
                 if (finishDelay > 0.0)
                 {
-                    timer.set(finishDelay, (c)-> finishAction(true));
+                    timer.set(finishDelay, (ctxt, cancel)-> finishAction(!cancel));
                 }
                 else
                 {
@@ -298,12 +303,13 @@ public class TrcRollerIntake implements TrcExclusiveSubsystem
         }
 
         if (triggerParams.triggerCallback != null &&
-            (triggerParams.triggerMode == TriggerMode.OnBoth ||
+            (canceled ||
+             triggerParams.triggerMode == TriggerMode.OnBoth ||
              triggerParams.triggerMode == TriggerMode.OnActive && active ||
              triggerParams.triggerMode == TriggerMode.OnInactive && !active))
         {
             // Caller has registered a callback with a specified trigger mode, call it.
-            triggerParams.triggerCallback.notify(triggerParams.callbackContext);
+            triggerParams.triggerCallback.notify(triggerParams.callbackContext, canceled);
         }
     }   //processTrigger
 
@@ -684,8 +690,9 @@ public class TrcRollerIntake implements TrcExclusiveSubsystem
      * and can auto grab an object over and over again until the user calls this method to cancel the operation.
      *
      * @param context not used.
+     * @param canceled not used.
      */
-    private void actionTimedOut(Object context)
+    private void actionTimedOut(Object context, boolean canceled)
     {
         tracer.traceDebug(instanceName, "Auto action timed out.");
         finishAction(false);
@@ -697,41 +704,45 @@ public class TrcRollerIntake implements TrcExclusiveSubsystem
      * arms the timeout timer for canceling the auto action when the timer expires.
      *
      * @param context specifies the action parameters.
+     * @param canceled specifies true if canceled.
      */
-    private void performAction(Object context)
+    private void performAction(Object context, boolean canceled)
     {
-        ActionParams ap = (ActionParams) context;
-        boolean gotObject = hasObject();
-        boolean actionPending = false;
-
-        if (ap.intakeAction && !gotObject)
+        if (!canceled)
         {
-            // We are intaking but we don't have the object yet.
-            tracer.traceDebug(instanceName, "Start Intake.");
-            params.motor.setPower(ap.owner, 0.0, params.intakePower, 0.0, null);
-            actionPending = true;
-        }
-        else if (!ap.intakeAction && gotObject)
-        {
-            // We are ejecting and we still have the object.
-            tracer.traceDebug(instanceName, "Start Eject.");
-            params.motor.setPower(ap.owner, 0.0, params.ejectPower, 0.0, null);
-            actionPending = true;
-        }
-
-        if (actionPending)
-        {
-            if (ap.timeout > 0.0)
+            ActionParams ap = (ActionParams) context;
+            boolean gotObject = hasObject();
+            boolean actionPending = false;
+    
+            if (ap.intakeAction && !gotObject)
             {
-                // Set a timeout and cancel auto-assist if timeout has expired.
-                tracer.traceDebug(instanceName, "Set timeout " + ap.timeout + " sec");
-                timer.set(ap.timeout, this::actionTimedOut, null);
+                // We are intaking but we don't have the object yet.
+                tracer.traceDebug(instanceName, "Start Intake.");
+                params.motor.setPower(ap.owner, 0.0, params.intakePower, 0.0, null);
+                actionPending = true;
             }
-        }
-        else
-        {
-            // Action already completed, we are done.
-            finishAction(true);
+            else if (!ap.intakeAction && gotObject)
+            {
+                // We are ejecting and we still have the object.
+                tracer.traceDebug(instanceName, "Start Eject.");
+                params.motor.setPower(ap.owner, 0.0, params.ejectPower, 0.0, null);
+                actionPending = true;
+            }
+    
+            if (actionPending)
+            {
+                if (ap.timeout > 0.0)
+                {
+                    // Set a timeout and cancel auto-assist if timeout has expired.
+                    tracer.traceDebug(instanceName, "Set timeout " + ap.timeout + " sec");
+                    timer.set(ap.timeout, this::actionTimedOut, null);
+                }
+            }
+            else
+            {
+                // Action already completed, we are done.
+                finishAction(true);
+            }
         }
     }   //performAction
 
@@ -769,7 +780,7 @@ public class TrcRollerIntake implements TrcExclusiveSubsystem
             }
             else
             {
-                performAction(actionParams);
+                performAction(actionParams, false);
             }
         }
     }   //autoAction

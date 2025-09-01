@@ -293,24 +293,28 @@ public class TrcPidConveyor implements TrcExclusiveSubsystem
      * This method is called when the entry sensor is triggered.
      *
      * @param context specifies true if an object has activated the sensor, false if the object has deactivated it.
+     * @param canceled specifies true if trigger was disabled.
      */
-    private void onEntryEvent(Object context)
+    private void onEntryEvent(Object context, boolean canceled)
     {
-        boolean active = ((AtomicBoolean) context).get();
+        if (!canceled)
+        {
+            boolean active = ((AtomicBoolean) context).get();
 
-        if (active)
-        {
-            numObjects++;
-            motor.setPower(params.movePower);
-        }
-        else
-        {
-            motor.setPower(0.0);
-        }
+            if (active)
+            {
+                numObjects++;
+                motor.setPower(params.movePower);
+            }
+            else
+            {
+                motor.setPower(0.0);
+            }
 
-        if (entryEvent != null)
-        {
-            entryEvent.signal();
+            if (entryEvent != null)
+            {
+                entryEvent.signal();
+            }
         }
     }   //onEntryEvent
 
@@ -318,23 +322,27 @@ public class TrcPidConveyor implements TrcExclusiveSubsystem
      * This method is called when the exit sensor is triggered.
      *
      * @param context specifies true if an object has activated the sensor, false if the object has deactivated it.
+     * @param canceled specifies true if trigger was disabled.
      */
-    private void onExitEvent(Object context)
+    private void onExitEvent(Object context, boolean canceled)
     {
-        boolean active = ((AtomicBoolean) context).get();
+        if (!canceled)
+        {
+            boolean active = ((AtomicBoolean) context).get();
 
-        if (active)
-        {
-            numObjects--;
-        }
-        else
-        {
-            motor.setPower(0.0);
-        }
+            if (active)
+            {
+                numObjects--;
+            }
+            else
+            {
+                motor.setPower(0.0);
+            }
 
-        if (exitEvent != null)
-        {
-            exitEvent.signal();
+            if (exitEvent != null)
+            {
+                exitEvent.signal();
+            }
         }
     }   //onExitEvent
 

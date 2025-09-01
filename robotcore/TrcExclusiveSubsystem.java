@@ -165,8 +165,9 @@ public interface TrcExclusiveSubsystem
      * It will also signal the original completion event for the owner.
      *
      * @param context specifies the releaseOwnership parameters.
+     * @param canceled not used.
      */
-    default void releaseOwnership(Object context)
+    default void releaseOwnership(Object context, boolean canceled)
     {
         OwnershipParams ownershipParams = (OwnershipParams) context;
 

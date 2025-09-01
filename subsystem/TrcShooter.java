@@ -322,31 +322,36 @@ public class TrcShooter implements TrcExclusiveSubsystem
      * This method is called when the shooter has reached target velocity or tilt/pan has reached target positions.
      *
      * @param context not used.
+     * @param canceled specifies true if canceled.
      */
-    private void onTarget(Object context)
+    private void onTarget(Object context, boolean canceled)
     {
         tracer.traceDebug(
             instanceName,
-            "shooter1Event=" + shooter1OnTargetEvent +
+            "canceled=" + canceled +
+            ",shooter1Event=" + shooter1OnTargetEvent +
             ",shooter2Event=" + shooter2OnTargetEvent +
             ", tiltEvent=" + tiltOnTargetEvent +
             ", panEvent=" + panOnTargetEvent +
             ", aimOnly=" + (shootOp == null));
-        if (shooter1OnTargetEvent.isSignaled() &&
-            (shooter2OnTargetEvent == null || shooter2OnTargetEvent.isSignaled()) &&
-            (tiltOnTargetEvent == null || tiltOnTargetEvent.isSignaled()) &&
-            (panOnTargetEvent == null || panOnTargetEvent.isSignaled()))
+        if (!canceled)
         {
-            if (shootOp != null)
+            if (shooter1OnTargetEvent.isSignaled() &&
+                (shooter2OnTargetEvent == null || shooter2OnTargetEvent.isSignaled()) &&
+                (tiltOnTargetEvent == null || tiltOnTargetEvent.isSignaled()) &&
+                (panOnTargetEvent == null || panOnTargetEvent.isSignaled()))
             {
-                // If both shooter velocity and tilt/pan position have reached target, shoot.
-                TrcEvent shootCompletionEvent = new TrcEvent(instanceName + ".shootCompletionEvent");
-                shootCompletionEvent.setCallback(this::shootCompleted, null);
-                shootOp.shoot(shootOpOwner, shootCompletionEvent);
-            }
-            else
-            {
-                finish(true);
+                if (shootOp != null)
+                {
+                    // If both shooter velocity and tilt/pan position have reached target, shoot.
+                    TrcEvent shootCompletionEvent = new TrcEvent(instanceName + ".shootCompletionEvent");
+                    shootCompletionEvent.setCallback(this::shootCompleted, null);
+                    shootOp.shoot(shootOpOwner, shootCompletionEvent);
+                }
+                else
+                {
+                    finish(true);
+                }
             }
         }
     }   //onTarget
@@ -355,10 +360,16 @@ public class TrcShooter implements TrcExclusiveSubsystem
      * This method is called when the object has been ejected from the shooter.
      *
      * @param context not used.
+     * @param canceled specifies true if canceled.
      */
-    private void shootCompleted(Object context)
+    private void shootCompleted(Object context, boolean canceled)
     {
-        if (shootOffDelay == null)
+        if (canceled)
+        {
+            tracer.traceInfo(instanceName, "Shoot canceled.");
+            finish(false);
+        }
+        else if (shootOffDelay == null)
         {
             tracer.traceInfo(instanceName, "Shoot completed, keeping shooter motor running.");
             finish(true);
@@ -387,8 +398,9 @@ public class TrcShooter implements TrcExclusiveSubsystem
      * This method is called if the shooter operation has timed out.
      *
      * @param context specifies true for shoot off timeout, false for operation timeout.
+     * @param canceled not used.
      */
-    private void timedOut(Object context)
+    private void timedOut(Object context, boolean canceled)
     {
         Boolean completion = (Boolean) context;
         tracer.traceInfo(instanceName, "Timed out: completion=" + completion);

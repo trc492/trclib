@@ -519,8 +519,9 @@ public class TrcGridDrive
      * This method is called when the PurePursuitDrive operation is done. It releases the ownership of the drive base.
      *
      * @param context not used.
+     * @param canceled not used.
      */
-    private void driveDone(Object context)
+    private void driveDone(Object context, boolean canceled)
     {
         driveBase.releaseExclusiveAccess(moduleName);
     }   //driveDone

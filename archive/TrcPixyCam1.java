@@ -523,16 +523,20 @@ public abstract class TrcPixyCam1
      * This method is called when the read request is completed.
      *
      * @param context specifies the read request.
+     * @param canceled specifies true if canceled.
      */
-    protected void requestHandler(Object context)
+    protected void requestHandler(Object context, boolean canceled)
     {
-        TrcSerialBusDevice.Request request = (TrcSerialBusDevice.Request) context;
-
-        if (request.readRequest && request.address == -1 && request.buffer != null)
+        if (!canceled)
         {
-            if (!request.canceled)
+            TrcSerialBusDevice.Request request = (TrcSerialBusDevice.Request) context;
+
+            if (request.readRequest && request.address == -1 && request.buffer != null)
             {
-                processData((RequestId)request.requestId, request.buffer, request.buffer.length);
+                if (!request.canceled)
+                {
+                    processData((RequestId)request.requestId, request.buffer, request.buffer.length);
+                }
             }
         }
     }   //requestHanlder

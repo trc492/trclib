@@ -472,44 +472,48 @@ public abstract class TrcServo implements TrcExclusiveSubsystem
      * This method performs the setPosition action.
      *
      * @param context not used.
+     * @param canceled specifies true if canceled.
      */
-    private void performSetPosition(Object context)
+    private void performSetPosition(Object context, boolean canceled)
     {
-        synchronized (actionParams)
+        if (!canceled)
         {
-            double logicalPos =
-                toLogicalPosition(
-                    actionParams.actionType == ActionType.SetPosition ?
-                        actionParams.targetPosition : actionParams.currPosition);
-
-            tracer.traceDebug(instanceName, "actionParams=" + actionParams + ", logicalPos=" + logicalPos);
-            if (prevLogicalPos == null || logicalPos != prevLogicalPos)
+            synchronized (actionParams)
             {
-                setLogicalPosition(logicalPos);
-                prevLogicalPos = logicalPos;
-                synchronized (followers)
+                double logicalPos =
+                    toLogicalPosition(
+                        actionParams.actionType == ActionType.SetPosition ?
+                            actionParams.targetPosition : actionParams.currPosition);
+
+                tracer.traceDebug(instanceName, "actionParams=" + actionParams + ", logicalPos=" + logicalPos);
+                if (prevLogicalPos == null || logicalPos != prevLogicalPos)
                 {
-                    for (TrcServo servo : followers)
+                    setLogicalPosition(logicalPos);
+                    prevLogicalPos = logicalPos;
+                    synchronized (followers)
                     {
-                        servo.setLogicalPosition(logicalPos);
+                        for (TrcServo servo : followers)
+                        {
+                            servo.setLogicalPosition(logicalPos);
+                        }
+                    }
+
+                    if (actionParams.timeout > 0.0 && actionParams.completionEvent != null)
+                    {
+                        // A timeout is specified, set a timer for it and signal an event when it expires.
+                        // Since servo has no position feedback mechanism, time is used to estimate how long it takes
+                        // to complete the operation and signal the caller.
+                        timer.set(actionParams.timeout, actionParams.completionEvent);
+                        actionParams.completionEvent = null;
                     }
                 }
 
-                if (actionParams.timeout > 0.0 && actionParams.completionEvent != null)
+                // Action performed, destroy the params if ActionType was SetPosition. SetPositionWithStepRate and
+                // SetPower will take care of cleaning up itself.
+                if (actionParams.actionType == ActionType.SetPosition)
                 {
-                    // A timeout is specified, set a timer for it and signal an event when it expires.
-                    // Since servo has no position feedback mechanism, time is used to estimate how long it takes to
-                    // complete the operation and signal the caller.
-                    timer.set(actionParams.timeout, actionParams.completionEvent);
-                    actionParams.completionEvent = null;
+                    finish(null, false);
                 }
-            }
-
-            // Action performed, destroy the params if ActionType was SetPosition. SetPositionWithStepRate and SetPower
-            // will take care of cleaning up itself.
-            if (actionParams.actionType == ActionType.SetPosition)
-            {
-                finish(null, false);
             }
         }
     }   //performSetPosition
@@ -560,7 +564,7 @@ public abstract class TrcServo implements TrcExclusiveSubsystem
             }
             else
             {
-                performSetPosition(null);
+                performSetPosition(null, false);
             }
         }
     }   //setPosition
@@ -631,15 +635,19 @@ public abstract class TrcServo implements TrcExclusiveSubsystem
      * This method performs the setPositionWithStepRate action.
      *
      * @param context not used.
+     * @param canceled specifies true if canceled.
      */
-    private void performSetPositionWithStepRate(Object context)
+    private void performSetPositionWithStepRate(Object context, boolean canceled)
     {
-        synchronized (actionParams)
+        if (!canceled)
         {
-            actionParams.currPosition = getPosition();
-            actionParams.prevTime = null;
-            setTaskEnabled(true);
-            tracer.traceDebug(instanceName, "actionParams=" + actionParams);
+            synchronized (actionParams)
+            {
+                actionParams.currPosition = getPosition();
+                actionParams.prevTime = null;
+                setTaskEnabled(true);
+                tracer.traceDebug(instanceName, "actionParams=" + actionParams);
+            }
         }
     }   //performSetPositionWithStepRate
 
@@ -681,7 +689,7 @@ public abstract class TrcServo implements TrcExclusiveSubsystem
             }
             else
             {
-                performSetPositionWithStepRate(null);
+                performSetPositionWithStepRate(null, false);
             }
         }
     }   //setPosition
@@ -729,35 +737,39 @@ public abstract class TrcServo implements TrcExclusiveSubsystem
      * This method performs the setPower action.
      *
      * @param context not used.
+     * @param canceled specifies true if canceled.
      */
-    private void performSetPower(Object context)
+    private void performSetPower(Object context, boolean canceled)
     {
-        synchronized (actionParams)
+        if (!canceled)
         {
-            if (!isTaskEnabled())
+            synchronized (actionParams)
             {
-                // Not already in stepping mode, do a setPosition to the direction according to the sign of the power
-                // and the step rate according to the magnitude of the power.
-                actionParams.targetPosition = actionParams.power > 0.0 ? actionParams.maxPos : actionParams.minPos;
-                actionParams.currStepRate = Math.abs(actionParams.power) * servoParams.maxStepRate;
-                actionParams.currPosition = getPosition();
-                actionParams.prevTime = null;
-                setTaskEnabled(true);
+                if (!isTaskEnabled())
+                {
+                    // Not already in stepping mode, do a setPosition to the direction according to the sign of the
+                    // power and the step rate according to the magnitude of the power.
+                    actionParams.targetPosition = actionParams.power > 0.0? actionParams.maxPos: actionParams.minPos;
+                    actionParams.currStepRate = Math.abs(actionParams.power) * servoParams.maxStepRate;
+                    actionParams.currPosition = getPosition();
+                    actionParams.prevTime = null;
+                    setTaskEnabled(true);
+                }
+                else if (actionParams.power != 0.0)
+                {
+                    // We are already in stepping mode, just change the stepping parameters.
+                    actionParams.targetPosition =
+                        actionParams.power > 0.0 ? actionParams.maxPos : actionParams.minPos;
+                    actionParams.currStepRate = Math.abs(actionParams.power) * servoParams.maxStepRate;
+                }
+                else
+                {
+                    // We are stopping.
+                    finish(null, false);
+                }
+                currPower = actionParams.power;
+                tracer.traceDebug(instanceName, "actionParams=" + actionParams + ", taskEnabled=" + isTaskEnabled());
             }
-            else if (actionParams.power != 0.0)
-            {
-                // We are already in stepping mode, just change the stepping parameters.
-                actionParams.targetPosition =
-                    actionParams.power > 0.0 ? actionParams.maxPos : actionParams.minPos;
-                actionParams.currStepRate = Math.abs(actionParams.power) * servoParams.maxStepRate;
-            }
-            else
-            {
-                // We are stopping.
-                finish(null, false);
-            }
-            currPower = actionParams.power;
-            tracer.traceDebug(instanceName, "actionParams=" + actionParams + ", taskEnabled=" + isTaskEnabled());
         }
     }   //performSetPower
 
@@ -789,7 +801,7 @@ public abstract class TrcServo implements TrcExclusiveSubsystem
             }
             else
             {
-                performSetPower(null);
+                performSetPower(null, false);
             }
         }
     }   //setPower
@@ -938,7 +950,7 @@ public abstract class TrcServo implements TrcExclusiveSubsystem
             if (!onTarget)
             {
                 tracer.traceDebug(instanceName, "deltaPos=" + deltaPos + ", actionParams=" + actionParams);
-                performSetPosition(actionParams);
+                performSetPosition(actionParams, false);
             }
         }
     }   //servoTask

@@ -361,11 +361,12 @@ public class TrcServoClaw implements TrcExclusiveSubsystem
      * This method cancels the auto-assist operation and to clean up. It is called by autoAssistGrab to cancel a
      * previous operation or if the auto-assist has set a timeout and it has expired. Auto-assist will not be canceled
      * even if the sensor trigger caused it to grab an object. If a timeout is not set, auto-assist remains enabled
-     * and can auto grab an object over and over again until the user calls this method to cancel the operation.
+     * and can auto grab an object over and over again until the user cancels the operation.
      *
      * @param context not used.
+     * @param canceled not used.
      */
-    private void actionTimedOut(Object context)
+    private void actionTimedOut(Object context, boolean canceled)
     {
         tracer.traceDebug(instanceName, "Auto action timed out.");
         finishAction(hasObject());
@@ -375,24 +376,28 @@ public class TrcServoClaw implements TrcExclusiveSubsystem
      * This method is called when the claw sensor is triggered.
      *
      * @param context not used.
+     * @param canceled specifies true if trigger is disabled.
      */
-    private void sensorTriggerCallback(Object context)
+    private void sensorTriggerCallback(Object context, boolean canceled)
     {
-        if (getTriggerState())
+        if (!canceled)
         {
-            tracer.traceDebug(instanceName, "Triggered: callbackEvent=" + actionParams.callbackEvent);
-            // If callback is provided, callback is responsible for grabbing the object.
-            if (actionParams.callbackEvent == null)
+            if (getTriggerState())
             {
-                // There is no callback, grab the object ourselves and finish the operation.
-                params.servo.setPosition(actionParams.owner, 0.0, params.closePos, null, 0.0);
-                finishAction(true);
-            }
-            else
-            {
-                // There is a callback, signal the callback. It is the responsibility of the caller to finish the
-                // operation by calling cancel.
-                actionParams.callbackEvent.signal();
+                tracer.traceDebug(instanceName, "Triggered: callbackEvent=" + actionParams.callbackEvent);
+                // If callback is provided, callback is responsible for grabbing the object.
+                if (actionParams.callbackEvent == null)
+                {
+                    // There is no callback, grab the object ourselves and finish the operation.
+                    params.servo.setPosition(actionParams.owner, 0.0, params.closePos, null, 0.0);
+                    finishAction(true);
+                }
+                else
+                {
+                    // There is a callback, signal the callback. It is the responsibility of the caller to finish the
+                    // operation by calling cancel.
+                    actionParams.callbackEvent.signal();
+                }
             }
         }
     }   //sensorTriggerCallback
@@ -404,50 +409,54 @@ public class TrcServoClaw implements TrcExclusiveSubsystem
      * auto action when the timer expires.
      *
      * @param context specifies the action parameters.
+     * @param canceled specifies true if canceled.
      */
-    private void performAction(Object context)
+    private void performAction(Object context, boolean canceled)
     {
-        ActionParams ap = (ActionParams) context;
-        boolean triggered = getTriggerState();
-        boolean clawClosed = isClosed();
-        boolean finished = false;
-
-        tracer.traceDebug(
-            instanceName, "AutoAssistGrab: clawClosed=%s, sensorTriggered=%s, params=%s",
-            clawClosed, triggered, params);
-        if (triggered)
+        if (!canceled)
         {
-            if (!clawClosed && ap.callbackEvent == null)
+            ActionParams ap = (ActionParams) context;
+            boolean triggered = getTriggerState();
+            boolean clawClosed = isClosed();
+            boolean finished = false;
+
+            tracer.traceDebug(
+                instanceName, "AutoAssistGrab: clawClosed=%s, sensorTriggered=%s, params=%s",
+                clawClosed, triggered, params);
+            if (triggered)
             {
-                // Claw is open, the object is detected and there is no callback, grab the object.
-                tracer.traceDebug(instanceName, "Object already detected, grab it!");
-                params.servo.setPosition(ap.owner, 0.0, params.closePos, null, 0.0);
+                if (!clawClosed && ap.callbackEvent == null)
+                {
+                    // Claw is open, the object is detected and there is no callback, grab the object.
+                    tracer.traceDebug(instanceName, "Object already detected, grab it!");
+                    params.servo.setPosition(ap.owner, 0.0, params.closePos, null, 0.0);
+                }
+                finished = true;
             }
-            finished = true;
-        }
-        else if (clawClosed)
-        {
-            // Claw is close but has no object, open it to prepare for grabbing.
-            tracer.traceDebug(instanceName, "Claws are closed, open it back up.");
-            params.servo.setPosition(ap.owner, 0.0, params.openPos, null, 0.0);
-        }
-
-        if (finished)
-        {
-            // Either already grabbed an object or object is detected and we have a callback, finish the action.
-            tracer.traceDebug(instanceName, "Already has object, finish the operation.");
-            finishAction(true);
-        }
-        else
-        {
-            // Arm the sensor trigger as long as AutoAssist is enabled.
-            tracer.traceDebug(instanceName, "Arm sensor trigger.");
-            params.sensorTrigger.enableTrigger(TriggerMode.OnBoth, this::sensorTriggerCallback);
-            if (ap.timeout > 0.0)
+            else if (clawClosed)
             {
-                // Set a timeout and cancel auto-assist if timeout has expired.
-                tracer.traceDebug(instanceName, "Set timeout " + ap.timeout + " sec");
-                timer.set(ap.timeout, this::actionTimedOut, null);
+                // Claw is close but has no object, open it to prepare for grabbing.
+                tracer.traceDebug(instanceName, "Claws are closed, open it back up.");
+                params.servo.setPosition(ap.owner, 0.0, params.openPos, null, 0.0);
+            }
+
+            if (finished)
+            {
+                // Either already grabbed an object or object is detected and we have a callback, finish the action.
+                tracer.traceDebug(instanceName, "Already has object, finish the operation.");
+                finishAction(true);
+            }
+            else
+            {
+                // Arm the sensor trigger as long as AutoAssist is enabled.
+                tracer.traceDebug(instanceName, "Arm sensor trigger.");
+                params.sensorTrigger.enableTrigger(TriggerMode.OnBoth, this::sensorTriggerCallback);
+                if (ap.timeout > 0.0)
+                {
+                    // Set a timeout and cancel auto-assist if timeout has expired.
+                    tracer.traceDebug(instanceName, "Set timeout " + ap.timeout + " sec");
+                    timer.set(ap.timeout, this::actionTimedOut, null);
+                }
             }
         }
     }   //performAction
@@ -523,7 +532,7 @@ public class TrcServoClaw implements TrcExclusiveSubsystem
             }
             else
             {
-                performAction(actionParams);
+                performAction(actionParams, false);
             }
         }
     }   //autoGrab

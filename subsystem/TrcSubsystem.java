@@ -190,9 +190,10 @@ public abstract class TrcSubsystem
      * This method is called when the zero calibration completion event of a subsystem is signaled. If there are
      * multiple subsystems, it will check
      *
-     * @param context
+     * @param context specifies the SubsystemInfo object.
+     * @param canceled not used.
      */
-    private static void zeroCalCallback(Object context)
+    private static void zeroCalCallback(Object context, boolean canceled)
     {
         boolean zeroCalCompleted = true;
 
@@ -210,7 +211,14 @@ public abstract class TrcSubsystem
 
         if (zeroCalCompleted)
         {
-            zeroCalCompletionEvent.signal();
+            if (canceled)
+            {
+                zeroCalCompletionEvent.cancel();
+            }
+            else
+            {
+                zeroCalCompletionEvent.signal();
+            }
             zeroCalCompletionEvent = null;
         }
     }   //zeroCalCallback
