@@ -31,7 +31,7 @@ import trclib.timer.TrcTimer;
  * getRawData abstract method required by TrcAnalogInput. In getRawData, it will call the AnalogDataSource
  * provided in its constructor to get the raw data.
  */
-public class TrcAnalogSensor extends TrcAnalogInput
+public class TrcAnalogSource extends TrcAnalogInput
 {
     /**
      * This interface is used by this class to get the analog data from the provider.
@@ -54,17 +54,17 @@ public class TrcAnalogSensor extends TrcAnalogInput
      * @param instanceName specifies the instance name.
      * @param dataSource specifies the analog data provider.
      */
-    public TrcAnalogSensor(String instanceName, AnalogDataSource dataSource)
+    public TrcAnalogSource(String instanceName, AnalogDataSource dataSource)
     {
         super(instanceName, 1, 0, null);
         this.dataSource = dataSource;
-    }   //TrcAnalogSensor
+    }   //TrcAnalogSource
 
     /**
      * This abstract method returns the raw data with the specified index and type.
      *
-     * @param index specifies the data index (not used because AnalogSensor has only one axis).
-     * @param dataType specifies the data type (not used because AnalogSensor only returns raw data).
+     * @param index specifies the data index (not used because AnalogSource has only one axis).
+     * @param dataType specifies the data type (not used because AnalogSource only returns raw data).
      * @return raw data from the analog data source.
      */
     public SensorData<Double> getRawData(int index, DataType dataType)
@@ -73,4 +73,4 @@ public class TrcAnalogSensor extends TrcAnalogInput
         return rawData != null? new SensorData<>(TrcTimer.getCurrentTime(), rawData): null;
     }   //getRawData
 
-}   //class TrcAnalogSensor
+}   //class TrcAnalogSource
