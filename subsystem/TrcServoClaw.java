@@ -175,6 +175,28 @@ public class TrcServoClaw implements TrcExclusiveSubsystem
     }   //toString
 
     /**
+     * This method returns the created servo object.
+     *
+     * @return servo object.
+     */
+    public TrcServo getServo()
+    {
+        return params.servo;
+    }   //getServo
+
+    /**
+     * This method sets the open and close positions of the claw.
+     *
+     * @param openPos specifies the open position.
+     * @param closePos specifies the close position.
+     */
+    public void setOpenClosePositions(double openPos, double closePos)
+    {
+        params.openPos = openPos;
+        params.closePos = closePos;
+    }   //setOpenClosePositions
+
+    /**
      * This method returns the current claw position.
      *
      * @return current claw servo position.
