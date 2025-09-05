@@ -250,6 +250,10 @@ public class TrcShooter implements TrcExclusiveSubsystem
                 shooter2OnTargetEvent.setCallback(this::onTarget, null);
                 shooterMotor2.setVelocity(0.0, velocity2, 0.0, shooter2OnTargetEvent);
             }
+            else
+            {
+                shooter2OnTargetEvent = null;
+            }
 
             if (tiltMotor != null && tiltAngle != null)
             {
