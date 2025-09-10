@@ -75,14 +75,15 @@ public abstract class TrcSubsystem
      * This method update the dashboard with the subsystem status.
      *
      * @param lineNum specifies the starting line number to print the subsystem status.
+     * @param slowLoop specifies true if this is a slow loop, false otherwise.
      * @return updated line number for the next subsystem to print.
      */
-    public abstract int updateStatus(int lineNum);
+    public abstract int updateStatus(int lineNum, boolean slowLoop);
 
     /**
      * This method is called to prep the subsystem for tuning.
      *
-     * @params tuneParams specifies tuning parameters in an array of doubles.
+     * @param tuneParams specifies tuning parameters in an array of doubles.
      */
     public abstract void prepSubsystemForTuning(double... tuneParams);
 
@@ -175,12 +176,16 @@ public abstract class TrcSubsystem
 
     /**
      * This method enumerates all subsystems and calls their updateStatus method.
+     *
+     * @param lineNum specifies the starting line number to print the subsystem status.
+     * @param slowLoop specifies true if this is a slow loop, false otherwise.
+     * @return updated line number for the next subsystem to print.
      */
-    public static int updateStatusAll(int lineNum)
+    public static int updateStatusAll(int lineNum, boolean slowLoop)
     {
         for (SubsystemInfo subsystemInfo: subsystemList)
         {
-            lineNum = subsystemInfo.subsystem.updateStatus(lineNum);
+            lineNum = subsystemInfo.subsystem.updateStatus(lineNum, slowLoop);
         }
 
         return lineNum;
