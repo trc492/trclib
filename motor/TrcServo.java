@@ -551,12 +551,12 @@ public abstract class TrcServo implements TrcExclusiveSubsystem
             completionEvent.clear();
         }
 
-        finish(owner, true);
         TrcEvent releaseOwnershipEvent = acquireOwnership(owner, completionEvent, tracer);
         if (releaseOwnershipEvent != null) completionEvent = releaseOwnershipEvent;
 
         if (validateOwnership(owner))
         {
+            finish(owner, true);
             actionParams.setPositionParams(position, completionEvent, timeout);
             if (delay > 0.0)
             {

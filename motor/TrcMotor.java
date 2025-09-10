@@ -1444,7 +1444,6 @@ public abstract class TrcMotor implements TrcMotorController, TrcExclusiveSubsys
     /**
      * This method cancels the operation and optionally stops the motor.
      *
-     * @param releaseOwnership specifies true to release ownership, false otherwise.
      * @param stopMotor specifies true to stop the motor, false otherwise.
      */
     public void cancel(boolean stopMotor)
