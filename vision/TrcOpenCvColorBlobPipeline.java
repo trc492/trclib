@@ -403,13 +403,13 @@ public class TrcOpenCvColorBlobPipeline implements TrcOpenCvPipeline<TrcOpenCvDe
      */
     public static class FilterContourParams
     {
-        double minArea = 0.0;
-        double minPerimeter = 0.0;
-        double[] widthRange = {0.0, 1000.0};
-        double[] heightRange = {0.0, 1000.0};
-        double[] solidityRange = {0.0, 100.0};
-        double[] verticesRange = {0.0, 1000000.0};
-        double[] aspectRatioRange = {0.0, 1000.0};
+        public double minArea = 0.0;
+        public double minPerimeter = 0.0;
+        public double[] widthRange = {0.0, 1000.0};
+        public double[] heightRange = {0.0, 1000.0};
+        public double[] solidityRange = {0.0, 100.0};
+        public double[] verticesRange = {0.0, 1000000.0};
+        public double[] aspectRatioRange = {0.0, 1000.0};
 
         public FilterContourParams setMinArea(double minArea)
         {
