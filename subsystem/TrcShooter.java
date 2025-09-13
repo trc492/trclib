@@ -312,6 +312,23 @@ public class TrcShooter implements TrcExclusiveSubsystem
      * When both shooter velocity and tilt/pan positions have reached target and if shoot method is provided, it will
      * shoot and signal an event if provided.
      *
+     * @param owner specifies the ID string of the caller for checking ownership, can be null if caller is not
+     *        ownership aware.
+     * @param velocity1 specifies the shooter motor 1 velocity in revolutions per second.
+     * @param velocity2 specifies the shooter motor 2 velocity in revolutions per second, ignored if none.
+     * @param tiltAngle specifies the absolute tilt angle in degrees, null if no tilting.
+     * @param panAngle specifies the absolute pan angle in degrees, null if no panning.
+     */
+    public void aimShooter(String owner, double velocity1, double velocity2, Double tiltAngle, Double panAngle)
+    {
+        aimShooter(owner, velocity1, velocity2, tiltAngle, panAngle, null, 0.0, null, null);
+    }   //aimShooter
+
+    /**
+     * This method sets the shooter velocity and the tilt/pan angles if tilt/pan exist. This method is asynchronous.
+     * When both shooter velocity and tilt/pan positions have reached target and if shoot method is provided, it will
+     * shoot and signal an event if provided.
+     *
      * @param velocity1 specifies the shooter motor 1 velocity in revolutions per second.
      * @param velocity2 specifies the shooter motor 2 velocity in revolutions per second, ignored if none.
      * @param tiltAngle specifies the absolute tilt angle in degrees, null if no tilting.

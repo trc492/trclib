@@ -98,6 +98,7 @@ public class TrcPidConveyor implements TrcExclusiveSubsystem
 
     }   //class Parameters
 
+    protected final String instanceName;
     public final TrcMotor motor;
     private final TrcDigitalInput entrySensor;
     private final TrcDigitalInput exitSensor;
@@ -106,6 +107,8 @@ public class TrcPidConveyor implements TrcExclusiveSubsystem
     private final TrcTriggerDigitalInput exitTrigger;
     private TrcEvent entryEvent;
     private TrcEvent exitEvent;
+    private TrcEvent entryCallbackEvent;
+    private TrcEvent exitCallbackEvent;
     private int numObjects = 0;
 
     /**
@@ -121,6 +124,7 @@ public class TrcPidConveyor implements TrcExclusiveSubsystem
         String instanceName, TrcMotor motor, TrcDigitalInput entrySensor, TrcDigitalInput exitSensor,
         Parameters params)
     {
+        this.instanceName = instanceName;
         this.motor = motor;
         this.entrySensor = entrySensor;
         this.exitSensor = exitSensor;
@@ -182,6 +186,15 @@ public class TrcPidConveyor implements TrcExclusiveSubsystem
         }
     }   //registerEntryEvent
 
+    public void registerEntryCallback(TrcEvent.Callback callback, Object callbackContext)
+    {
+        if (entryTrigger != null)
+        {
+            entryCallbackEvent = new TrcEvent(instanceName + ".entryCallbackEvent");
+            entryCallbackEvent.setCallback(callback, callbackContext);
+        }
+    }   //registerEntryCallback
+
     /**
      * This method registers an event to be signaled when the exit sensor is triggered.
      *
@@ -194,6 +207,15 @@ public class TrcPidConveyor implements TrcExclusiveSubsystem
             exitEvent = event;
         }
     }   //registerExitEvent
+
+    public void registerExitCallback(TrcEvent.Callback callback, Object callbackContext)
+    {
+        if (exitTrigger != null)
+        {
+            exitCallbackEvent = new TrcEvent(instanceName + ".exitCallbackEvent");
+            exitCallbackEvent.setCallback(callback, callbackContext);
+        }
+    }   //registerExitCallback
 
     /**
      * This method returns the sensor state read from the digital sensor.
@@ -315,6 +337,11 @@ public class TrcPidConveyor implements TrcExclusiveSubsystem
             {
                 entryEvent.signal();
             }
+
+            if (entryCallbackEvent != null)
+            {
+                entryCallbackEvent.signal();
+            }
         }
     }   //onEntryEvent
 
@@ -342,6 +369,11 @@ public class TrcPidConveyor implements TrcExclusiveSubsystem
             if (exitEvent != null)
             {
                 exitEvent.signal();
+            }
+
+            if (exitCallbackEvent != null)
+            {
+                exitCallbackEvent.signal();
             }
         }
     }   //onExitEvent

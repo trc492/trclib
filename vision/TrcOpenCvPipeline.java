@@ -62,11 +62,16 @@ public interface TrcOpenCvPipeline<O>
     O[] getDetectedObjects();
 
     /**
-     * This method enables/disables image annotation of the detected object.
+     * This method enables image annotation of the detected object.
      *
-     * @param enabled specifies true to enable annotation, false to disable.
+     * @param drawRotatedRect specifies true to draw rotated rectangle, false to draw bounding rectangle.
      */
-    void setAnnotateEnabled(boolean enabled);
+    void enableAnnotation(boolean drawRotatedRect);
+
+    /**
+     * This method disables image annotation.
+     */
+    void disableAnnotation();
 
     /**
      * This method checks if image annotation is enabled.
@@ -110,21 +115,21 @@ public interface TrcOpenCvPipeline<O>
      * @param image specifies the frame to be rendered to the video output.
      * @param label specifies the text label to be annotated on the detected object, can be null if not provided.
      * @param detectedObjects specifies the detected objects.
+     * @param drawRotatedRect specifies true to draw rotated rectangle, false to draw bounding rectangle.
      * @param rectColor specifies the color of the annotated rectangle.
      * @param thickness specifies the thickness of the annotated rectangle.
      * @param textColor specifies the color of the annotated text.
      * @param fontScale specifies the scale factor that is multiplied by the font-specific base size.
      */
     default void annotateFrame(
-        Mat image, String label, TrcOpenCvDetector.DetectedObject<?>[] detectedObjects, Scalar rectColor, int thickness,
-        Scalar textColor, double fontScale)
+        Mat image, String label, TrcOpenCvDetector.DetectedObject<?>[] detectedObjects,
+        boolean drawRotatedRect, Scalar rectColor, int thickness, Scalar textColor, double fontScale)
     {
         for (TrcOpenCvDetector.DetectedObject<?> object : detectedObjects)
         {
-            Point[] vertices = object.getRotatedRectVertices();
             Rect objRect = null;
-
-            if (vertices != null)
+            Point[] vertices;
+            if (drawRotatedRect && (vertices = object.getRotatedRectVertices()) != null)
             {
                 MatOfPoint points = new MatOfPoint(vertices);
                 Imgproc.drawContours(image, Collections.singletonList(points), -1, rectColor, thickness);

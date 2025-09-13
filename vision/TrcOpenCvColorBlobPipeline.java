@@ -514,6 +514,7 @@ public class TrcOpenCvColorBlobPipeline implements TrcOpenCvPipeline<TrcOpenCvDe
     private final AtomicReference<DetectedObject[]> detectedObjectsUpdate = new AtomicReference<>();
     private int intermediateStep = 0;
     private boolean annotateEnabled = false;
+    private boolean drawRotatedRect = false;
     private int morphOp = Imgproc.MORPH_CLOSE;
     private Mat kernelMat = null;
     private TrcVisionPerformanceMetrics performanceMetrics = null;
@@ -766,8 +767,8 @@ public class TrcOpenCvColorBlobPipeline implements TrcOpenCvPipeline<TrcOpenCvDe
                 Scalar rectColor = intermediateStep == 0? ANNOTATE_RECT_COLOR: ANNOTATE_RECT_WHITE;
                 Scalar textColor = intermediateStep == 0? ANNOTATE_TEXT_COLOR: ANNOTATE_RECT_WHITE;
                 annotateFrame(
-                    output, instanceName, detectedObjects, rectColor, ANNOTATE_RECT_THICKNESS, textColor,
-                    ANNOTATE_FONT_SCALE);
+                    output, instanceName, detectedObjects, drawRotatedRect, rectColor, ANNOTATE_RECT_THICKNESS,
+                    textColor, ANNOTATE_FONT_SCALE);
                 Imgproc.drawMarker(
                     output, new Point(imageCols/2.0, imageRows/2.0), rectColor, Imgproc.MARKER_CROSS,
                     Math.max(imageRows, imageCols), ANNOTATE_RECT_THICKNESS);
@@ -795,15 +796,26 @@ public class TrcOpenCvColorBlobPipeline implements TrcOpenCvPipeline<TrcOpenCvDe
     }   //getDetectedObjects
 
     /**
-     * This method enables/disables image annotation of the detected object.
+     * This method enables image annotation of the detected object.
      *
-     * @param enabled specifies true to enable annotation, false to disable.
+     * @param drawRotatedRect specifies true to draw rotated rectangle, false to draw bounding rectangle.
      */
     @Override
-    public void setAnnotateEnabled(boolean enabled)
+    public void enableAnnotation(boolean drawRotatedRect)
     {
-        annotateEnabled = enabled;
+        this.annotateEnabled = true;
+        this.drawRotatedRect = drawRotatedRect;
     }   //setAnnotateEnabled
+
+    /**
+     * This method disables image annotation.
+     */
+    @Override
+    public void disableAnnotation()
+    {
+        this.annotateEnabled = false;
+        this.drawRotatedRect = false;
+    }   //disableAnnotation
 
     /**
      * This method checks if image annotation is enabled.
