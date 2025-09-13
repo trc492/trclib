@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015 Titan Robotics Club (http://www.titanrobotics.com)
+ * Copyright (c) 2025 Titan Robotics Club (http://www.titanrobotics.com)
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -22,8 +22,7 @@
 
 package trclib.sensor;
 
-import java.util.Arrays;
-import java.util.Locale;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Supplier;
 
 import trclib.robotcore.TrcDbgTrace;
@@ -33,11 +32,10 @@ import trclib.robotcore.TrcTaskMgr;
 import trclib.timer.TrcTimer;
 
 /**
- * This class implements a Threshold Zones Trigger. It monitors the value source against an array of threshold
- * values. If the sensor reading crosses any of the thresholds in the array, it signals an event or notifies the
- * callback handler so that an action could be performed.
+ * This class implements a trigger using digital sensor source. A digital state trigger monitors the digital sensor
+ * source and notifies the callback handler if it changes state.
  */
-public class TrcTriggerThresholdZones implements TrcTrigger
+public class TrcTriggerDigitalState implements TrcTrigger
 {
     /**
      * This class encapsulates the trigger state. Access to this object must be thread safe (i.e. needs to be
@@ -45,21 +43,17 @@ public class TrcTriggerThresholdZones implements TrcTrigger
      */
     private static class TriggerState
     {
-        volatile double sensorValue;
-        volatile int sensorZone;
-        volatile int prevZone;
+        volatile boolean sensorState;
         volatile boolean triggerEnabled;
         TriggerMode triggerMode;
         TrcEvent triggerEvent;
         TrcEvent.Callback triggerCallback;
         Thread callbackThread;
 
-        TriggerState(double sensorValue, int sensorZone, boolean triggerEnabled)
+        TriggerState(boolean state, boolean enabled)
         {
-            this.sensorValue = sensorValue;
-            this.sensorZone = sensorZone;
-            this.prevZone = sensorZone;
-            this.triggerEnabled = triggerEnabled;
+            this.sensorState = state;
+            this.triggerEnabled = enabled;
             this.triggerMode = null;
             this.triggerEvent = null;
             this.triggerCallback = null;
@@ -69,74 +63,41 @@ public class TrcTriggerThresholdZones implements TrcTrigger
         @Override
         public String toString()
         {
-            return String.format(
-                Locale.US, "(value=%f,Zone=%d,prevZone=%d,Enabled=%s)",
-                sensorValue, sensorZone, prevZone, triggerEnabled);
+            return "(state=" + sensorState +
+                   ",enabled=" + triggerEnabled + ")";
         }   //toString
 
     }   //class TriggerState
 
-    /**
-     * This class encapsulates all the info for the the trigger event callback.
-     */
-    public static class CallbackContext
-    {
-        public double sensorValue;
-        public int prevZone;
-        public int currZone;
-
-        @Override
-        public String toString()
-        {
-            return String.format(Locale.US, "(value-%f,prevZone=%d,currZone=%d)", sensorValue, prevZone, currZone);
-        }   //toString
-
-    }   //class CallbackContext
-
     private final TrcDbgTrace tracer;
     private final String instanceName;
-    private final Supplier<Double> valueSource;
+    private final Supplier<Boolean> digitalSource;
     private final TrcTimer timer;
     private final TriggerState triggerState;
-    private final CallbackContext callbackContext;
+    private final AtomicBoolean callbackContext;
     private final TrcTaskMgr.TaskObject triggerTaskObj;
-    private double[] thresholds;
 
     /**
      * Constructor: Create an instance of the object.
      *
      * @param instanceName specifies the instance name.
-     * @param valueSource specifies the interface that implements the value source.
-     * @param dataPoints specifies an array of trigger points or an array of thresholds if dataIsTrigger is true.
-     * @param dataIsTrigger specifies true if dataPoints specifies an array of trigger points, false if it is an
-     *                      array of thresholds. Trigger points will be converted to threshold points.
+     * @param digitalSource specifies the source that supplies the digital state.
      */
-    public TrcTriggerThresholdZones(
-        String instanceName, Supplier<Double> valueSource, double[] dataPoints, boolean dataIsTrigger)
+    public TrcTriggerDigitalState(String instanceName, Supplier<Boolean> digitalSource)
     {
-        if (valueSource == null)
+        if (digitalSource == null)
         {
-            throw new IllegalArgumentException("ValueSource cannot be null.");
+            throw new IllegalArgumentException("Digital Source cannot be null.");
         }
 
         this.tracer = new TrcDbgTrace();
         this.instanceName = instanceName;
-        this.valueSource = valueSource;
+        this.digitalSource = digitalSource;
         timer = new TrcTimer(instanceName);
-        if (dataIsTrigger)
-        {
-            setTriggerPoints(dataPoints);
-        }
-        else
-        {
-            setThresholds(dataPoints);
-        }
-
-        double value = getSensorValue();
-        triggerState = new TriggerState(value, getValueZone(value), false);
-        callbackContext = new CallbackContext();
+        triggerState = new TriggerState(digitalSource.get(), false);
+        callbackContext = new AtomicBoolean();
         triggerTaskObj = TrcTaskMgr.createTask(instanceName + ".triggerTask", this::triggerTask);
-    }   //TrcTriggerThresholdZones
+    }   //TrcTriggerDigitalInput
 
     /**
      * This method returns the instance name and its state.
@@ -208,15 +169,13 @@ public class TrcTriggerThresholdZones implements TrcTrigger
             if (enabled)
             {
                 triggerState.triggerEvent.clear();
-                triggerState.sensorValue = getSensorValue();
-                triggerState.sensorZone = getValueZone(triggerState.sensorValue);
-                triggerState.prevZone = triggerState.sensorZone;
+                triggerState.sensorState = digitalSource.get();
                 triggerTaskObj.registerTask(TrcTaskMgr.TaskType.PRE_PERIODIC_TASK);
             }
             else
             {
                 triggerTaskObj.unregisterTask();
-                triggerState.triggerEvent. cancel();
+                triggerState.triggerEvent.cancel();
                 triggerState.triggerEvent = null;
             }
             triggerState.triggerEnabled = enabled;
@@ -228,9 +187,7 @@ public class TrcTriggerThresholdZones implements TrcTrigger
      * This method arms the trigger. It enables the task that monitors the sensor value.
      *
      * @param triggerDelay specifies the delay in seconds before enabling trigger, null if none.
-     * @param triggerMode specifies the trigger direction that will signal the event. TriggerMode.OnActive will
-     *        trigger only when crossing a lower zone to a higher zone. TriggerMode.OnInactive will trigger only when
-     *        crossing from a higher zone to a lower zone. TriggerMode.OnBoth will trigger on both directions.
+     * @param triggerMode specifies the trigger mode that will signal the event.
      * @param event specifies the event to signal when the trigger state changed.
      */
     @Override
@@ -254,9 +211,7 @@ public class TrcTriggerThresholdZones implements TrcTrigger
      * This method arms the trigger. It enables the task that monitors the sensor value.
      *
      * @param triggerDelay specifies the delay in seconds before enabling trigger, null if none.
-     * @param triggerMode specifies the trigger direction that will trigger a callback. TriggerMode.OnActive will
-     *        trigger only when crossing a lower zone to a higher zone. TriggerMode.OnInactive will trigger only when
-     *        crossing from a higher zone to a lower zone. TriggerMode.OnBoth will trigger on both directions.
+     * @param triggerMode specifies the trigger mode that will trigger a callback.
      * @param callback specifies the callback handler to notify when the trigger state changed.
      */
     @Override
@@ -306,126 +261,30 @@ public class TrcTriggerThresholdZones implements TrcTrigger
     }   //isEnabled
 
     /**
-     * This method reads the current analog sensor value.
+     * This method reads the digital sensor state and will return 1.0 for active and 0.0 for inactive.
      *
-     * @return current sensor value.
+     * @return 1.0 for active and 0.0 for inactive.
      */
     @Override
     public double getSensorValue()
     {
-        return valueSource.get();
+        return digitalSource.get()? 1.0: 0.0;
     }   //getSensorValue
 
     /**
-     * This method reads the current trigger state. TrcTriggerThresholdZones does not support getTriggerState and
-     * will throw an exception.
+     * This method reads the current digital sensor state.
      *
-     * @return current trigger state.
+     * @return current sensor state.
      */
     @Override
     public boolean getTriggerState()
     {
-        throw new UnsupportedOperationException("TrcTriggerThresholdZones does not support trigger state.");
+        return digitalSource.get();
     }   //getTriggerState
 
     /**
-     * This method returns the current zone it is in.
-     *
-     * @return current zone index.
-     */
-    public int getCurrentZone()
-    {
-        return triggerState.sensorZone;
-    }   //getCurrentZone
-
-    /**
-     * This method returns the previous zone it was in.
-     *
-     * @return previous zone index.
-     */
-    public int getPreviousZone()
-    {
-        return triggerState.prevZone;
-    }   //getPreviousZone
-
-    /**
-     * This method determines the sensor zone with the given sensor value.
-     *
-     * @param value specifies the sensor value.
-     * @return sensor zone the value is in.
-     */
-    private int getValueZone(double value)
-    {
-        int zone = -1;
-
-        if (value < thresholds[0])
-        {
-            zone = 0;
-        }
-        else
-        {
-            for (int i = 0; i < thresholds.length - 1; i++)
-            {
-                if (value >= thresholds[i] && value < thresholds[i + 1])
-                {
-                    zone = i + 1;
-                    break;
-                }
-            }
-
-            if (zone == -1)
-            {
-                zone = thresholds.length;
-            }
-        }
-        tracer.traceDebug(instanceName, "value=%f, zone=%d", value, zone);
-
-        return zone;
-    }   //getValueZone
-
-    /**
-     * This method creates and threshold array and calculates all the threshold values. A threshold value is the
-     * average of two adjacent trigger points.
-     *
-     * @param triggerPoints specifies the array of trigger points.
-     */
-    public void setTriggerPoints(double[] triggerPoints)
-    {
-        if (triggerPoints == null || triggerPoints.length < 2)
-        {
-            throw new IllegalArgumentException("triggerPoints cannot be null and must have at least 2 points.");
-        }
-
-        thresholds = new double[triggerPoints.length - 1];
-        for (int i = 0; i < thresholds.length; i++)
-        {
-            thresholds[i] = (triggerPoints[i] + triggerPoints[i + 1])/2.0;
-        }
-        tracer.traceDebug(
-            instanceName,
-            "triggerPts=" + Arrays.toString(triggerPoints) +
-            ", thresholds=" + Arrays.toString(thresholds));
-    }   //setTriggerPoints
-
-    /**
-     * This method stores the threshold array.
-     *
-     * @param thresholds specifies the array of thresholds.
-     */
-    public void setThresholds(double[] thresholds)
-    {
-        if (thresholds == null || thresholds.length == 0)
-        {
-            throw new IllegalArgumentException("thresholds cannot be null nor empty.");
-        }
-
-        this.thresholds = Arrays.copyOf(thresholds, thresholds.length);
-        tracer.traceDebug(instanceName, "thresholds=" + Arrays.toString(thresholds));
-    }   //setThresholds
-
-    /**
-     * This method is called periodically to check the current sensor value against the threshold array to see it
-     * crosses any thresholds and the triggerHandler will be notified.
+     * This method is called periodically to check the current sensor state. If it has changed from the previous
+     * state, the triggerCallback will be notified.
      *
      * @param taskType specifies the type of task being run.
      * @param runMode specifies the competition mode that is running. (e.g. Autonomous, TeleOp, Test).
@@ -434,27 +293,22 @@ public class TrcTriggerThresholdZones implements TrcTrigger
      */
     private void triggerTask(TrcTaskMgr.TaskType taskType, TrcRobot.RunMode runMode, boolean slowPeriodicLoop)
     {
-        double currValue = getSensorValue();
-        int currZone = getValueZone(currValue);
+        boolean currState = digitalSource.get();
         boolean triggered = false;
-        int prevZone = -1;
+        boolean prevState = false;
         TrcEvent.Callback callback = null;
         TrcEvent triggerEvent = null;
         Thread callbackThread = null;
 
         synchronized (triggerState)
         {
-            if (currZone != triggerState.sensorZone)
+            if (currState != triggerState.sensorState)
             {
-                //
-                // We have crossed to another zone, let's notify somebody.
-                //
-                prevZone = triggerState.sensorZone;
-                triggerState.sensorZone = currZone;
-                triggerState.prevZone = prevZone;
+                prevState = triggerState.sensorState;
+                triggerState.sensorState = currState;
                 if (triggerState.triggerMode == TriggerMode.OnBoth ||
-                    triggerState.triggerMode == TriggerMode.OnActive && prevZone < currZone ||
-                    triggerState.triggerMode == TriggerMode.OnInactive && prevZone > currZone)
+                    triggerState.triggerMode == TriggerMode.OnActive && currState ||
+                    triggerState.triggerMode == TriggerMode.OnInactive && !currState)
                 {
                     triggered = true;
                     callback = triggerState.triggerCallback;
@@ -462,24 +316,18 @@ public class TrcTriggerThresholdZones implements TrcTrigger
                     callbackThread = triggerState.callbackThread;
                 }
             }
-            triggerState.sensorValue = currValue;
         }
         // Do not hold the lock while doing callback.
         if (triggered)
         {
-            tracer.traceDebug(instanceName, "Crossing zones %d->%d (value=%f)", prevZone, currZone, currValue);
+            tracer.traceDebug(instanceName, "changes state " + prevState + "->" + currState);
             if (callback != null)
             {
-                synchronized (callbackContext)
-                {
-                    callbackContext.sensorValue = currValue;
-                    callbackContext.prevZone = prevZone;
-                    callbackContext.currZone = currZone;
-                }
+                callbackContext.set(currState);
                 triggerEvent.setCallback(callbackThread, callback, callbackContext);
             }
             triggerEvent.signal();
         }
     }   //triggerTask
 
-}   //class TrcTriggerThresholdZones
+}   //class TrcTriggerDigitalState
