@@ -23,7 +23,7 @@
 package trclib.sensor;
 
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.function.Supplier;
+import java.util.function.BooleanSupplier;
 
 import trclib.robotcore.TrcDbgTrace;
 import trclib.robotcore.TrcEvent;
@@ -71,7 +71,7 @@ public class TrcTriggerDigitalSource implements TrcTrigger
 
     private final TrcDbgTrace tracer;
     private final String instanceName;
-    private final Supplier<Boolean> digitalSource;
+    private final BooleanSupplier digitalSource;
     private final TrcTimer timer;
     private final TriggerState triggerState;
     private final AtomicBoolean callbackContext;
@@ -83,7 +83,7 @@ public class TrcTriggerDigitalSource implements TrcTrigger
      * @param instanceName specifies the instance name.
      * @param digitalSource specifies the source that supplies the digital state.
      */
-    public TrcTriggerDigitalSource(String instanceName, Supplier<Boolean> digitalSource)
+    public TrcTriggerDigitalSource(String instanceName, BooleanSupplier digitalSource)
     {
         if (digitalSource == null)
         {
@@ -94,7 +94,7 @@ public class TrcTriggerDigitalSource implements TrcTrigger
         this.instanceName = instanceName;
         this.digitalSource = digitalSource;
         timer = new TrcTimer(instanceName);
-        triggerState = new TriggerState(digitalSource.get(), false);
+        triggerState = new TriggerState(digitalSource.getAsBoolean(), false);
         callbackContext = new AtomicBoolean();
         triggerTaskObj = TrcTaskMgr.createTask(instanceName + ".triggerTask", this::triggerTask);
     }   //TrcTriggerDigitalInput
@@ -169,7 +169,7 @@ public class TrcTriggerDigitalSource implements TrcTrigger
             if (enabled)
             {
                 triggerState.triggerEvent.clear();
-                triggerState.sensorState = digitalSource.get();
+                triggerState.sensorState = digitalSource.getAsBoolean();
                 triggerTaskObj.registerTask(TrcTaskMgr.TaskType.PRE_PERIODIC_TASK);
             }
             else
@@ -268,7 +268,7 @@ public class TrcTriggerDigitalSource implements TrcTrigger
     @Override
     public double getSensorValue()
     {
-        return digitalSource.get()? 1.0: 0.0;
+        return digitalSource.getAsBoolean()? 1.0: 0.0;
     }   //getSensorValue
 
     /**
@@ -279,7 +279,7 @@ public class TrcTriggerDigitalSource implements TrcTrigger
     @Override
     public boolean getTriggerState()
     {
-        return digitalSource.get();
+        return digitalSource.getAsBoolean();
     }   //getTriggerState
 
     /**
@@ -293,7 +293,7 @@ public class TrcTriggerDigitalSource implements TrcTrigger
      */
     private void triggerTask(TrcTaskMgr.TaskType taskType, TrcRobot.RunMode runMode, boolean slowPeriodicLoop)
     {
-        boolean currState = digitalSource.get();
+        boolean currState = digitalSource.getAsBoolean();
         boolean triggered = false;
         boolean prevState = false;
         TrcEvent.Callback callback = null;

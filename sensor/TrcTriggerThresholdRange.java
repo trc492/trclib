@@ -25,7 +25,7 @@ package trclib.sensor;
 import java.util.Arrays;
 import java.util.Locale;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.function.Supplier;
+import java.util.function.DoubleSupplier;
 
 import trclib.dataprocessor.TrcDataBuffer;
 import trclib.robotcore.TrcDbgTrace;
@@ -76,7 +76,7 @@ public class TrcTriggerThresholdRange implements TrcTrigger
 
     private final TrcDbgTrace tracer;
     private final String instanceName;
-    private final Supplier<Double> valueSource;
+    private final DoubleSupplier valueSource;
     private final TrcTimer timer;
     private final TriggerState triggerState;
     private final AtomicBoolean callbackContext;
@@ -88,7 +88,7 @@ public class TrcTriggerThresholdRange implements TrcTrigger
      * @param instanceName specifies the instance name.
      * @param valueSource specifies the interface that implements the value source.
      */
-    public TrcTriggerThresholdRange(String instanceName, Supplier<Double> valueSource)
+    public TrcTriggerThresholdRange(String instanceName, DoubleSupplier valueSource)
     {
         if (valueSource == null)
         {
@@ -281,7 +281,7 @@ public class TrcTriggerThresholdRange implements TrcTrigger
     @Override
     public double getSensorValue()
     {
-        return valueSource.get();
+        return valueSource.getAsDouble();
     }   //getSensorValue
 
     /**

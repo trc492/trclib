@@ -50,21 +50,6 @@ public class TrcUtil
     public static final double EARTH_GRAVITATIONAL_CONSTANT = 9.807;    //in m/s2
     public static final double BATTERY_NOMINAL_VOLTAGE = 12.0;          //in volts
 
-    /**
-     * This interface provides the method to get data of the specified type. This is to replaced the Supplier
-     * interface that Java SDK provides but Android API level 19 does not have.
-     */
-    public interface DataSupplier<T>
-    {
-        /**
-         * This method returns the data of the designated type.
-         *
-         * @return data of the designated type.
-         */
-        T get();
-
-    }   //interface DataSupplier
-
 //    /**
 //     * This method loads data points from a CSV file either on the external file system or attached resources.
 //     *

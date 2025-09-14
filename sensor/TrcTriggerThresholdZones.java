@@ -24,7 +24,7 @@ package trclib.sensor;
 
 import java.util.Arrays;
 import java.util.Locale;
-import java.util.function.Supplier;
+import java.util.function.DoubleSupplier;
 
 import trclib.robotcore.TrcDbgTrace;
 import trclib.robotcore.TrcEvent;
@@ -95,7 +95,7 @@ public class TrcTriggerThresholdZones implements TrcTrigger
 
     private final TrcDbgTrace tracer;
     private final String instanceName;
-    private final Supplier<Double> valueSource;
+    private final DoubleSupplier valueSource;
     private final TrcTimer timer;
     private final TriggerState triggerState;
     private final CallbackContext callbackContext;
@@ -112,7 +112,7 @@ public class TrcTriggerThresholdZones implements TrcTrigger
      *                      array of thresholds. Trigger points will be converted to threshold points.
      */
     public TrcTriggerThresholdZones(
-        String instanceName, Supplier<Double> valueSource, double[] dataPoints, boolean dataIsTrigger)
+        String instanceName, DoubleSupplier valueSource, double[] dataPoints, boolean dataIsTrigger)
     {
         if (valueSource == null)
         {
@@ -313,7 +313,7 @@ public class TrcTriggerThresholdZones implements TrcTrigger
     @Override
     public double getSensorValue()
     {
-        return valueSource.get();
+        return valueSource.getAsDouble();
     }   //getSensorValue
 
     /**
