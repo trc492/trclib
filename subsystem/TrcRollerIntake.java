@@ -43,6 +43,64 @@ import trclib.timer.TrcTimer;
  */
 public class TrcRollerIntake implements TrcExclusiveSubsystem
 {
+    /**
+     * This class contains Intake parameters.
+     */
+    public static class IntakeParams
+    {
+        private double intakePower = 1.0;
+        private double ejectPower = 1.0;
+        private double retainPower = 0.0;
+        private double intakeFinishDelay = 0.0;
+        private double ejectFinishDelay = 0.0;
+
+        /**
+         * This method returns the string format of the Intake parameters.
+         *
+         * @return string format of the parameters.
+         */
+        @Override
+        public String toString()
+        {
+            return "(intakePower=" + intakePower +
+                   ",ejectPower=" + ejectPower +
+                   ",retainPower=" + retainPower +
+                   ",intakeFinishDelay=" + intakeFinishDelay +
+                   ",ejectFinishDelay=" + ejectFinishDelay + ")";
+        }   //toString
+
+        /**
+         * This method sets various power levels of the Roller Intake.
+         *
+         * @param intakePower specifies the intake power.
+         * @param ejectPower specifies the eject power.
+         * @param retainPower specifies the retain power.
+         * @return this parameter object.
+         */
+        public IntakeParams setPowerLevels(double intakePower, double ejectPower, double retainPower)
+        {
+            this.intakePower = intakePower;
+            this.ejectPower = ejectPower;
+            this.retainPower = retainPower;
+            return this;
+        }   //setPowerLevels
+
+        /**
+         * This method sets various finish delays of the Roller Intake.
+         *
+         * @param intakeFinishDelay specifies the intake finish delay in seconds.
+         * @param ejectFinishDelay specifies the eject finish delay in seconds.
+         * @return this parameter object.
+         */
+        public IntakeParams setFinishDelays(double intakeFinishDelay, double ejectFinishDelay)
+        {
+            this.intakeFinishDelay = intakeFinishDelay;
+            this.ejectFinishDelay = ejectFinishDelay;
+            return this;
+        }   //setFinishDelays
+
+    }   //class IntakeParams
+
     public enum TriggerAction
     {
         NoAction,       // Do nothing when trigger occurs.
@@ -59,8 +117,8 @@ public class TrcRollerIntake implements TrcExclusiveSubsystem
         private final TrcTrigger trigger;
         private final TriggerAction triggerAction;
         private final TriggerMode triggerMode;
-        private TrcEvent.Callback triggerCallback;
-        private Object callbackContext;
+        private final TrcEvent.Callback triggerCallback;
+        private final Object callbackContext;
 
         public TriggerParams(
             TrcTrigger trigger, TriggerAction triggerAction, TriggerMode triggerMode, TrcEvent.Callback callback,
@@ -90,106 +148,6 @@ public class TrcRollerIntake implements TrcExclusiveSubsystem
 
     }   //class TriggerParams
 
-   /**
-    * This class contains all the parameters for the Roller Intake.
-    */
-    public static class Params
-    {
-        private TrcMotor motor = null;
-        private TriggerParams frontTriggerParams = null;
-        private TriggerParams backTriggerParams = null;
-        private double intakePower = 0.0;
-        private double ejectPower = 0.0;
-        private double retainPower = 0.0;
-        private double intakeFinishDelay = 0.0;
-        private double ejectFinishDelay = 0.0;
- 
-        /**
-         * This method returns the string form of all the parameters.
-         *
-         * @return string form of all the parameters.
-         */
-        @Override
-        public String toString()
-        {
-            return "motor=" + motor +
-                   ",frontTriggerParams=" + frontTriggerParams +
-                   ",backTriggerParams=" + backTriggerParams +
-                   ",intakePower=" + intakePower +
-                   ",ejectPower=" + ejectPower +
-                   ",retainPower=" + retainPower +
-                   ",intakeFinishDelay=" + intakeFinishDelay +
-                   ",ejectFinishDelay=" + ejectFinishDelay;
-        }   //toString
- 
-        /**
-         * This method sets the motor object for the grabber.
-         *
-         * @param motor specifies the motor object.
-         * @return this parameter object.
-         */
-        public Params setMotor(TrcMotor motor)
-        {
-            this.motor = motor;
-            return this;
-        }   //setMotor
- 
-        /**
-         * This method sets the front trigger and its parameters.
-         *
-         * @param triggerParams specifies the trigger parameters.
-         * @return this parameter object.
-         */
-        public Params setFrontTrigger(TriggerParams triggerParams)
-        {
-            this.frontTriggerParams = triggerParams;
-            return this;
-        }   //setFrontTrigger
-
-        /**
-         * This method sets the back trigger and its parameters.
-         *
-         * @param triggerParams specifies the trigger parameters.
-         * @return this parameter object.
-         */
-        public Params setBackTrigger(TriggerParams triggerParams)
-        {
-            this.backTriggerParams = triggerParams;
-            return this;
-        }   //setBackTrigger
-
-        /**
-         * This method sets various power levels of the Roller Intake.
-         *
-         * @param intakePower specifies the intake power.
-         * @param ejectPower specifies the eject power.
-         * @param retainPower specifies the retain power.
-         * @return this parameter object.
-         */
-        public Params setPowerLevels(double intakePower, double ejectPower, double retainPower)
-        {
-            this.intakePower = intakePower;
-            this.ejectPower = ejectPower;
-            this.retainPower = retainPower;
-            return this;
-        }   //setPowerLevels
-
-        /**
-         * This method sets various power levels of the Roller Intake.
-         *
-         * @param intakeFinishDelay specifies the intake finish delay in seconds.
-         * @param ejectFinishDelay specifies the eject finish delay in seconds.
-         * @return this parameter object.
-         */
-        public Params setFinishDelays(double intakeFinishDelay, double ejectFinishDelay)
-        {
-            this.intakeFinishDelay = intakeFinishDelay;
-            this.ejectFinishDelay = ejectFinishDelay;
-            return this;
-        }   //setFinishDelays
-
-    }   //class Params
- 
     /**
      * This class encapsulates all the parameters required to perform the action.
      */
@@ -222,7 +180,10 @@ public class TrcRollerIntake implements TrcExclusiveSubsystem
 
     public final TrcDbgTrace tracer;
     private final String instanceName;
-    private final Params params;
+    public final TrcMotor motor;
+    private final IntakeParams intakeParams;
+    private final TriggerParams frontTriggerParams;
+    private final TriggerParams backTriggerParams;
     private final TrcTimer timer;
     private ActionParams actionParams = null;
 
@@ -230,28 +191,36 @@ public class TrcRollerIntake implements TrcExclusiveSubsystem
      * Constructor: Create an instance of the object.
      *
      * @param instanceName specifies the instance name.
-     * @param params specifies the RollerIntake params.
+     * @param motor specifies the motor object.
+     * @param intakeParams specifies the intake parameters.
+     * @param frontTriggerParams specifies the front sensor trigger parameters, null if no front sensor.
+     * @param backTriggerParams specifies the back sensor trigger parameters, null if no back sensor.
      */
-    public TrcRollerIntake(String instanceName, Params params)
+    public TrcRollerIntake(
+        String instanceName, TrcMotor motor, IntakeParams intakeParams, TriggerParams frontTriggerParams,
+        TriggerParams backTriggerParams)
     {
         this.tracer = new TrcDbgTrace();
         this.instanceName = instanceName;
-        this.params = params;
+        this.motor = motor;
+        this.intakeParams = intakeParams;
+        this.frontTriggerParams = frontTriggerParams;
+        this.backTriggerParams = backTriggerParams;
 
-        if (params.frontTriggerParams != null && params.frontTriggerParams.trigger != null)
+        if (frontTriggerParams != null)
         {
-            params.frontTriggerParams.trigger.enableTrigger(
+            frontTriggerParams.trigger.enableTrigger(
                 TriggerMode.OnBoth,
                 (context, canceled)->processTrigger(
-                    ((AtomicBoolean) context).get(), params.frontTriggerParams, canceled));
+                    ((AtomicBoolean) context).get(), frontTriggerParams, canceled));
         }
 
-        if (params.backTriggerParams != null && params.backTriggerParams.trigger != null)
+        if (backTriggerParams != null)
         {
-            params.backTriggerParams.trigger.enableTrigger(
+            backTriggerParams.trigger.enableTrigger(
                 TriggerMode.OnBoth,
                 (context, canceled)->processTrigger(
-                    ((AtomicBoolean) context).get(), params.backTriggerParams, canceled));
+                    ((AtomicBoolean) context).get(), backTriggerParams, canceled));
         }
 
         timer = new TrcTimer(instanceName);
@@ -289,7 +258,8 @@ public class TrcRollerIntake implements TrcExclusiveSubsystem
             }
             else if (triggerParams.triggerAction == TriggerAction.FinishOnTrigger)
             {
-                double finishDelay = actionParams.intakeAction? params.intakeFinishDelay: params.ejectFinishDelay;
+                double finishDelay =
+                    actionParams.intakeAction? intakeParams.intakeFinishDelay: intakeParams.ejectFinishDelay;
 
                 if (finishDelay > 0.0)
                 {
@@ -330,9 +300,7 @@ public class TrcRollerIntake implements TrcExclusiveSubsystem
      */
     public boolean getFrontTriggerState()
     {
-        return params.frontTriggerParams != null &&
-               params.frontTriggerParams.trigger != null &&
-               params.frontTriggerParams.trigger.getTriggerState();
+        return frontTriggerParams != null && frontTriggerParams.trigger.getTriggerState();
     }   //getFrontTriggerState
 
     /**
@@ -342,9 +310,7 @@ public class TrcRollerIntake implements TrcExclusiveSubsystem
      */
     public boolean getBackTriggerState()
     {
-        return params.backTriggerParams != null &&
-               params.backTriggerParams.trigger != null &&
-               params.backTriggerParams.trigger.getTriggerState();
+        return backTriggerParams != null && backTriggerParams.trigger.getTriggerState();
     }   //getBackTriggerState
 
     /**
@@ -365,8 +331,7 @@ public class TrcRollerIntake implements TrcExclusiveSubsystem
      */
     public double getFrontSensorValue()
     {
-        return params.frontTriggerParams != null && params.frontTriggerParams.trigger != null?
-                params.frontTriggerParams.trigger.getSensorValue(): 0.0;
+        return frontTriggerParams != null? frontTriggerParams.trigger.getSensorValue(): 0.0;
     }   //getFrontSensorValue
 
     /**
@@ -376,8 +341,7 @@ public class TrcRollerIntake implements TrcExclusiveSubsystem
      */
     public double getBackSensorValue()
     {
-        return params.backTriggerParams != null && params.backTriggerParams.trigger != null?
-                params.backTriggerParams.trigger.getSensorValue(): 0.0;
+        return backTriggerParams != null? backTriggerParams.trigger.getSensorValue(): 0.0;
     }   //getBackSensorValue
 
     /**
@@ -387,7 +351,7 @@ public class TrcRollerIntake implements TrcExclusiveSubsystem
      */
     public boolean isOn()
     {
-        return params.motor.getPower() != 0.0;
+        return motor.getPower() != 0.0;
     }   //isOn
 
     /**
@@ -397,7 +361,7 @@ public class TrcRollerIntake implements TrcExclusiveSubsystem
      */
     public double getCurrent()
     {
-        return params.motor.getCurrent();
+        return motor.getCurrent();
     }   //getCurrent
 
     /**
@@ -407,7 +371,7 @@ public class TrcRollerIntake implements TrcExclusiveSubsystem
      */
     public double getPower()
     {
-        return params.motor.getPower();
+        return motor.getPower();
     }   //getPower
 
     //
@@ -441,7 +405,7 @@ public class TrcRollerIntake implements TrcExclusiveSubsystem
             {
                 event.clear();
             }
-            params.motor.setPower(owner, delay, power, duration, event);
+            motor.setPower(owner, delay, power, duration, event);
         }
     }   //setPower
 
@@ -543,7 +507,7 @@ public class TrcRollerIntake implements TrcExclusiveSubsystem
      */
     public void intake(String owner, double delay, double duration, TrcEvent event)
     {
-        setPower(owner, delay, params.intakePower, duration, event);
+        setPower(owner, delay, intakeParams.intakePower, duration, event);
     }   //intake
 
     /**
@@ -557,7 +521,7 @@ public class TrcRollerIntake implements TrcExclusiveSubsystem
      */
     public void intake(String owner, double duration, TrcEvent event)
     {
-        setPower(owner, 0.0, params.intakePower, duration, event);
+        setPower(owner, 0.0, intakeParams.intakePower, duration, event);
     }   //intake
 
     /**
@@ -570,7 +534,7 @@ public class TrcRollerIntake implements TrcExclusiveSubsystem
      */
     public void intake(double duration, TrcEvent event)
     {
-        setPower(null, 0.0, params.intakePower, duration, event);
+        setPower(null, 0.0, intakeParams.intakePower, duration, event);
     }   //intake
 
     /**
@@ -578,7 +542,7 @@ public class TrcRollerIntake implements TrcExclusiveSubsystem
      */
     public void intake()
     {
-        setPower(null, 0.0, params.intakePower, 0.0, null);
+        setPower(null, 0.0, intakeParams.intakePower, 0.0, null);
     }   //intake
 
     /**
@@ -593,7 +557,7 @@ public class TrcRollerIntake implements TrcExclusiveSubsystem
      */
     public void eject(String owner, double delay, double duration, TrcEvent event)
     {
-        setPower(owner, delay, params.ejectPower, duration, event);
+        setPower(owner, delay, intakeParams.ejectPower, duration, event);
     }   //eject
 
     /**
@@ -607,7 +571,7 @@ public class TrcRollerIntake implements TrcExclusiveSubsystem
      */
     public void eject(String owner, double duration, TrcEvent event)
     {
-        setPower(owner, 0.0, params.ejectPower, duration, event);
+        setPower(owner, 0.0, intakeParams.ejectPower, duration, event);
     }   //eject
 
     /**
@@ -620,7 +584,7 @@ public class TrcRollerIntake implements TrcExclusiveSubsystem
      */
     public void eject(double duration, TrcEvent event)
     {
-        setPower(null, 0.0, params.ejectPower, duration, event);
+        setPower(null, 0.0, intakeParams.ejectPower, duration, event);
     }   //eject
 
     /**
@@ -628,7 +592,7 @@ public class TrcRollerIntake implements TrcExclusiveSubsystem
      */
     public void eject()
     {
-        setPower(null, 0.0, params.ejectPower, 0.0, null);
+        setPower(null, 0.0, intakeParams.ejectPower, 0.0, null);
     }   //eject
 
     //
@@ -653,13 +617,13 @@ public class TrcRollerIntake implements TrcExclusiveSubsystem
             timer.cancel();
             if (completed)
             {
-                double power = actionParams.intakeAction && gotObject? params.retainPower: 0.0;
-                params.motor.setPower(actionParams.owner, 0.0, power, 0.0, null);
+                double power = actionParams.intakeAction && gotObject? intakeParams.retainPower: 0.0;
+                motor.setPower(actionParams.owner, 0.0, power, 0.0, null);
             }
             else
             {
                 // Operation was canceled, cancel operation to release ownership if any.
-                params.motor.cancel();
+                motor.cancel();
             }
 
             if (actionParams.completionEvent != null)
@@ -679,7 +643,7 @@ public class TrcRollerIntake implements TrcExclusiveSubsystem
         else if (!completed)
         {
             // We are canceling but there was no pending auto action, just stop the motor.
-            params.motor.cancel();
+            motor.cancel();
         }
     }   //finishAction
 
@@ -718,14 +682,14 @@ public class TrcRollerIntake implements TrcExclusiveSubsystem
             {
                 // We are intaking but we don't have the object yet.
                 tracer.traceDebug(instanceName, "Start Intake.");
-                params.motor.setPower(ap.owner, 0.0, params.intakePower, 0.0, null);
+                motor.setPower(ap.owner, 0.0, intakeParams.intakePower, 0.0, null);
                 actionPending = true;
             }
             else if (!ap.intakeAction && gotObject)
             {
                 // We are ejecting and we still have the object.
                 tracer.traceDebug(instanceName, "Start Eject.");
-                params.motor.setPower(ap.owner, 0.0, params.ejectPower, 0.0, null);
+                motor.setPower(ap.owner, 0.0, intakeParams.ejectPower, 0.0, null);
                 actionPending = true;
             }
     
@@ -760,8 +724,8 @@ public class TrcRollerIntake implements TrcExclusiveSubsystem
      */
     private void autoAction(boolean intakeAction, String owner, double delay, TrcEvent completionEvent, double timeout)
     {
-        if ((params.frontTriggerParams == null || params.frontTriggerParams.triggerAction == TriggerAction.NoAction) &&
-            (params.backTriggerParams == null || params.backTriggerParams.triggerAction == TriggerAction.NoAction))
+        if ((frontTriggerParams == null || frontTriggerParams.triggerAction == TriggerAction.NoAction) &&
+            (backTriggerParams == null || backTriggerParams.triggerAction == TriggerAction.NoAction))
         {
             throw new RuntimeException("Must have sensor to perform Auto Operation.");
         }

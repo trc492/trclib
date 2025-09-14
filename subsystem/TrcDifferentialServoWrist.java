@@ -43,9 +43,8 @@ public class TrcDifferentialServoWrist implements TrcExclusiveSubsystem
     /**
      * This class contains all the parameters of the Differential Servo Wrist.
      */
-    public static class Params
+    public static class WristParams
     {
-        private TrcServo servo1 = null, servo2 = null;
         private double logicalMin = 0.0;
         private double logicalMax = 1.0;
         private double physicalPosRange = 1.0;
@@ -68,9 +67,7 @@ public class TrcDifferentialServoWrist implements TrcExclusiveSubsystem
         @Override
         public String toString()
         {
-            return "servo1=" + servo1 +
-                   ",servo2=" + servo2 +
-                   ",logRangeMin=" + logicalMin +
+            return "(logRangeMin=" + logicalMin +
                    ",logRangeMax=" + logicalMax +
                    ",phyRange=" + physicalPosRange +
                    ",tiltOffset=" + tiltPosOffset +
@@ -82,22 +79,8 @@ public class TrcDifferentialServoWrist implements TrcExclusiveSubsystem
                    ",rotatePosHighLimit=" + rotatePosHighLimit +
                    ",presetTolerance=" + presetTolerance +
                    ",tiltPosPresets=" + (tiltPosPresets != null? Arrays.toString(tiltPosPresets): "null") +
-                   ",rotatePosPresets=" + (rotatePosPresets != null? Arrays.toString(rotatePosPresets): "null");
+                   ",rotatePosPresets=" + (rotatePosPresets != null? Arrays.toString(rotatePosPresets): "null" + ")");
         }   //toString
-
-        /**
-         * This methods sets the two servos.
-         *
-         * @param servo1 specifies the servo1 object.
-         * @param servo2 specifies the servo2 object.
-         * @return this object for chaining.
-         */
-        public Params setServos(TrcServo servo1, TrcServo servo2)
-        {
-            this.servo1 = servo1;
-            this.servo2 = servo2;
-            return this;
-        }   //setServos
 
         /**
          * This method sets the physical tilt and rotate position range of the wrist. Because of the nature of
@@ -115,7 +98,7 @@ public class TrcDifferentialServoWrist implements TrcExclusiveSubsystem
          *        zero position, rotatePosOffset will be 0.0.
          * @return this object for chaining.
          */
-        public Params setPosRange(
+        public WristParams setPosRange(
             double logicalMin, double logicalMax, double physicalRange, double tiltOffset, double rotateOffset)
         {
             this.logicalMin = logicalMin;
@@ -132,7 +115,7 @@ public class TrcDifferentialServoWrist implements TrcExclusiveSubsystem
          * @param maxStepRate specifies the maximum speed of the servo in degrees per second.
          * @return this object for chaining.
          */
-        public Params setMaxStepRate(double maxStepRate)
+        public WristParams setMaxStepRate(double maxStepRate)
         {
             this.maxStepRate = maxStepRate;
             return this;
@@ -147,7 +130,7 @@ public class TrcDifferentialServoWrist implements TrcExclusiveSubsystem
          * @param rotatePosHighLimit specifies the rotate position high limit in physical unit.
          * @return this object for chaining.
          */
-        public Params setPositionLimits(
+        public WristParams setPositionLimits(
             double tiltPosLowLimit, double tiltPosHighLimit, double rotatePosLowLimit, double rotatePosHighLimit)
         {
             this.tiltPosLowLimit = tiltPosLowLimit;
@@ -165,7 +148,7 @@ public class TrcDifferentialServoWrist implements TrcExclusiveSubsystem
          * @param rotatePosPresets specifies the rotate position preset array.
          * @return this object for chaining.
          */
-        public Params setPosPresets(double presetTolerance, double[] tiltPosPresets, double[] rotatePosPresets)
+        public WristParams setPosPresets(double presetTolerance, double[] tiltPosPresets, double[] rotatePosPresets)
         {
             this.presetTolerance = presetTolerance;
             this.tiltPosPresets = tiltPosPresets;
@@ -173,7 +156,7 @@ public class TrcDifferentialServoWrist implements TrcExclusiveSubsystem
             return this;
         }   //setPosPresets
 
-    }   //class Params
+    }   //class WristParams
 
     /**
      * Specifies the operation types.
@@ -211,18 +194,19 @@ public class TrcDifferentialServoWrist implements TrcExclusiveSubsystem
         public String toString()
         {
             return "(op=" + operation +
-                   ", owner=" + owner +
-                   ", tiltValue=" + tiltValue +
-                   ", rotateValue=" + rotateValue +
-                   ", event=" + event +
-                   ", timeout=" + timeout + ")";
+                   ",owner=" + owner +
+                   ",tiltValue=" + tiltValue +
+                   ",rotateValue=" + rotateValue +
+                   ",event=" + event +
+                   ",timeout=" + timeout + ")";
         }   //toString
 
     }   //class ActionParams
 
     public final TrcDbgTrace tracer;
     private final String instanceName;
-    private final Params wristParams;
+    private final TrcServo servo1, servo2;
+    private final WristParams wristParams;
     private final TrcTimer timer;
     private final TrcPresets tiltPosPresets;
     private final TrcPresets rotatePosPresets;
@@ -235,30 +219,36 @@ public class TrcDifferentialServoWrist implements TrcExclusiveSubsystem
      * Constructor: Create an instance of the object.
      *
      * @param instanceName specifies the instance name.
-     * @param params specifies the wrist parameters.
+     * @param servo1 specifies the servo 1 object.
+     * @param servo2 specifies the servo 2 object.
+     * @param wristParams specifies the wrist parameters.
      */
-    public TrcDifferentialServoWrist(String instanceName, Params params)
+    public TrcDifferentialServoWrist(String instanceName, TrcServo servo1, TrcServo servo2, WristParams wristParams)
     {
         this.tracer = new TrcDbgTrace();
         this.instanceName = instanceName;
-        this.wristParams = params;
+        this.servo1 = servo1;
+        this.servo2 = servo2;
+        this.wristParams = wristParams;
         this.timer = new TrcTimer(instanceName);
         this.tiltPosPresets =
-            params.tiltPosPresets != null?
-                new TrcPresets(instanceName + ".tiltPosPresets", params.presetTolerance, params.tiltPosPresets):
+            wristParams.tiltPosPresets != null?
+                new TrcPresets(
+                    instanceName + ".tiltPosPresets", wristParams.presetTolerance, wristParams.tiltPosPresets):
                 null;
         this.rotatePosPresets =
-            params.rotatePosPresets != null?
-                new TrcPresets(instanceName + ".rotatePosPresets", params.presetTolerance, params.rotatePosPresets):
+            wristParams.rotatePosPresets != null?
+                new TrcPresets(
+                    instanceName + ".rotatePosPresets", wristParams.presetTolerance, wristParams.rotatePosPresets):
                 null;
 
-        double halfPosRange = params.physicalPosRange / 2.0;
-        params.servo1.setLogicalPosRange(params.logicalMin, params.logicalMax);
-        params.servo2.setLogicalPosRange(params.logicalMin, params.logicalMax);
-        params.servo1.setPhysicalPosRange(-halfPosRange, halfPosRange);
-        params.servo2.setPhysicalPosRange(-halfPosRange, halfPosRange);
-        params.servo1.setMaxStepRate(params.maxStepRate);
-        params.servo2.setMaxStepRate(params.maxStepRate);
+        double halfPosRange = wristParams.physicalPosRange / 2.0;
+        servo1.setLogicalPosRange(wristParams.logicalMin, wristParams.logicalMax);
+        servo2.setLogicalPosRange(wristParams.logicalMin, wristParams.logicalMax);
+        servo1.setPhysicalPosRange(-halfPosRange, halfPosRange);
+        servo2.setPhysicalPosRange(-halfPosRange, halfPosRange);
+        servo1.setMaxStepRate(wristParams.maxStepRate);
+        servo2.setMaxStepRate(wristParams.maxStepRate);
     }   //TrcDifferentialServoWrist
 
     /**
@@ -287,8 +277,8 @@ public class TrcDifferentialServoWrist implements TrcExclusiveSubsystem
             if (!completed)
             {
                 timer.cancel();
-                wristParams.servo1.cancel(actionParams.owner);
-                wristParams.servo2.cancel(actionParams.owner);
+                servo1.cancel(actionParams.owner);
+                servo2.cancel(actionParams.owner);
             }
 
             if (actionParams.event != null)
@@ -340,8 +330,8 @@ public class TrcDifferentialServoWrist implements TrcExclusiveSubsystem
         if (!canceled)
         {
             ActionParams actionParams = (ActionParams) context;
-            double currServo1Pos = wristParams.servo1.getPosition();
-            double currServo2Pos = wristParams.servo2.getPosition();
+            double currServo1Pos = servo1.getPosition();
+            double currServo2Pos = servo2.getPosition();
             double currTiltPos = getTiltPosition(currServo1Pos, currServo2Pos);
             double currRotatePos = getRotatePosition(currServo1Pos, currServo2Pos);
             // Because of the nature of Differential Wrist, it has two DOFs (tilt and rotate) that interact with
@@ -387,14 +377,14 @@ public class TrcDifferentialServoWrist implements TrcExclusiveSubsystem
                 if (tiltPower != 0.0)
                 {
                     // Don't restrict the range if we are tilting the wrist.
-                    wristParams.servo1.setPower(servo1Power, -maxHeadroom, maxHeadroom);
-                    wristParams.servo2.setPower(servo2Power, -maxHeadroom, maxHeadroom);
+                    servo1.setPower(servo1Power, -maxHeadroom, maxHeadroom);
+                    servo2.setPower(servo2Power, -maxHeadroom, maxHeadroom);
                 }
                 else
                 {
                     // Restrict the range if we are just rotating.
-                    wristParams.servo1.setPower(servo1Power, currTiltOffset - headroom, currTiltOffset + headroom);
-                    wristParams.servo2.setPower(servo2Power, currTiltOffset - headroom, currTiltOffset + headroom);
+                    servo1.setPower(servo1Power, currTiltOffset - headroom, currTiltOffset + headroom);
+                    servo2.setPower(servo2Power, currTiltOffset - headroom, currTiltOffset + headroom);
                 }
                 tracer.traceDebug(
                     instanceName,
@@ -417,8 +407,8 @@ public class TrcDifferentialServoWrist implements TrcExclusiveSubsystem
                     targetRotatePos, -headroom + wristParams.rotatePosOffset, headroom + wristParams.rotatePosOffset);
                 double servo1TargetPos = getServo1Position(targetTiltPos, targetRotatePos);
                 double servo2TargetPos = getServo2Position(targetTiltPos, targetRotatePos);
-                wristParams.servo1.setPosition(servo1TargetPos);
-                wristParams.servo2.setPosition(servo2TargetPos);
+                servo1.setPosition(servo1TargetPos);
+                servo2.setPosition(servo2TargetPos);
                 tracer.traceDebug(
                     instanceName,
                     "setPosition(tilt=%.3f,rotate=%.3f,headroom=%.3f,servo1Target=%.3f,servo2Target=%.3f)",
@@ -646,7 +636,7 @@ public class TrcDifferentialServoWrist implements TrcExclusiveSubsystem
      */
     public double getTiltPosition()
     {
-        return getTiltPosition(wristParams.servo1.getPosition(), wristParams.servo2.getPosition());
+        return getTiltPosition(servo1.getPosition(), servo2.getPosition());
     }   //getTiltPosition
 
     /**
@@ -658,7 +648,7 @@ public class TrcDifferentialServoWrist implements TrcExclusiveSubsystem
      */
     public double getRotatePosition()
     {
-        return getRotatePosition(wristParams.servo1.getPosition(), wristParams.servo2.getPosition());
+        return getRotatePosition(servo1.getPosition(), servo2.getPosition());
     }   //getRotatePosition
 
     private double getTiltPosition(double servo1Pos, double servo2Pos)

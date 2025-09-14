@@ -42,56 +42,28 @@ import trclib.timer.TrcTimer;
 public class TrcServoClaw implements TrcExclusiveSubsystem
 {
     /**
-     * This class contains all the parameters for the servo claw.
+     * This class contains Claw parameters.
      */
-    public static class Params
+    public static class ClawParams
     {
-        private TrcServo servo;
-        private TrcTrigger sensorTrigger;
         private double openPos = 0.0;
         private double openTime = 0.5;
         private double closePos = 1.0;
         private double closeTime = 0.5;
 
         /**
-         * This method returns the string form of all the parameters.
+         * This method returns the string format of the Claw parameters.
          *
-         * @return string form of all the parameters.
+         * @return string format of the parameters.
          */
         @Override
         public String toString()
         {
-            return "servo=" + servo +
-                   ",sensorTrigger=" + sensorTrigger +
-                   ",openPos=" + openPos +
+            return "(openPos=" + openPos +
                    ",openTime=" + openTime +
                    ",closePos=" + closePos +
-                   ",closeTime=" + closeTime;
+                   ",closeTime=" + closeTime + ")";
         }   //toString
-
-        /**
-         * This method sets the servo object for the servo claw.
-         *
-         * @param servo specifies the servo object.
-         * @return this parameter object.
-         */
-        public Params setServo(TrcServo servo)
-        {
-            this.servo = servo;
-            return this;
-        }   //setServo
-
-        /**
-         * This method sets the sensor trigger object with optional trigger callback.
-         *
-         * @param trigger specifies the sensor trigger object.
-         * @return this parameter object.
-         */
-        public Params setSensorTrigger(TrcTrigger trigger)
-        {
-            this.sensorTrigger = trigger;
-            return this;
-        }   //setSensorTrigger
 
         /**
          * This method sets the open/close parameters of the servo claw.
@@ -102,7 +74,7 @@ public class TrcServoClaw implements TrcExclusiveSubsystem
          * @param closeTime specifies the time in seconds required to close from fully open position.
          * @return this parameter object.
          */
-        public Params setOpenCloseParams(double openPos, double openTime, double closePos, double closeTime)
+        public ClawParams setOpenCloseParams(double openPos, double openTime, double closePos, double closeTime)
         {
             this.openPos = openPos;
             this.openTime = openTime;
@@ -111,7 +83,7 @@ public class TrcServoClaw implements TrcExclusiveSubsystem
             return this;
         }   //setOpenCloseParams
 
-    }   //class Params
+    }   //class ClawParams
 
     /**
      * This class encapsulates all the parameters required to perform the action.
@@ -144,7 +116,9 @@ public class TrcServoClaw implements TrcExclusiveSubsystem
 
     public final TrcDbgTrace tracer;
     private final String instanceName;
-    private final Params params;
+    public final TrcServo servo;
+    private final ClawParams clawParams;
+    private final TrcTrigger sensorTrigger;
     private final TrcTimer timer;
 
     private ActionParams actionParams = null;
@@ -153,13 +127,17 @@ public class TrcServoClaw implements TrcExclusiveSubsystem
      * Constructor: Create an instance of the object.
      *
      * @param instanceName specifies the instance name.
-     * @param params specifies the servo claw parameters.
+     * @param servo specifies the servo object.
+     * @param clawParams specifies the Claw parameters.
+     * @param sensorTrigger specifies the sensor trigger object, null if there is no sensor.
      */
-    public TrcServoClaw(String instanceName, Params params)
+    public TrcServoClaw(String instanceName, TrcServo servo, ClawParams clawParams, TrcTrigger sensorTrigger)
     {
         this.tracer = new TrcDbgTrace();
         this.instanceName = instanceName;
-        this.params = params;
+        this.servo = servo;
+        this.clawParams = clawParams;
+        this.sensorTrigger = sensorTrigger;
         timer = new TrcTimer(instanceName);
     }   //TrcServoClaw
 
@@ -181,7 +159,7 @@ public class TrcServoClaw implements TrcExclusiveSubsystem
      */
     public TrcServo getServo()
     {
-        return params.servo;
+        return servo;
     }   //getServo
 
     /**
@@ -192,8 +170,8 @@ public class TrcServoClaw implements TrcExclusiveSubsystem
      */
     public void setOpenClosePositions(double openPos, double closePos)
     {
-        params.openPos = openPos;
-        params.closePos = closePos;
+        clawParams.openPos = openPos;
+        clawParams.closePos = closePos;
     }   //setOpenClosePositions
 
     /**
@@ -203,7 +181,7 @@ public class TrcServoClaw implements TrcExclusiveSubsystem
      */
     public double getPosition()
     {
-        return params.servo.getPosition();
+        return servo.getPosition();
     }   //getPosition
 
     /**
@@ -213,7 +191,7 @@ public class TrcServoClaw implements TrcExclusiveSubsystem
      */
     public boolean isClosed()
     {
-        return params.servo.getPosition() == params.closePos;
+        return servo.getPosition() == clawParams.closePos;
     }   //isClosed
 
     /**
@@ -242,7 +220,7 @@ public class TrcServoClaw implements TrcExclusiveSubsystem
             {
                 event.clear();
             }
-            params.servo.setPosition(owner, delay, position, event, timeout);
+            servo.setPosition(owner, delay, position, event, timeout);
         }
     }   //setPosition
 
@@ -256,7 +234,7 @@ public class TrcServoClaw implements TrcExclusiveSubsystem
      */
     public void open(String owner, double delay, TrcEvent event)
     {
-        setPosition(owner, delay, params.openPos, event, params.openTime);
+        setPosition(owner, delay, clawParams.openPos, event, clawParams.openTime);
     }   //open
 
     /**
@@ -268,7 +246,7 @@ public class TrcServoClaw implements TrcExclusiveSubsystem
      */
     public void open(String owner, TrcEvent event)
     {
-        setPosition(owner, 0.0, params.openPos, event, params.openTime);
+        setPosition(owner, 0.0, clawParams.openPos, event, clawParams.openTime);
     }   //open
 
     /**
@@ -279,7 +257,7 @@ public class TrcServoClaw implements TrcExclusiveSubsystem
      */
     public void open(TrcEvent event)
     {
-        setPosition(null, 0.0, params.openPos, event, params.openTime);
+        setPosition(null, 0.0, clawParams.openPos, event, clawParams.openTime);
     }   //open
 
     /**
@@ -287,7 +265,7 @@ public class TrcServoClaw implements TrcExclusiveSubsystem
      */
     public void open()
     {
-        setPosition(null, 0.0, params.openPos, null, 0.0);
+        setPosition(null, 0.0, clawParams.openPos, null, 0.0);
     }   //open
 
     /**
@@ -300,7 +278,7 @@ public class TrcServoClaw implements TrcExclusiveSubsystem
      */
     public void close(String owner, double delay, TrcEvent event)
     {
-        setPosition(owner, delay, params.closePos, event, params.closeTime);
+        setPosition(owner, delay, clawParams.closePos, event, clawParams.closeTime);
     }   //close
 
     /**
@@ -312,7 +290,7 @@ public class TrcServoClaw implements TrcExclusiveSubsystem
      */
     public void close(String owner, TrcEvent event)
     {
-        setPosition(owner, 0.0, params.closePos, event, params.closeTime);
+        setPosition(owner, 0.0, clawParams.closePos, event, clawParams.closeTime);
     }   //close
 
     /**
@@ -323,7 +301,7 @@ public class TrcServoClaw implements TrcExclusiveSubsystem
      */
     public void close(TrcEvent event)
     {
-        setPosition(null, 0.0, params.closePos, event, params.closeTime);
+        setPosition(null, 0.0, clawParams.closePos, event, clawParams.closeTime);
     }   //close
 
     /**
@@ -331,7 +309,7 @@ public class TrcServoClaw implements TrcExclusiveSubsystem
      */
     public void close()
     {
-        setPosition(null, 0.0, params.closePos, null, 0.0);
+        setPosition(null, 0.0, clawParams.closePos, null, 0.0);
     }   //close
 
     /**
@@ -350,11 +328,11 @@ public class TrcServoClaw implements TrcExclusiveSubsystem
                 completed, clawClosed, hasObject(), actionParams);
 
             timer.cancel();
-            params.sensorTrigger.disableTrigger();
+            sensorTrigger.disableTrigger();
             if (!completed)
             {
                 // Operation was canceled, cancel operation to release ownership if any.
-                params.servo.cancel(actionParams.owner);
+                servo.cancel(actionParams.owner);
             }
 
             if (actionParams.completionEvent != null)
@@ -411,7 +389,7 @@ public class TrcServoClaw implements TrcExclusiveSubsystem
                 if (actionParams.callbackEvent == null)
                 {
                     // There is no callback, grab the object ourselves and finish the operation.
-                    params.servo.setPosition(actionParams.owner, 0.0, params.closePos, null, 0.0);
+                    servo.setPosition(actionParams.owner, 0.0, clawParams.closePos, null, 0.0);
                     finishAction(true);
                 }
                 else
@@ -443,15 +421,15 @@ public class TrcServoClaw implements TrcExclusiveSubsystem
             boolean finished = false;
 
             tracer.traceDebug(
-                instanceName, "AutoAssistGrab: clawClosed=%s, sensorTriggered=%s, params=%s",
-                clawClosed, triggered, params);
+                instanceName, "AutoAssistGrab: clawClosed=%s, sensorTriggered=%s, actionParams=%s",
+                clawClosed, triggered, ap);
             if (triggered)
             {
                 if (!clawClosed && ap.callbackEvent == null)
                 {
                     // Claw is open, the object is detected and there is no callback, grab the object.
                     tracer.traceDebug(instanceName, "Object already detected, grab it!");
-                    params.servo.setPosition(ap.owner, 0.0, params.closePos, null, 0.0);
+                    servo.setPosition(ap.owner, 0.0, clawParams.closePos, null, 0.0);
                 }
                 finished = true;
             }
@@ -459,7 +437,7 @@ public class TrcServoClaw implements TrcExclusiveSubsystem
             {
                 // Claw is close but has no object, open it to prepare for grabbing.
                 tracer.traceDebug(instanceName, "Claws are closed, open it back up.");
-                params.servo.setPosition(ap.owner, 0.0, params.openPos, null, 0.0);
+                servo.setPosition(ap.owner, 0.0, clawParams.openPos, null, 0.0);
             }
 
             if (finished)
@@ -472,7 +450,7 @@ public class TrcServoClaw implements TrcExclusiveSubsystem
             {
                 // Arm the sensor trigger as long as AutoAssist is enabled.
                 tracer.traceDebug(instanceName, "Arm sensor trigger.");
-                params.sensorTrigger.enableTrigger(TriggerMode.OnBoth, this::sensorTriggerCallback);
+                sensorTrigger.enableTrigger(TriggerMode.OnBoth, this::sensorTriggerCallback);
                 if (ap.timeout > 0.0)
                 {
                     // Set a timeout and cancel auto-assist if timeout has expired.
@@ -528,7 +506,7 @@ public class TrcServoClaw implements TrcExclusiveSubsystem
         String owner, double delay, TrcEvent event, double timeout, TrcEvent.Callback triggerCallback,
         Object callbackContext)
     {
-        if (params.sensorTrigger == null)
+        if (sensorTrigger == null)
         {
             throw new RuntimeException("Must have sensor to perform Auto Operation.");
         }
@@ -591,7 +569,7 @@ public class TrcServoClaw implements TrcExclusiveSubsystem
      */
     public double getSensorValue()
     {
-        return params.sensorTrigger != null? params.sensorTrigger.getSensorValue(): 0.0;
+        return sensorTrigger != null? sensorTrigger.getSensorValue(): 0.0;
     }   //getSensorValue
 
     /**
@@ -601,7 +579,7 @@ public class TrcServoClaw implements TrcExclusiveSubsystem
      */
     public boolean getTriggerState()
     {
-        return params.sensorTrigger != null && params.sensorTrigger.getTriggerState();
+        return sensorTrigger != null && sensorTrigger.getTriggerState();
     }   //getTriggerState
 
     /**

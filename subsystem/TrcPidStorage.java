@@ -42,9 +42,9 @@ public class TrcPidStorage implements TrcExclusiveSubsystem
      */
     public static class StorageParams
     {
-        public double objectDistance = 0.0;
-        public double movePower = 1.0;
-        public int maxCapacity = 1;
+        private double objectDistance = 0.0;
+        private double movePower = 1.0;
+        private int maxCapacity = 1;
 
         /**
          * This method returns the string format of the PID storage parameters.
@@ -54,7 +54,7 @@ public class TrcPidStorage implements TrcExclusiveSubsystem
         @Override
         public String toString()
         {
-            return "objDistance=" + objectDistance +
+            return "(objDistance=" + objectDistance +
                    ",movePower=" + movePower +
                    ",maxCap=" + maxCapacity + ")";
         }   //toString

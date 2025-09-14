@@ -32,10 +32,10 @@ import trclib.robotcore.TrcTaskMgr;
 import trclib.timer.TrcTimer;
 
 /**
- * This class implements a trigger using digital sensor source. A digital state trigger monitors the digital sensor
+ * This class implements a trigger using digital sensor source. A digital source trigger monitors the digital sensor
  * source and notifies the callback handler if it changes state.
  */
-public class TrcTriggerDigitalState implements TrcTrigger
+public class TrcTriggerDigitalSource implements TrcTrigger
 {
     /**
      * This class encapsulates the trigger state. Access to this object must be thread safe (i.e. needs to be
@@ -83,7 +83,7 @@ public class TrcTriggerDigitalState implements TrcTrigger
      * @param instanceName specifies the instance name.
      * @param digitalSource specifies the source that supplies the digital state.
      */
-    public TrcTriggerDigitalState(String instanceName, Supplier<Boolean> digitalSource)
+    public TrcTriggerDigitalSource(String instanceName, Supplier<Boolean> digitalSource)
     {
         if (digitalSource == null)
         {
@@ -330,4 +330,4 @@ public class TrcTriggerDigitalState implements TrcTrigger
         }
     }   //triggerTask
 
-}   //class TrcTriggerDigitalState
+}   //class TrcTriggerDigitalSource
