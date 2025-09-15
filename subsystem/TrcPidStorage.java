@@ -171,6 +171,38 @@ public class TrcPidStorage implements TrcExclusiveSubsystem
     }   //TrcPidStorage
 
     /**
+     * This method cancels the operation which is stopping the motor.
+     *
+     * @param owner specifies the owner ID to check if the caller has ownership of the storage.
+     */
+    public void cancel(String owner)
+    {
+        if (validateOwnership(owner))
+        {
+            motor.cancel();
+        }
+    }   //cancel
+
+    /**
+     * This method cancels the operation which is stopping the motor.
+     */
+    public void cancel()
+    {
+        cancel(null);
+    }   //cancel
+
+    /**
+     * This method starts zero calibrate of the subsystem.
+     *
+     * @param owner specifies the owner ID to to claim subsystem ownership, can be null if ownership not required.
+     * @param event specifies an event to signal when zero calibration is done, can be null if not provided.
+     */
+    public void zeroCalibrate(String owner, double calPower, TrcEvent event)
+    {
+        motor.zeroCalibrate(owner, calPower, event);
+    }   //zeroCalibrate
+
+    /**
      * This method returns the number of objects in the storage.
      * Note: Storage can only keep track of the number of objects if it has entry and exit sensors. Otherwise,
      * the number of objects returned will not be correct.
@@ -254,11 +286,31 @@ public class TrcPidStorage implements TrcExclusiveSubsystem
 
     /**
      * This method advances the storage by the one object unit.
+     *
+     * @param owner specifies the owner ID to check if the caller has ownership of the storage.
+     */
+    public void advance(String owner)
+    {
+        move(owner, 1, null);
+    }   //advance
+
+    /**
+     * This method advances the storage by the one object unit.
      */
     public void advance()
     {
         move(null, 1, null);
     }   //advance
+
+    /**
+     * This method backs up the storage by the one object unit.
+     *
+     * @param owner specifies the owner ID to check if the caller has ownership of the storage.
+     */
+    public void backup(String owner)
+    {
+        move(owner, -1, null);
+    }   //backup
 
     /**
      * This method backs up the storage by the one object unit.
