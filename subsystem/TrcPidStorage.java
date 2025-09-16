@@ -203,6 +203,26 @@ public class TrcPidStorage implements TrcExclusiveSubsystem
     }   //zeroCalibrate
 
     /**
+     * This method returns the entry sensor trigger if there is one. It returns null if there isn't one.
+     *
+     * @return entry sensor trigger, or null if there isn't one.
+     */
+    public TrcTrigger getEntryTrigger()
+    {
+        return entryTriggerParams.trigger;
+    }   //getEntryTrigger
+
+    /**
+     * This method returns the exit sensor trigger if there is one. It returns null if there isn't one.
+     *
+     * @return exit sensor trigger, or null if there isn't one.
+     */
+    public TrcTrigger getExitTrigger()
+    {
+        return exitTriggerParams.trigger;
+    }   //getExitTrigger
+
+    /**
      * This method returns the number of objects in the storage.
      * Note: Storage can only keep track of the number of objects if it has entry and exit sensors. Otherwise,
      * the number of objects returned will not be correct.
