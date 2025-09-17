@@ -84,9 +84,8 @@ public abstract class TrcSubsystem
      * This method is called to prep the subsystem for tuning.
      *
      * @param subComponent specifies the sub-component of the Subsystem to be tuned, can be null if no sub-component.
-     * @param tuneParams specifies tuning parameters in an array of doubles.
      */
-    public abstract void prepSubsystemForTuning(String subComponent, double... tuneParams);
+    public abstract void prepSubsystemForTuning(String subComponent);
 
     /**
      * Constructor: Creates an instance of the object.

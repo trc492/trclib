@@ -2534,6 +2534,23 @@ public abstract class TrcMotor implements TrcMotorController, TrcExclusiveSubsys
      * @param pidCoeff specifies the PID coefficients to set.
      * @param tolerance specifies the PID tolerance.
      * @param softwarePid specifies true to use software PID control, false to use native motor PID control.
+     * @param enableSquid specifies true to enable SQUID control mode, false to disable (only applicable if
+     *        softwarePid is true).
+     */
+    public void setPositionPidParameters(
+        TrcPidController.PidCoefficients pidCoeff, double tolerance, boolean softwarePid, boolean enableSquid)
+    {
+        setPositionPidParameters(pidCoeff, null, tolerance, softwarePid, enableSquid);
+    }   //setPositionPidParameters
+
+    /**
+     * This method sets the PID parameters of the motor's position PID controller. Note that PID coefficients are
+     * different for software PID and controller built-in PID. If you enable/disable software PID, you need to set
+     * the appropriate PID coefficients accordingly.
+     *
+     * @param pidCoeff specifies the PID coefficients to set.
+     * @param tolerance specifies the PID tolerance.
+     * @param softwarePid specifies true to use software PID control, false to use native motor PID control.
      */
     public void setPositionPidParameters(
         TrcPidController.PidCoefficients pidCoeff, double tolerance, boolean softwarePid)
