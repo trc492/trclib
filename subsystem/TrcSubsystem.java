@@ -81,11 +81,18 @@ public abstract class TrcSubsystem
     public abstract int updateStatus(int lineNum, boolean slowLoop);
 
     /**
-     * This method is called to prep the subsystem for tuning.
+     * This method is called to initialize the Dashboard from subsystem parameters.
      *
      * @param subComponent specifies the sub-component of the Subsystem to be tuned, can be null if no sub-component.
      */
-    public abstract void prepSubsystemForTuning(String subComponent);
+    public abstract void initDashboardFromSubsystemParams(String subComponent);
+
+    /**
+     * This method is called to initialize the subsystem parameters from the Dashboard for tuning.
+     *
+     * @param subComponent specifies the sub-component of the Subsystem to be tuned, can be null if no sub-component.
+     */
+    public abstract void initSubsystemParamsForTuning(String subComponent);
 
     /**
      * Constructor: Creates an instance of the object.
