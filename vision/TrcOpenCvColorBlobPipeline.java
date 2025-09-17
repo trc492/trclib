@@ -458,6 +458,17 @@ public class TrcOpenCvColorBlobPipeline implements TrcOpenCvPipeline<TrcOpenCvDe
             return this;
         }   //setAspectRatioRange
 
+        public void setAs(FilterContourParams other)
+        {
+            minArea = other.minArea;
+            minPerimeter = other.minPerimeter;
+            System.arraycopy(other.widthRange, 0, this.widthRange, 0, this.widthRange.length);
+            System.arraycopy(other.heightRange, 0, this.heightRange, 0, this.heightRange.length);
+            System.arraycopy(other.solidityRange, 0, this.solidityRange, 0, this.solidityRange.length);
+            System.arraycopy(other.verticesRange, 0, this.verticesRange, 0, this.verticesRange.length);
+            System.arraycopy(other.aspectRatioRange, 0, this.aspectRatioRange, 0, this.aspectRatioRange.length);
+        }   //setAs
+
         @Override
         public FilterContourParams clone()
         {
