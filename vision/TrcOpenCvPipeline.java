@@ -117,14 +117,15 @@ public interface TrcOpenCvPipeline<O>
      * @param label specifies the text label to be annotated on the detected object, can be null if not provided.
      * @param detectedObjects specifies the detected objects.
      * @param drawRotatedRect specifies true to draw rotated rectangle, false to draw bounding rectangle.
+     * @param drawCrosshair specifies true to draw crosshair at the center of the screen, false otherwise.
      * @param rectColor specifies the color of the annotated rectangle.
      * @param thickness specifies the thickness of the annotated rectangle.
      * @param textColor specifies the color of the annotated text.
      * @param fontScale specifies the scale factor that is multiplied by the font-specific base size.
      */
     default void annotateFrame(
-        Mat image, String label, TrcOpenCvDetector.DetectedObject<?>[] detectedObjects,
-        boolean drawRotatedRect, Scalar rectColor, int thickness, Scalar textColor, double fontScale)
+        Mat image, String label, TrcOpenCvDetector.DetectedObject<?>[] detectedObjects, boolean drawRotatedRect,
+        boolean drawCrosshair, Scalar rectColor, int thickness, Scalar textColor, double fontScale)
     {
         for (TrcOpenCvDetector.DetectedObject<?> object : detectedObjects)
         {
@@ -148,9 +149,12 @@ public interface TrcOpenCvPipeline<O>
                     objRect = object.getObjectRect();
                 }
 
-                Imgproc.drawMarker(
-                    image, new Point(objRect.x + objRect.width/2.0, objRect.y + objRect.height), rectColor,
-                    MARKER_CROSS);
+                if (drawCrosshair)
+                {
+                    Imgproc.drawMarker(
+                        image, new Point(objRect.x + objRect.width/2.0, objRect.y + objRect.height), rectColor,
+                        MARKER_CROSS);
+                }
                 Imgproc.putText(
                     image, label, new Point(objRect.x, objRect.y), FONT_HERSHEY_SIMPLEX, fontScale, textColor,
                     thickness);

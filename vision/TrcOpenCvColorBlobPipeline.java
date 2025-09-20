@@ -913,8 +913,8 @@ public class TrcOpenCvColorBlobPipeline implements TrcOpenCvPipeline<TrcOpenCvDe
             if (annotateEnabled)
             {
                 annotateFrame(
-                    annotateMat, instanceName, detectedObjects, drawRotatedRect, rectColor, ANNOTATE_RECT_THICKNESS,
-                    textColor, ANNOTATE_FONT_SCALE);
+                    annotateMat, instanceName, detectedObjects, drawRotatedRect, drawCrosshair, rectColor,
+                    ANNOTATE_RECT_THICKNESS, textColor, ANNOTATE_FONT_SCALE);
                 if (cameraMatrix != null)
                 {
                     drawAxes(annotateMat);
