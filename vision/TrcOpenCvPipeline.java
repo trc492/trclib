@@ -65,8 +65,9 @@ public interface TrcOpenCvPipeline<O>
      * This method enables image annotation of the detected object.
      *
      * @param drawRotatedRect specifies true to draw rotated rectangle, false to draw bounding rectangle.
+     * @param drawCrosshair specifies true to draw crosshair at the center of the screen, false otherwise.
      */
-    void enableAnnotation(boolean drawRotatedRect);
+    void enableAnnotation(boolean drawRotatedRect, boolean drawCrosshair);
 
     /**
      * This method disables image annotation.

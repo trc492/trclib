@@ -94,7 +94,7 @@ public class TrcOpenCvColorBlobPipeline implements TrcOpenCvPipeline<TrcOpenCvDe
             // The angle OpenCV gives us can be ambiguous, so look at the shape of the rectangle to fix that.
             if (rotatedRect.size.width < rotatedRect.size.height)
             {
-                // pixelWidth is the longer edge.
+                // pixelWidth is the longer edge, swap them.
                 rotatedRectAngle = rotatedRect.angle + 90.0;
                 pixelWidth = rotatedRect.size.height;
                 pixelHeight = rotatedRect.size.width;
@@ -500,7 +500,8 @@ public class TrcOpenCvColorBlobPipeline implements TrcOpenCvPipeline<TrcOpenCvDe
     private static final Scalar ANNOTATE_RECT_WHITE = new Scalar(255, 255, 255, 255);
     private static final int ANNOTATE_RECT_THICKNESS = 2;
     private static final Scalar ANNOTATE_TEXT_COLOR = new Scalar(0, 255, 255, 255);
-    private static final double ANNOTATE_FONT_SCALE = 0.6;
+    private static final double ANNOTATE_FONT_SCALE = 0.5;
+    private static final int NUM_INTERMEDIATE_MATS = 7;
 
     public final TrcDbgTrace tracer;
     private final String instanceName;
@@ -514,20 +515,23 @@ public class TrcOpenCvColorBlobPipeline implements TrcOpenCvPipeline<TrcOpenCvDe
     private final Mat cameraMatrix;
     private final MatOfDouble distCoeffs;
     private final TrcPose3D cameraPose;
-    private final Mat colorConversionOutput = new Mat();
-    private final Mat colorThresholdOutput = new Mat();
-    private final Mat morphologyOutput = new Mat();
-    private final Mat hierarchy = new Mat();
     private final Mat[] intermediateMats;
+    private final Mat hierarchy = new Mat();
     private final Mat rvec = new Mat();
     private final Mat tvec = new Mat();
 
     private final AtomicReference<DetectedObject[]> detectedObjectsUpdate = new AtomicReference<>();
     private int intermediateStep = 0;
     private boolean annotateEnabled = false;
+    private boolean drawCrosshair = false;
     private boolean drawRotatedRect = false;
     private int morphOp = Imgproc.MORPH_CLOSE;
     private Mat kernelMat = null;
+    private boolean circleDetectionEnabled = false;
+    private double minCircleDistance = 0.0;
+    private boolean cannyEdgeEnabled = false;
+    private double cannyEdgeThreshold1 = 0.0;
+    private double cannyEdgeThreshold2 = 0.0;
     private TrcVisionPerformanceMetrics performanceMetrics = null;
 
     /**
@@ -575,11 +579,12 @@ public class TrcOpenCvColorBlobPipeline implements TrcOpenCvPipeline<TrcOpenCvDe
         this.cameraMatrix = cameraMatrix;
         this.distCoeffs = distCoeffs;
         this.cameraPose = cameraPose;
-        intermediateMats = new Mat[4];
-        intermediateMats[0] = null;
-        intermediateMats[1] = colorConversionOutput;
-        intermediateMats[2] = colorThresholdOutput;
-        intermediateMats[3] = morphologyOutput;
+        intermediateMats = new Mat[NUM_INTERMEDIATE_MATS];
+        // Allocate Intermediate Mats, intermediateMats[0] is always the input Mat, no need to allocate.
+        for (int i = 1; i < intermediateMats.length; i++)
+        {
+            intermediateMats[i] = new Mat();
+        }
     }   //TrcOpenCvColorBlobPipeline
 
     /**
@@ -700,6 +705,53 @@ public class TrcOpenCvColorBlobPipeline implements TrcOpenCvPipeline<TrcOpenCvDe
         setMorphologyOp(Imgproc.MORPH_CLOSE, Imgproc.MORPH_ELLIPSE, new Size(5, 5));
     }   //setMorphologyOp
 
+    /**
+     * This method enables circle detection in the pipeline with the given parameters.
+     *
+     * @param minCircleDistance specifies the minimum distance between detected circle centers.
+     */
+    public void enableCircleDetection(double minCircleDistance)
+    {
+        this.minCircleDistance = minCircleDistance;
+        this.circleDetectionEnabled = true;
+        tracer.traceInfo(instanceName, "Enabling Circle Detection: minCircleDistance=%f", minCircleDistance);
+    }   //enableCircleDetection
+
+    /**
+     * This method disables circle detection in the pipeline.
+     */
+    public void disableCircleDetection()
+    {
+        this.minCircleDistance = 0.0;
+        this.circleDetectionEnabled = false;
+        tracer.traceInfo(instanceName, "Disabling Circle Detection.");
+    }   //disableCircleDetection
+
+    /**
+     * This method enables Canny Edge Detection with the specified threshold values.
+     *
+     * @param threshold1 specifies threshold 1 value.
+     * @param threshold2 specifies threshold 2 value.
+     */
+    public void enableCannyEdgeDetection(double threshold1, double threshold2)
+    {
+        this.cannyEdgeThreshold1 = threshold1;
+        this.cannyEdgeThreshold2 = threshold2;
+        this.cannyEdgeEnabled = true;
+        tracer.traceInfo(
+            instanceName, "Enabling Canny Edge Detection: threshold1=%f, threshold2=%f", threshold1, threshold2);
+    }   //enableCannyEdgeDetection
+
+    /**
+     * This method disables Canny Edge Detection.
+     */
+    public void disableCannyEdgeDetection()
+    {
+        this.cannyEdgeThreshold1 = this.cannyEdgeThreshold2 = 0.0;
+        this.cannyEdgeEnabled = false;
+        tracer.traceInfo(instanceName, "Disabling Canny Edge Detection.");
+    }   //disableCannyEdgeDetection
+
     //
     // Implements TrcOpenCvPipeline interface.
     //
@@ -729,30 +781,104 @@ public class TrcOpenCvColorBlobPipeline implements TrcOpenCvPipeline<TrcOpenCvDe
         DetectedObject[] detectedObjects = null;
         ArrayList<MatOfPoint> contoursOutput = new ArrayList<>();
         ArrayList<MatOfPoint> filterContoursOutput = new ArrayList<>();
-        double startTime = TrcTimer.getCurrentTime();
+        double startTime;
+        Mat output;
+        int nextMat = 1;
 
         intermediateMats[0] = input;
+        output = intermediateMats[nextMat++];
+        startTime = TrcTimer.getCurrentTime();
+
         // Do color space conversion.
         if (colorConversion != null)
         {
-            Imgproc.cvtColor(input, colorConversionOutput, colorConversion);
-            input = colorConversionOutput;
+            Imgproc.cvtColor(input, output, colorConversion);
+            input = output;
+            output = intermediateMats[nextMat++];
         }
+
         // Do color filtering.
         Core.inRange(
             input, new Scalar(colorThresholds[0], colorThresholds[2], colorThresholds[4]),
-            new Scalar(colorThresholds[1], colorThresholds[3], colorThresholds[5]), colorThresholdOutput);
-        input = colorThresholdOutput;
+            new Scalar(colorThresholds[1], colorThresholds[3], colorThresholds[5]), output);
+        input = output;
+        output = intermediateMats[nextMat++];
+
         // Do morphology.
         if (kernelMat != null)
         {
-            Imgproc.morphologyEx(input, morphologyOutput, morphOp, kernelMat);
-            input = morphologyOutput;
+            Imgproc.morphologyEx(input, output, morphOp, kernelMat);
+            input = output;
+            output = intermediateMats[nextMat++];
         }
-        // Find contours.
-        Imgproc.findContours(
-            input, contoursOutput, hierarchy, externalContourOnly? Imgproc.RETR_EXTERNAL: Imgproc.RETR_LIST,
-            Imgproc.CHAIN_APPROX_SIMPLE);
+
+        if (circleDetectionEnabled)
+        {
+            // Apply mask to the original image.
+            output.setTo(new Scalar(0));
+            Core.bitwise_and(intermediateMats[0], intermediateMats[0], output, input);
+            input = output;
+            output = intermediateMats[nextMat++];
+            // Convert masked result to gray.
+            Imgproc.cvtColor(input, output, Imgproc.COLOR_RGB2GRAY);
+            input = output;
+            output = intermediateMats[nextMat++];
+            // Blur result.
+            Imgproc.GaussianBlur(input, output, new Size(9, 9), 2, 2);
+            input = output;
+            output = intermediateMats[nextMat++];
+            // Hough Circle Detection.
+            Mat circles = new Mat();
+            Imgproc.HoughCircles(
+                input,
+                circles,
+                Imgproc.CV_HOUGH_GRADIENT,
+                1.0,                // dp (accumulator resolution)
+                minCircleDistance,  // minDist (min distance between circle centers)
+                100.0,              // param1: upper threshold for Canny
+                30.0,               // param2: threshold for center detection (smaller = more circles)
+                (int)(filterContourParams.widthRange[0]/2.0),   // min radius
+                (int)(filterContourParams.widthRange[1]/2.0));  // max radius
+            // Create contours for detected circles.
+            for (int i = 0; i < circles.cols(); i++)
+            {
+                double[] data = circles.get(0, i);
+                if (data == null) continue;
+
+                Point center = new Point(data[0], data[1]);
+                int radius = (int)Math.round(data[2]);
+
+                // approximate circle with 16-point polygon
+                Point[] pts = new Point[16];
+                for (int j = 0; j < pts.length; j++)
+                {
+                    double angle = 2 * Math.PI * j / 16;
+                    pts[j] = new Point(center.x + radius * Math.cos(angle), center.y + radius * Math.sin(angle));
+                }
+                MatOfPoint circleContour = new MatOfPoint();
+                circleContour.fromArray(pts);
+                contoursOutput.add(circleContour);
+//                // Optional: draw on input for visualization
+//                Imgproc.circle(intermediateMats[0], center, radius, new Scalar(255,255,255), 2);
+//                Imgproc.circle(intermediateMats[0], center, 2, new Scalar(255,255,255), -1);
+            }
+            circles.release();
+        }
+        // Canny Edge detection is not applicable for circle detection.
+        else if (cannyEdgeEnabled)
+        {
+            Imgproc.Canny(input, output, cannyEdgeThreshold1, cannyEdgeThreshold2);
+            input = output;
+            output = intermediateMats[nextMat++];
+        }
+        // Circle Detection creates its own contours.
+        if (!circleDetectionEnabled)
+        {
+            // Find contours.
+            Imgproc.findContours(
+                input, contoursOutput, hierarchy, externalContourOnly ? Imgproc.RETR_EXTERNAL : Imgproc.RETR_LIST,
+                Imgproc.CHAIN_APPROX_SIMPLE);
+        }
         // Do contour filtering.
         if (filterContourParams != null)
         {
@@ -760,6 +886,20 @@ public class TrcOpenCvColorBlobPipeline implements TrcOpenCvPipeline<TrcOpenCvDe
             contoursOutput = filterContoursOutput;
         }
         if (performanceMetrics != null) performanceMetrics.logProcessingTime(startTime);
+
+        Mat annotateMat = getIntermediateOutput(intermediateStep);
+        Scalar rectColor, textColor;
+
+        if (annotateMat.type() != CvType.CV_8UC1)
+        {
+            rectColor = ANNOTATE_RECT_COLOR;
+            textColor = ANNOTATE_TEXT_COLOR;
+        }
+        else
+        {
+            rectColor = ANNOTATE_RECT_WHITE;
+            textColor = ANNOTATE_RECT_WHITE;
+        }
 
         if (!contoursOutput.isEmpty())
         {
@@ -772,24 +912,24 @@ public class TrcOpenCvColorBlobPipeline implements TrcOpenCvPipeline<TrcOpenCvDe
 
             if (annotateEnabled)
             {
-                Mat output = getIntermediateOutput(intermediateStep);
-                int imageRows = output.rows();
-                int imageCols = output.cols();
-                Scalar rectColor = intermediateStep == 0? ANNOTATE_RECT_COLOR: ANNOTATE_RECT_WHITE;
-                Scalar textColor = intermediateStep == 0? ANNOTATE_TEXT_COLOR: ANNOTATE_RECT_WHITE;
                 annotateFrame(
-                    output, instanceName, detectedObjects, drawRotatedRect, rectColor, ANNOTATE_RECT_THICKNESS,
+                    annotateMat, instanceName, detectedObjects, drawRotatedRect, rectColor, ANNOTATE_RECT_THICKNESS,
                     textColor, ANNOTATE_FONT_SCALE);
-                Imgproc.drawMarker(
-                    output, new Point(imageCols/2.0, imageRows/2.0), rectColor, Imgproc.MARKER_CROSS,
-                    Math.max(imageRows, imageCols), ANNOTATE_RECT_THICKNESS);
                 if (cameraMatrix != null)
                 {
-                    drawAxes(output);
+                    drawAxes(annotateMat);
                 }
             }
-
             detectedObjectsUpdate.set(detectedObjects);
+        }
+
+        if (annotateEnabled && drawCrosshair)
+        {
+            int imageRows = annotateMat.rows();
+            int imageCols = annotateMat.cols();
+            Imgproc.drawMarker(
+                annotateMat, new Point(imageCols/2.0, imageRows/2.0), rectColor, Imgproc.MARKER_CROSS,
+                Math.max(imageRows, imageCols), ANNOTATE_RECT_THICKNESS);
         }
 
         return detectedObjects;
@@ -810,12 +950,14 @@ public class TrcOpenCvColorBlobPipeline implements TrcOpenCvPipeline<TrcOpenCvDe
      * This method enables image annotation of the detected object.
      *
      * @param drawRotatedRect specifies true to draw rotated rectangle, false to draw bounding rectangle.
+     * @param drawCrosshair specifies true to draw crosshair at the center of the screen, false otherwise.
      */
     @Override
-    public void enableAnnotation(boolean drawRotatedRect)
+    public void enableAnnotation(boolean drawRotatedRect, boolean drawCrosshair)
     {
         this.annotateEnabled = true;
         this.drawRotatedRect = drawRotatedRect;
+        this.drawCrosshair = drawCrosshair;
     }   //setAnnotateEnabled
 
     /**
@@ -826,6 +968,7 @@ public class TrcOpenCvColorBlobPipeline implements TrcOpenCvPipeline<TrcOpenCvDe
     {
         this.annotateEnabled = false;
         this.drawRotatedRect = false;
+        this.drawCrosshair = false;
     }   //disableAnnotation
 
     /**
