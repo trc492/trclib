@@ -894,55 +894,54 @@ public class TrcOpenCvColorBlobPipeline implements TrcOpenCvPipeline<TrcOpenCvDe
     {
         ArrayList<DetectedObject> detectedObjectsList = new ArrayList<>();
         ArrayList<MatOfPoint> contoursOutput = new ArrayList<>();
-        ArrayList<MatOfPoint> filterContoursOutput = new ArrayList<>();
         double startTime;
         Mat output;
-        int nextMat = 1;
+        int matIndex = 0;
 
-        intermediateMats[0] = input;
-        output = intermediateMats[nextMat++];
+        intermediateMats[matIndex] = input;
         startTime = TrcTimer.getCurrentTime();
 
         // Do color space conversion.
         if (pipelineParams.colorConversion != null)
         {
+            output = intermediateMats[++matIndex];
             Imgproc.cvtColor(input, output, pipelineParams.colorConversion);
             input = output;
-            output = intermediateMats[nextMat++];
         }
 
-        // Do color filtering.
-        int ctNextMat = nextMat;
+        int ctStartMat = matIndex;
+        Mat colorConvertedMat = input;
         for (ColorThresholds ct: pipelineParams.colorThresholdsList)
         {
-            nextMat = ctNextMat;
+            matIndex = ctStartMat;
+            input = colorConvertedMat;
+            // Do color filtering.
+            output = intermediateMats[++matIndex];
             Core.inRange(input, new Scalar(ct.lowThresholds), new Scalar(ct.highThresholds), output);
             input = output;
-            output = intermediateMats[nextMat++];
-
             // Do morphology.
             if (kernelMat != null)
             {
+                output = intermediateMats[++matIndex];
                 Imgproc.morphologyEx(input, output, morphOp, kernelMat);
                 input = output;
-                output = intermediateMats[nextMat++];
             }
 
             if (circleDetectionEnabled)
             {
                 // Apply mask to the original image.
+                output = intermediateMats[++matIndex];
                 output.setTo(new Scalar(0));
                 Core.bitwise_and(intermediateMats[0], intermediateMats[0], output, input);
                 input = output;
-                output = intermediateMats[nextMat++];
                 // Convert masked result to gray.
+                output = intermediateMats[++matIndex];
                 Imgproc.cvtColor(input, output, Imgproc.COLOR_RGB2GRAY);
                 input = output;
-                output = intermediateMats[nextMat++];
                 // Blur result.
+                output = intermediateMats[++matIndex];
                 Imgproc.GaussianBlur(input, output, new Size(9, 9), 2, 2);
                 input = output;
-                output = intermediateMats[nextMat++];
                 // Hough Circle Detection.
                 Mat circles = new Mat();
                 Imgproc.HoughCircles(
@@ -983,9 +982,9 @@ public class TrcOpenCvColorBlobPipeline implements TrcOpenCvPipeline<TrcOpenCvDe
             // Canny Edge detection is not applicable for circle detection.
             else if (cannyEdgeEnabled)
             {
+                output = intermediateMats[++matIndex];
                 Imgproc.Canny(input, output, cannyEdgeThreshold1, cannyEdgeThreshold2);
                 input = output;
-                output = intermediateMats[nextMat++];
             }
             // Circle Detection creates its own contours.
             if (!circleDetectionEnabled)
@@ -997,10 +996,13 @@ public class TrcOpenCvColorBlobPipeline implements TrcOpenCvPipeline<TrcOpenCvDe
             // Do contour filtering.
             if (pipelineParams.filterContourParams != null)
             {
+                ArrayList<MatOfPoint> filterContoursOutput = new ArrayList<>();
                 filterContours(contoursOutput, pipelineParams.filterContourParams, filterContoursOutput);
-                contoursOutput = filterContoursOutput;
+                contoursOutput.clear();
+                contoursOutput.addAll(filterContoursOutput);
             }
             // Process contour result.
+            tracer.traceInfo(instanceName, ct.name + ": [" + contoursOutput.size() + "] detected circles");
             for (MatOfPoint contour: contoursOutput)
             {
                 detectedObjectsList.add(new DetectedObject(ct.name, contour));
@@ -1008,6 +1010,7 @@ public class TrcOpenCvColorBlobPipeline implements TrcOpenCvPipeline<TrcOpenCvDe
         }
         if (performanceMetrics != null) performanceMetrics.logProcessingTime(startTime);
 
+        tracer.traceInfo(instanceName, "total detected objects=" + detectedObjectsList.size());
         DetectedObject[] detectedObjects = detectedObjectsList.toArray(new DetectedObject[0]);
         detectedObjectsUpdate.set(detectedObjects);
 
