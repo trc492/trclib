@@ -756,6 +756,11 @@ public class TrcOpenCvColorBlobPipeline implements TrcOpenCvPipeline<TrcOpenCvDe
      */
     public void setColorThresholds(int index, double... colorThresholds)
     {
+        if (colorThresholds.length != 6)
+        {
+            throw new IllegalArgumentException("colorThresholds must be an array of 6 doubles.");
+        }
+
         if (index < pipelineParams.colorThresholdsList.size())
         {
             ColorThresholds ct = pipelineParams.colorThresholdsList.get(index);
@@ -779,6 +784,16 @@ public class TrcOpenCvColorBlobPipeline implements TrcOpenCvPipeline<TrcOpenCvDe
      */
     public void setColorThresholds(int index, double[] lowThresholds, double[] highThresholds)
     {
+        if (lowThresholds.length != 3)
+        {
+            throw new IllegalArgumentException("lowThresholds must be an array of 3 doubles.");
+        }
+
+        if (highThresholds.length != 3)
+        {
+            throw new IllegalArgumentException("highThresholds must be an array of 3 doubles.");
+        }
+
         if (index < pipelineParams.colorThresholdsList.size())
         {
             ColorThresholds ct = pipelineParams.colorThresholdsList.get(index);
