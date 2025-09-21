@@ -44,6 +44,7 @@ import org.opencv.core.Size;
 import org.opencv.imgproc.Imgproc;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -59,13 +60,273 @@ import trclib.timer.TrcTimer;
 public class TrcOpenCvColorBlobPipeline implements TrcOpenCvPipeline<TrcOpenCvDetector.DetectedObject<?>>
 {
     /**
+     * This class encapsulates color thresholding operation properties of the pipeline.
+     */
+    public static class ColorThresholds
+    {
+        public String name;
+        public double[] lowThresholds;
+        public double[] highThresholds;
+
+        /**
+         * Constructor: Create an instance of the object.
+         *
+         * @param name specifies the name of the color ranges. This will be used to label the detected object.
+         * @param lowThresholds specifies the low threshold values of the color space (e.g. {R, G, B}, {H, S, V}, or
+         *        {Y, Cr, Cb} etc.)
+         * @param highThresholds specifies the high threshold values of the color space (e.g. {R, G, B}, {H, S, V}, or
+         *        {Y, Cr, Cb} etc.)
+         */
+        public ColorThresholds(String name, double[] lowThresholds, double[] highThresholds)
+        {
+            this.name = name;
+            this.lowThresholds = lowThresholds;
+            this.highThresholds = highThresholds;
+        }   //ColorThresholds
+
+        @Override
+        public String toString()
+        {
+            return "(name=" + name +
+                   ",lowThreshold=" + Arrays.toString(lowThresholds) +
+                   ",highThresholds=" + Arrays.toString(highThresholds) + ")";
+        }   //toString
+
+    }   //class ColorThresholds
+
+    /**
+     * This class encapsulates all the filter contour parameters.
+     */
+    public static class FilterContourParams
+    {
+        public double minArea = 0.0;
+        public double minPerimeter = 0.0;
+        public double[] widthRange = {0.0, 1000.0};
+        public double[] heightRange = {0.0, 1000.0};
+        public double[] solidityRange = {0.0, 100.0};
+        public double[] verticesRange = {0.0, 1000000.0};
+        public double[] aspectRatioRange = {0.0, 1000.0};
+
+        public FilterContourParams setMinArea(double minArea)
+        {
+            this.minArea = minArea;
+            return this;
+        }   //setMinArea
+
+        public FilterContourParams setMinPerimeter(double minPerimeter)
+        {
+            this.minPerimeter = minPerimeter;
+            return this;
+        }   //setMinPerimeter
+
+        public FilterContourParams setWidthRange(double min, double max)
+        {
+            this.widthRange[0] = min;
+            this.widthRange[1] = max;
+            return this;
+        }   //setWidthRange
+
+        public FilterContourParams setHeightRange(double min, double max)
+        {
+            this.heightRange[0] = min;
+            this.heightRange[1] = max;
+            return this;
+        }   //setHeightRange
+
+        public FilterContourParams setSolidityRange(double min, double max)
+        {
+            this.solidityRange[0] = min;
+            this.solidityRange[1] = max;
+            return this;
+        }   //setSolidityRange
+
+        public FilterContourParams setVerticesRange(double min, double max)
+        {
+            this.verticesRange[0] = min;
+            this.verticesRange[1] = max;
+            return this;
+        }   //setVerticesRange
+
+        public FilterContourParams setAspectRatioRange(double min, double max)
+        {
+            this.aspectRatioRange[0] = min;
+            this.aspectRatioRange[1] = max;
+            return this;
+        }   //setAspectRatioRange
+
+        public void setAs(FilterContourParams other)
+        {
+            minArea = other.minArea;
+            minPerimeter = other.minPerimeter;
+            System.arraycopy(other.widthRange, 0, this.widthRange, 0, this.widthRange.length);
+            System.arraycopy(other.heightRange, 0, this.heightRange, 0, this.heightRange.length);
+            System.arraycopy(other.solidityRange, 0, this.solidityRange, 0, this.solidityRange.length);
+            System.arraycopy(other.verticesRange, 0, this.verticesRange, 0, this.verticesRange.length);
+            System.arraycopy(other.aspectRatioRange, 0, this.aspectRatioRange, 0, this.aspectRatioRange.length);
+        }   //setAs
+
+        @Override
+        public FilterContourParams clone()
+        {
+            return new FilterContourParams()
+                .setMinArea(minArea)
+                .setMinPerimeter(minPerimeter)
+                .setWidthRange(widthRange[0], widthRange[1])
+                .setHeightRange(heightRange[0], heightRange[1])
+                .setSolidityRange(solidityRange[0], solidityRange[1])
+                .setVerticesRange(verticesRange[0], verticesRange[1])
+                .setAspectRatioRange(aspectRatioRange[0], aspectRatioRange[1]);
+        }   //clone
+
+        @Override
+        public String toString()
+        {
+            return "minArea=" + minArea +
+                   ",minPerim=" + minPerimeter +
+                   ",width=(" + widthRange[0] + "," + widthRange[1] + ")" +
+                   ",height=(" + heightRange[0] + "," + heightRange[1] + ")" +
+                   ",solidity=(" + solidityRange[0] + "," + solidityRange[1] + ")" +
+                   ",vertices=(" + verticesRange[0] + "," + verticesRange[1] + ")" +
+                   ",aspectRatio=(" + aspectRatioRange[0] + "," + aspectRatioRange[1] + ")";
+        }   //toString
+
+    }   //class FilterContourParams
+
+    /**
+     * This class contains all the pipeline parameters.
+     */
+    public static class PipelineParams
+    {
+        public double objWidth = 0.0;
+        public double objHeight = 0.0;
+        public Integer colorConversion = null;
+        public ArrayList<ColorThresholds> colorThresholdsList;
+        public int contourRetrievalMode = Imgproc.RETR_EXTERNAL;
+        public FilterContourParams filterContourParams = null;
+        public Mat cameraMatrix = null;
+        public MatOfDouble distCoeffs = null;
+        public TrcPose3D cameraPose = null;
+        public MatOfPoint3f objPoints = null;
+
+        /**
+         * This method sets the detected object's real world size.
+         *
+         * @param objWidth specifies the detected object's real world width.
+         * @param objHeight specifies the detected object's real world height.
+         * @return this object for chaining.
+         */
+        public PipelineParams setObjectSize(double objWidth, double objHeight)
+        {
+            this.objWidth = objWidth;
+            this.objHeight = objHeight;
+            return this;
+        }   //setObjectSize
+
+        /**
+         * This method sets the parameters for color conversion and color thresholding.
+         *
+         * @param colorConversion specifies the conversion target color space, can be null if no conversion needed.
+         * @param name specifies the name of the color ranges. This will be used to label the detected object.
+         * @param lowThresholds specifies the low threshold values of the color space (e.g. {R, G, B}, {H, S, V}, or
+         *        {Y, Cr, Cb} etc.)
+         * @param highThresholds specifies the high threshold values of the color space (e.g. {R, G, B}, {H, S, V}, or
+         *        {Y, Cr, Cb} etc.)
+         * @return this object for chaining.
+         */
+        public PipelineParams setColorThresholds(
+            Integer colorConversion, String name, double[] lowThresholds, double[] highThresholds)
+        {
+            this.colorConversion = colorConversion;
+            this.colorThresholdsList = new ArrayList<>();
+            this.colorThresholdsList.add(new ColorThresholds(name, lowThresholds, highThresholds));
+            return this;
+        }   //setColorThresholds
+
+        /**
+         * This method adds another set of color thresholds. This allows the same pipeline to detect different color
+         * blobs.
+         *
+         * @param name specifies the name of the color ranges. This will be used to label the detected object.
+         * @param lowThresholds specifies the low threshold values of the color space (e.g. {R, G, B}, {H, S, V}, or
+         *        {Y, Cr, Cb} etc.)
+         * @param highThresholds specifies the high threshold values of the color space (e.g. {R, G, B}, {H, S, V}, or
+         *        {Y, Cr, Cb} etc.)
+         * @return this object for chaining.
+         */
+        public PipelineParams addColorThresholds(String name, double[] lowThresholds, double[] highThresholds)
+        {
+            if (colorThresholdsList == null)
+            {
+                throw new IllegalStateException("Must call setColorThresholds first.");
+            }
+
+            colorThresholdsList.add(new ColorThresholds(name, lowThresholds, highThresholds));
+            return this;
+        }   //addColorThresholds
+
+        /**
+         * This method sets contour detection parameters.
+         *
+         * @param externalContourOnly specifies true to detect external contour only (i.e. no internal holes).
+         * @param filterParams specifies the contour filtering parameters.
+         * @return this object for chaining.
+         */
+        public PipelineParams setContourDetectionParams(boolean externalContourOnly, FilterContourParams filterParams)
+        {
+            this.contourRetrievalMode = externalContourOnly? Imgproc.RETR_EXTERNAL: Imgproc.RETR_LIST;
+            this.filterContourParams = filterParams;
+            return this;
+        }   //setContourDetectionParams
+
+        /**
+         * This method sets the parameters used for SolvePnp operation.
+         *
+         * @param fx specifies the focal length in x.
+         * @param fy specifies the focal length in y.
+         * @param cx specifies the principal point in x.
+         * @param cy specifies the principal point in y.
+         * @param distCoeffs specifies an array containing the lens distortion coefficients.
+         * @param cameraPose specifies the camera pose from robot center.
+         * @return this object for chaining.
+         */
+        public PipelineParams setSolvePnpParams(
+            double fx, double fy, double cx, double cy, double[] distCoeffs, TrcPose3D cameraPose)
+        {
+            cameraMatrix = new Mat(3, 3, CvType.CV_64FC1);
+            cameraMatrix.put(
+                0, 0,
+                fx, 0, cx,
+                0, fy, cy,
+                0, 0, 1);
+            this.distCoeffs = new MatOfDouble(distCoeffs);
+            this.cameraPose = cameraPose;
+            this.objPoints = new MatOfPoint3f(
+                new Point3(-objWidth/2.0, -objHeight/2.0, 0.0),
+                new Point3(objWidth/2.0, -objHeight/2.0, 0.0),
+                new Point3(objWidth/2.0, objHeight/2.0, 0.0),
+                new Point3(-objWidth/2.0, objHeight/2.0, 0.0));
+            return this;
+        }   //setSolvePnpParams
+
+        @Override
+        public String toString()
+        {
+            return "objWidth=" + objWidth +
+                   ",objHeight=" + objHeight +
+                   ",colorConversion=" + colorConversion +
+                   ",externalContourOnly=" + (contourRetrievalMode == Imgproc.RETR_EXTERNAL) +
+                   ",filterContourParams=" + filterContourParams +
+                   ",cameraPose=" + cameraPose;
+        }   //toString
+
+    }   //class PipelineParams
+
+    /**
      * This class encapsulates info of the detected object. It extends TrcOpenCvDetector.DetectedObject that requires
      * it to provide a method to return the detected object rect and area.
      */
     public class DetectedObject extends TrcOpenCvDetector.DetectedObject<MatOfPoint>
     {
-        public final double objWidth;
-        public final double objHeight;
         public final RotatedRect rotatedRect;
         public final double rotatedRectAngle;
         public final Point[] vertices = new Point[4];
@@ -77,19 +338,10 @@ public class TrcOpenCvColorBlobPipeline implements TrcOpenCvPipeline<TrcOpenCvDe
          *
          * @param label specifies the object label.
          * @param contour specifies the contour of the detected object.
-         * @param objWidth specifies object width in real world units (the long edge).
-         * @param objHeight specifies object height in real world units (the short edge).
-         * @param cameraMatrix specifies the camera lens characteristic matrix (fx, fy, cx, cy).
-         * @param distCoeffs specifies the camera lens distortion coefficients.
-         * @param cameraPose specifies the camera's 3D position on the robot.
          */
-        public DetectedObject(
-            String label, MatOfPoint contour, double objWidth, double objHeight, Mat cameraMatrix,
-            MatOfDouble distCoeffs, TrcPose3D cameraPose)
+        public DetectedObject(String label, MatOfPoint contour)
         {
             super(label, contour);
-            this.objWidth = objWidth;
-            this.objHeight = objHeight;
             rotatedRect = Imgproc.minAreaRect(new MatOfPoint2f(contour.toArray()));
             // The angle OpenCV gives us can be ambiguous, so look at the shape of the rectangle to fix that.
             if (rotatedRect.size.width < rotatedRect.size.height)
@@ -109,17 +361,17 @@ public class TrcOpenCvColorBlobPipeline implements TrcOpenCvPipeline<TrcOpenCvDe
             rotatedRect.points(vertices);
 
             // Solve PnP: assuming the object is a rectangle with known dimensions.
-            if (cameraMatrix != null && distCoeffs != null &&
+            if (pipelineParams.cameraMatrix != null && pipelineParams.distCoeffs != null &&
                 Calib3d.solvePnP(
                     // Define the 3D coordinates of the object corners in the object coordinate space
-                    objPoints,                                  // Object points in 3D
+                    pipelineParams.objPoints,                                  // Object points in 3D
                     new MatOfPoint2f(orderPoints(vertices)),    // Corresponding image points
-                    cameraMatrix,
-                    distCoeffs,
+                    pipelineParams.cameraMatrix,
+                    pipelineParams.distCoeffs,
                     rvec,
                     tvec))
             {
-                objPose = projectPose(rvec, tvec, cameraPose);
+                objPose = projectPose(rvec, tvec, pipelineParams.cameraPose);
 //                objPose = new TrcPose2D(tvec.get(0, 0)[0], tvec.get(2, 0)[0], -(Math.toDegrees(rvec.get(1, 0)[0])));
             }
             else
@@ -128,17 +380,6 @@ public class TrcOpenCvColorBlobPipeline implements TrcOpenCvPipeline<TrcOpenCvDe
                 // return null so caller will determine object pose by Homography.
                 objPose = null;
             }
-        }   //DetectedObject
-
-        /**
-         * Constructor: Creates an instance of the object.
-         *
-         * @param label specifies the object label.
-         * @param contour specifies the contour of the detected object.
-         */
-        public DetectedObject(String label, MatOfPoint contour)
-        {
-            this(label, contour, 0.0, 0.0, null, null, null);
         }   //DetectedObject
 
         /**
@@ -371,7 +612,7 @@ public class TrcOpenCvColorBlobPipeline implements TrcOpenCvPipeline<TrcOpenCvDe
         @Override
         public Double getObjectWidth()
         {
-            return objWidth;
+            return pipelineParams.objWidth;
         }   //getObjectWidth
 
         /**
@@ -398,104 +639,6 @@ public class TrcOpenCvColorBlobPipeline implements TrcOpenCvPipeline<TrcOpenCvDe
 
     }   //class DetectedObject
 
-    /**
-     * This class encapsulates all the filter contour parameters.
-     */
-    public static class FilterContourParams
-    {
-        public double minArea = 0.0;
-        public double minPerimeter = 0.0;
-        public double[] widthRange = {0.0, 1000.0};
-        public double[] heightRange = {0.0, 1000.0};
-        public double[] solidityRange = {0.0, 100.0};
-        public double[] verticesRange = {0.0, 1000000.0};
-        public double[] aspectRatioRange = {0.0, 1000.0};
-
-        public FilterContourParams setMinArea(double minArea)
-        {
-            this.minArea = minArea;
-            return this;
-        }   //setMinArea
-
-        public FilterContourParams setMinPerimeter(double minPerimeter)
-        {
-            this.minPerimeter = minPerimeter;
-            return this;
-        }   //setMinPerimeter
-
-        public FilterContourParams setWidthRange(double min, double max)
-        {
-            this.widthRange[0] = min;
-            this.widthRange[1] = max;
-            return this;
-        }   //setWidthRange
-
-        public FilterContourParams setHeightRange(double min, double max)
-        {
-            this.heightRange[0] = min;
-            this.heightRange[1] = max;
-            return this;
-        }   //setHeightRange
-
-        public FilterContourParams setSolidityRange(double min, double max)
-        {
-            this.solidityRange[0] = min;
-            this.solidityRange[1] = max;
-            return this;
-        }   //setSolidityRange
-
-        public FilterContourParams setVerticesRange(double min, double max)
-        {
-            this.verticesRange[0] = min;
-            this.verticesRange[1] = max;
-            return this;
-        }   //setVerticesRange
-
-        public FilterContourParams setAspectRatioRange(double min, double max)
-        {
-            this.aspectRatioRange[0] = min;
-            this.aspectRatioRange[1] = max;
-            return this;
-        }   //setAspectRatioRange
-
-        public void setAs(FilterContourParams other)
-        {
-            minArea = other.minArea;
-            minPerimeter = other.minPerimeter;
-            System.arraycopy(other.widthRange, 0, this.widthRange, 0, this.widthRange.length);
-            System.arraycopy(other.heightRange, 0, this.heightRange, 0, this.heightRange.length);
-            System.arraycopy(other.solidityRange, 0, this.solidityRange, 0, this.solidityRange.length);
-            System.arraycopy(other.verticesRange, 0, this.verticesRange, 0, this.verticesRange.length);
-            System.arraycopy(other.aspectRatioRange, 0, this.aspectRatioRange, 0, this.aspectRatioRange.length);
-        }   //setAs
-
-        @Override
-        public FilterContourParams clone()
-        {
-            return new FilterContourParams()
-                .setMinArea(minArea)
-                .setMinPerimeter(minPerimeter)
-                .setWidthRange(widthRange[0], widthRange[1])
-                .setHeightRange(heightRange[0], heightRange[1])
-                .setSolidityRange(solidityRange[0], solidityRange[1])
-                .setVerticesRange(verticesRange[0], verticesRange[1])
-                .setAspectRatioRange(aspectRatioRange[0], aspectRatioRange[1]);
-        }   //clone
-
-        @Override
-        public String toString()
-        {
-            return "minArea=" + minArea +
-                   ",minPerim=" + minPerimeter +
-                   ",width=(" + widthRange[0] + "," + widthRange[1] + ")" +
-                   ",height=(" + heightRange[0] + "," + heightRange[1] + ")" +
-                   ",solidity=(" + solidityRange[0] + "," + solidityRange[1] + ")" +
-                   ",vertices=(" + verticesRange[0] + "," + verticesRange[1] + ")" +
-                   ",aspectRatio=(" + aspectRatioRange[0] + "," + aspectRatioRange[1] + ")";
-        }   //toString
-
-    }   //class FilterContourParams
-
     private static final Scalar ANNOTATE_RECT_COLOR = new Scalar(0, 255, 0, 255);
     private static final Scalar ANNOTATE_RECT_WHITE = new Scalar(255, 255, 255, 255);
     private static final int ANNOTATE_RECT_THICKNESS = 2;
@@ -505,16 +648,7 @@ public class TrcOpenCvColorBlobPipeline implements TrcOpenCvPipeline<TrcOpenCvDe
 
     public final TrcDbgTrace tracer;
     private final String instanceName;
-    private final Integer colorConversion;
-    private double[] colorThresholds;
-    private final FilterContourParams filterContourParams;
-    private final boolean externalContourOnly;
-    private final double objWidth;
-    private final double objHeight;
-    private final MatOfPoint3f objPoints;
-    private final Mat cameraMatrix;
-    private final MatOfDouble distCoeffs;
-    private final TrcPose3D cameraPose;
+    private final PipelineParams pipelineParams;
     private final Mat[] intermediateMats;
     private final Mat hierarchy = new Mat();
     private final Mat rvec = new Mat();
@@ -538,76 +672,19 @@ public class TrcOpenCvColorBlobPipeline implements TrcOpenCvPipeline<TrcOpenCvDe
      * Constructor: Create an instance of the object.
      *
      * @param instanceName specifies the instance name.
-     * @param colorConversion specifies color space conversion, can be null if no color space conversion.
-     *        Note: FTC ECOV input Mat format is RGBA, so you need to do Imgproc.COLOR_RGBA2xxx or
-     *        Imgproc.COLOR_RGB2xxx conversion. For FRC, the Desktop OpenCV input Mat format is BGRA, so you need to
-     *        do Imgproc.COLOR_BGRAxxx or Imgproc.COLOR_BGR2xxx conversion.
-     * @param colorThresholds specifies an array of color thresholds. If color space is RGB, the array contains RGB
-     *        thresholds (minRed, maxRed, minGreen, maxGreen, minBlue, maxBlue). If color space is HSV, the array
-     *        contains HSV thresholds (minHue, maxHue, minSat, maxSat, minValue, maxValue).
-     * @param filterContourParams specifies the parameters for filtering contours, can be null if not provided.
-     * @param externalContourOnly specifies true for finding external contours only, false otherwise (not applicable
-     *        if filterContourParams is null).
-     * @param objWidth specifies object width in real world units (the long edge).
-     * @param objHeight specifies object height in real world units (the short edge).
-     * @param cameraMatrix specifies the camera lens characteristics (fx, fy, cx, cy), null if not provided.
-     * @param distCoeffs specifies the camera lens distortion coefficients, null if not provided.
+     * @param pipelineParams specifies the pipeline parameters.
      */
-    public TrcOpenCvColorBlobPipeline(
-        String instanceName, Integer colorConversion, double[] colorThresholds, FilterContourParams filterContourParams,
-        boolean externalContourOnly, double objWidth, double objHeight, Mat cameraMatrix, MatOfDouble distCoeffs,
-        TrcPose3D cameraPose)
+    public TrcOpenCvColorBlobPipeline(String instanceName, PipelineParams pipelineParams)
     {
-        if (colorThresholds == null || colorThresholds.length != 6)
-        {
-            throw new RuntimeException("colorThresholds must be an array of 6 doubles.");
-        }
-
         this.tracer = new TrcDbgTrace();
         this.instanceName = instanceName;
-        this.colorConversion = colorConversion;
-        this.colorThresholds = colorThresholds;
-        this.filterContourParams = filterContourParams;
-        this.externalContourOnly = externalContourOnly;
-        this.objWidth = objWidth;
-        this.objHeight = objHeight;
-        this.objPoints = new MatOfPoint3f(
-            new Point3(-objWidth/2.0, -objHeight/2.0, 0.0),
-            new Point3(objWidth/2.0, -objHeight/2.0, 0.0),
-            new Point3(objWidth/2.0, objHeight/2.0, 0.0),
-            new Point3(-objWidth/2.0, objHeight/2.0, 0.0));
-        this.cameraMatrix = cameraMatrix;
-        this.distCoeffs = distCoeffs;
-        this.cameraPose = cameraPose;
+        this.pipelineParams = pipelineParams;
         intermediateMats = new Mat[NUM_INTERMEDIATE_MATS];
         // Allocate Intermediate Mats, intermediateMats[0] is always the input Mat, no need to allocate.
         for (int i = 1; i < intermediateMats.length; i++)
         {
             intermediateMats[i] = new Mat();
         }
-    }   //TrcOpenCvColorBlobPipeline
-
-    /**
-     * Constructor: Create an instance of the object.
-     *
-     * @param instanceName specifies the instance name.
-     * @param colorConversion specifies color space conversion, can be null if no color space conversion.
-     *        Note: FTC ECOV input Mat format is RGBA, so you need to do Imgproc.COLOR_RGBA2xxx or
-     *        Imgproc.COLOR_RGB2xxx conversion. For FRC, the Desktop OpenCV input Mat format is BGRA, so you need to
-     *        do Imgproc.COLOR_BGRAxxx or Imgproc.COLOR_BGR2xxx conversion.
-     * @param colorThresholds specifies an array of color thresholds. If color space is RGB, the array contains RGB
-     *        thresholds (minRed, maxRed, minGreen, maxGreen, minBlue, maxBlue). If color space is HSV, the array
-     *        contains HSV thresholds (minHue, maxHue, minSat, maxSat, minValue, maxValue).
-     * @param filterContourParams specifies the parameters for filtering contours, can be null if not provided.
-     * @param externalContourOnly specifies true for finding external contours only, false otherwise (not applicable
-     *        if filterContourParams is null).
-     */
-    public TrcOpenCvColorBlobPipeline(
-        String instanceName, Integer colorConversion, double[] colorThresholds, FilterContourParams filterContourParams,
-        boolean externalContourOnly)
-    {
-        this(instanceName, colorConversion, colorThresholds, filterContourParams, externalContourOnly,
-             0.0, 0.0, null, null, null);
     }   //TrcOpenCvColorBlobPipeline
 
     /**
@@ -652,21 +729,62 @@ public class TrcOpenCvColorBlobPipeline implements TrcOpenCvPipeline<TrcOpenCvDe
     /**
      * This method returns the color threshold values.
      *
+     * @param index specifies the index of the colorThresholdsList.
      * @return array of color threshold values.
      */
-    public double[] getColorThresholds()
+    public double[] getColorThresholds(int index)
     {
+        double[] colorThresholds = null;
+
+        if (index < pipelineParams.colorThresholdsList.size())
+        {
+            ColorThresholds ct = pipelineParams.colorThresholdsList.get(index);
+            colorThresholds = new double[] {
+                ct.lowThresholds[0], ct.highThresholds[0],
+                ct.lowThresholds[1], ct.highThresholds[1],
+                ct.lowThresholds[2], ct.highThresholds[2]};
+        }
+
         return colorThresholds;
     }   //getColorThresholds
 
     /**
      * This method sets the color threshold values.
      *
+     * @param index specifies the index of the colorThresholdsList.
      * @param colorThresholds specifies an array of color threshold values.
      */
-    public void setColorThresholds(double... colorThresholds)
+    public void setColorThresholds(int index, double... colorThresholds)
     {
-        this.colorThresholds = colorThresholds;
+        if (index < pipelineParams.colorThresholdsList.size())
+        {
+            ColorThresholds ct = pipelineParams.colorThresholdsList.get(index);
+            ct.lowThresholds[0] = colorThresholds[0];
+            ct.highThresholds[0] = colorThresholds[1];
+            ct.lowThresholds[1] = colorThresholds[2];
+            ct.highThresholds[1] = colorThresholds[3];
+            ct.lowThresholds[2] = colorThresholds[4];
+            ct.highThresholds[2] = colorThresholds[5];
+        }
+    }   //setColorThresholds
+
+    /**
+     * This method sets the color threshold values.
+     *
+     * @param index specifies the index of the colorThresholdsList.
+     * @param lowThresholds specifies the low threshold values of the color space (e.g. {R, G, B}, {H, S, V}, or
+     *        {Y, Cr, Cb} etc.)
+     * @param highThresholds specifies the high threshold values of the color space (e.g. {R, G, B}, {H, S, V}, or
+     *        {Y, Cr, Cb} etc.)
+     */
+    public void setColorThresholds(int index, double[] lowThresholds, double[] highThresholds)
+    {
+        if (index < pipelineParams.colorThresholdsList.size())
+        {
+            ColorThresholds ct = pipelineParams.colorThresholdsList.get(index);
+            System.arraycopy(lowThresholds, 0, ct.lowThresholds, 0, ct.lowThresholds.length);
+            System.arraycopy(highThresholds, 0, ct.highThresholds, 0, ct.highThresholds.length);
+        }
     }   //setColorThresholds
 
     /**
@@ -790,17 +908,16 @@ public class TrcOpenCvColorBlobPipeline implements TrcOpenCvPipeline<TrcOpenCvDe
         startTime = TrcTimer.getCurrentTime();
 
         // Do color space conversion.
-        if (colorConversion != null)
+        if (pipelineParams.colorConversion != null)
         {
-            Imgproc.cvtColor(input, output, colorConversion);
+            Imgproc.cvtColor(input, output, pipelineParams.colorConversion);
             input = output;
             output = intermediateMats[nextMat++];
         }
 
         // Do color filtering.
-        Core.inRange(
-            input, new Scalar(colorThresholds[0], colorThresholds[2], colorThresholds[4]),
-            new Scalar(colorThresholds[1], colorThresholds[3], colorThresholds[5]), output);
+        ColorThresholds ct = pipelineParams.colorThresholdsList.get(0);
+        Core.inRange(input, new Scalar(ct.lowThresholds), new Scalar(ct.highThresholds), output);
         input = output;
         output = intermediateMats[nextMat++];
 
@@ -837,8 +954,8 @@ public class TrcOpenCvColorBlobPipeline implements TrcOpenCvPipeline<TrcOpenCvDe
                 minCircleDistance,  // minDist (min distance between circle centers)
                 100.0,              // param1: upper threshold for Canny
                 30.0,               // param2: threshold for center detection (smaller = more circles)
-                (int)(filterContourParams.widthRange[0]/2.0),   // min radius
-                (int)(filterContourParams.widthRange[1]/2.0));  // max radius
+                (int)(pipelineParams.filterContourParams.widthRange[0]/2.0),    // min radius
+                (int)(pipelineParams.filterContourParams.widthRange[1]/2.0));   // max radius
             // Create contours for detected circles.
             for (int i = 0; i < circles.cols(); i++)
             {
@@ -876,13 +993,12 @@ public class TrcOpenCvColorBlobPipeline implements TrcOpenCvPipeline<TrcOpenCvDe
         {
             // Find contours.
             Imgproc.findContours(
-                input, contoursOutput, hierarchy, externalContourOnly ? Imgproc.RETR_EXTERNAL : Imgproc.RETR_LIST,
-                Imgproc.CHAIN_APPROX_SIMPLE);
+                input, contoursOutput, hierarchy, pipelineParams.contourRetrievalMode, Imgproc.CHAIN_APPROX_SIMPLE);
         }
         // Do contour filtering.
-        if (filterContourParams != null)
+        if (pipelineParams.filterContourParams != null)
         {
-            filterContours(contoursOutput, filterContourParams, filterContoursOutput);
+            filterContours(contoursOutput, pipelineParams.filterContourParams, filterContoursOutput);
             contoursOutput = filterContoursOutput;
         }
         if (performanceMetrics != null) performanceMetrics.logProcessingTime(startTime);
@@ -906,8 +1022,7 @@ public class TrcOpenCvColorBlobPipeline implements TrcOpenCvPipeline<TrcOpenCvDe
             detectedObjects = new DetectedObject[contoursOutput.size()];
             for (int i = 0; i < detectedObjects.length; i++)
             {
-                detectedObjects[i] = new DetectedObject(
-                    instanceName, contoursOutput.get(i), objWidth, objHeight, cameraMatrix, distCoeffs, cameraPose);
+                detectedObjects[i] = new DetectedObject(instanceName, contoursOutput.get(i));
             }
 
             if (annotateEnabled)
@@ -915,7 +1030,7 @@ public class TrcOpenCvColorBlobPipeline implements TrcOpenCvPipeline<TrcOpenCvDe
                 annotateFrame(
                     annotateMat, instanceName, detectedObjects, drawRotatedRect, drawCrosshair, rectColor,
                     ANNOTATE_RECT_THICKNESS, textColor, ANNOTATE_FONT_SCALE);
-                if (cameraMatrix != null)
+                if (pipelineParams.cameraMatrix != null)
                 {
                     drawAxes(annotateMat);
                 }
@@ -1058,7 +1173,8 @@ public class TrcOpenCvColorBlobPipeline implements TrcOpenCvPipeline<TrcOpenCvDe
 
         // Project the 3D points to 2D image points
         MatOfPoint2f imagePoints = new MatOfPoint2f();
-        Calib3d.projectPoints(axisPoints, rvec, tvec, cameraMatrix, distCoeffs, imagePoints);
+        Calib3d.projectPoints(
+            axisPoints, rvec, tvec, pipelineParams.cameraMatrix, pipelineParams.distCoeffs, imagePoints);
 
         Point[] imgPts = imagePoints.toArray();
 
