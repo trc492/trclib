@@ -114,7 +114,6 @@ public interface TrcOpenCvPipeline<O>
      * This method is called to overlay rectangles of the detected objects on an image.
      *
      * @param image specifies the frame to be rendered to the video output.
-     * @param label specifies the text label to be annotated on the detected object, can be null if not provided.
      * @param detectedObjects specifies the detected objects.
      * @param drawRotatedRect specifies true to draw rotated rectangle, false to draw bounding rectangle.
      * @param drawCrosshair specifies true to draw crosshair at the center of the screen, false otherwise.
@@ -124,7 +123,7 @@ public interface TrcOpenCvPipeline<O>
      * @param fontScale specifies the scale factor that is multiplied by the font-specific base size.
      */
     default void annotateFrame(
-        Mat image, String label, TrcOpenCvDetector.DetectedObject<?>[] detectedObjects, boolean drawRotatedRect,
+        Mat image, TrcOpenCvDetector.DetectedObject<?>[] detectedObjects, boolean drawRotatedRect,
         boolean drawCrosshair, Scalar rectColor, int thickness, Scalar textColor, double fontScale)
     {
         for (TrcOpenCvDetector.DetectedObject<?> object : detectedObjects)
@@ -142,23 +141,20 @@ public interface TrcOpenCvPipeline<O>
                 Imgproc.rectangle(image, objRect, rectColor, thickness);
             }
 
-            if (label != null)
+            if (objRect == null)
             {
-                if (objRect == null)
-                {
-                    objRect = object.getObjectRect();
-                }
-
-                if (drawCrosshair)
-                {
-                    Imgproc.drawMarker(
-                        image, new Point(objRect.x + objRect.width/2.0, objRect.y + objRect.height), rectColor,
-                        MARKER_CROSS);
-                }
-                Imgproc.putText(
-                    image, label, new Point(objRect.x, objRect.y), FONT_HERSHEY_SIMPLEX, fontScale, textColor,
-                    thickness);
+                objRect = object.getObjectRect();
             }
+
+            if (drawCrosshair)
+            {
+                Imgproc.drawMarker(
+                    image, new Point(objRect.x + objRect.width/2.0, objRect.y + objRect.height), rectColor,
+                    MARKER_CROSS);
+            }
+            Imgproc.putText(
+                image, object.label, new Point(objRect.x, objRect.y), FONT_HERSHEY_SIMPLEX, fontScale, textColor,
+                thickness);
         }
     }   //annotatedFrame
 
