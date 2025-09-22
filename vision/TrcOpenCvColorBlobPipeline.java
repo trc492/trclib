@@ -645,6 +645,8 @@ public class TrcOpenCvColorBlobPipeline implements TrcOpenCvPipeline<TrcOpenCvDe
     private static final Scalar ANNOTATE_TEXT_COLOR = new Scalar(0, 255, 255, 255);
     private static final double ANNOTATE_FONT_SCALE = 0.5;
     private static final int NUM_INTERMEDIATE_MATS = 7;
+    private static final int DEF_BLUR_KERNEL_WIDTH = 5;
+    private static final int DEF_BLUR_KERNEL_HEIGHT = 5;
 
     public final TrcDbgTrace tracer;
     private final String instanceName;
@@ -663,6 +665,7 @@ public class TrcOpenCvColorBlobPipeline implements TrcOpenCvPipeline<TrcOpenCvDe
     private Mat kernelMat = null;
     private boolean circleDetectionEnabled = false;
     private double minCircleDistance = 0.0;
+    private Size blurKernelSize = null;
     private boolean cannyEdgeEnabled = false;
     private double cannyEdgeThreshold1 = 0.0;
     private double cannyEdgeThreshold2 = 0.0;
@@ -820,6 +823,33 @@ public class TrcOpenCvColorBlobPipeline implements TrcOpenCvPipeline<TrcOpenCvDe
     }   //setMorphologyOp
 
     /**
+     * This method enables blur operation for circle detection.
+     *
+     * @param kernelWidth specifies the kernel width in pixels.
+     * @param kernelHeight specifies the kernel height in pixels.
+     */
+    public void enableCircleBlur(int kernelWidth, int kernelHeight)
+    {
+        blurKernelSize = new Size(kernelWidth, kernelHeight);
+    }   //enableCircleBlur
+
+    /**
+     * This method enables blur operation in circle detection.
+     */
+    public void enableCircleBlur()
+    {
+        enableCircleBlur(DEF_BLUR_KERNEL_WIDTH, DEF_BLUR_KERNEL_HEIGHT);
+    }   //enableCircleBlur
+
+    /**
+     * This method disables blur operation in circle detection.
+     */
+    public void disableCircleBlur()
+    {
+        blurKernelSize = null;
+    }   //disableCircleBlur
+
+    /**
      * This method enables circle detection in the pipeline with the given parameters.
      *
      * @param minCircleDistance specifies the minimum distance between detected circle centers.
@@ -939,9 +969,12 @@ public class TrcOpenCvColorBlobPipeline implements TrcOpenCvPipeline<TrcOpenCvDe
                 Imgproc.cvtColor(input, output, Imgproc.COLOR_RGB2GRAY);
                 input = output;
                 // Blur result.
-                output = intermediateMats[++matIndex];
-                Imgproc.GaussianBlur(input, output, new Size(9, 9), 2, 2);
-                input = output;
+                if (blurKernelSize != null)
+                {
+                    output = intermediateMats[++matIndex];
+                    Imgproc.GaussianBlur(input, output, blurKernelSize, 2, 2);
+                    input = output;
+                }
                 // Hough Circle Detection.
                 Mat circles = new Mat();
                 Imgproc.HoughCircles(
