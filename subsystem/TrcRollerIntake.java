@@ -250,36 +250,40 @@ public class TrcRollerIntake implements TrcExclusiveSubsystem
             instanceName, "Trigger: active=%s, triggerParams=%s, actionParams=%s, canceled=%s",
             active, triggerParams, actionParams, canceled);
 
-        if (!canceled && actionParams != null)
+        if (actionParams != null)
         {
-            if (triggerParams.triggerAction == TriggerAction.StartOnTrigger)
+            if (!canceled)
             {
-                performAction(actionParams, false);
+                if (triggerParams.triggerAction == TriggerAction.StartOnTrigger && motor.getPower() == 0.0)
+                {
+                    // Start the Intake Motor if not already started.
+                    motor.setPower(actionParams.owner, 0.0, intakeParams.intakePower, 0.0, null);
+                }
+                else if (triggerParams.triggerAction == TriggerAction.FinishOnTrigger)
+                {
+                    double finishDelay =
+                        actionParams.intakeAction? intakeParams.intakeFinishDelay: intakeParams.ejectFinishDelay;
+
+                    if (finishDelay > 0.0)
+                    {
+                        timer.set(finishDelay, (ctxt, cancel)-> finishAction(!cancel));
+                    }
+                    else
+                    {
+                        finishAction(true);
+                    }
+                }
             }
-            else if (triggerParams.triggerAction == TriggerAction.FinishOnTrigger)
+
+            if (triggerParams.triggerCallback != null &&
+                (canceled ||
+                 triggerParams.triggerMode == TriggerMode.OnBoth ||
+                 triggerParams.triggerMode == TriggerMode.OnActive && active ||
+                 triggerParams.triggerMode == TriggerMode.OnInactive && !active))
             {
-                double finishDelay =
-                    actionParams.intakeAction? intakeParams.intakeFinishDelay: intakeParams.ejectFinishDelay;
-
-                if (finishDelay > 0.0)
-                {
-                    timer.set(finishDelay, (ctxt, cancel)-> finishAction(!cancel));
-                }
-                else
-                {
-                    finishAction(true);
-                }
+                // Caller has registered a callback with a specified trigger mode, call it.
+                triggerParams.triggerCallback.notify(triggerParams.callbackContext, canceled);
             }
-        }
-
-        if (triggerParams.triggerCallback != null &&
-            (canceled ||
-             triggerParams.triggerMode == TriggerMode.OnBoth ||
-             triggerParams.triggerMode == TriggerMode.OnActive && active ||
-             triggerParams.triggerMode == TriggerMode.OnInactive && !active))
-        {
-            // Caller has registered a callback with a specified trigger mode, call it.
-            triggerParams.triggerCallback.notify(triggerParams.callbackContext, canceled);
         }
     }   //processTrigger
 
@@ -349,10 +353,10 @@ public class TrcRollerIntake implements TrcExclusiveSubsystem
      *
      * @return true if intake motor is ON, false if open.
      */
-    public boolean isOn()
+    public boolean isActive()
     {
         return motor.getPower() != 0.0;
-    }   //isOn
+    }   //isActive
 
     /**
      * This method returns the intake motor current.
@@ -612,8 +616,8 @@ public class TrcRollerIntake implements TrcExclusiveSubsystem
             boolean gotObject = hasObject();
 
             tracer.traceInfo(
-                instanceName, "FinishAction(completed=%s): isOn=%s, hasObject=%s, actionParams=%s",
-                completed, isOn(), gotObject, actionParams);
+                instanceName, "FinishAction(completed=%s): isActive=%s, hasObject=%s, actionParams=%s",
+                completed, isActive(), gotObject, actionParams);
             timer.cancel();
             if (completed)
             {
@@ -682,7 +686,10 @@ public class TrcRollerIntake implements TrcExclusiveSubsystem
             {
                 // We are intaking but we don't have the object yet.
                 tracer.traceDebug(instanceName, "Start Intake.");
-                motor.setPower(ap.owner, 0.0, intakeParams.intakePower, 0.0, null);
+                if (frontTriggerParams == null || frontTriggerParams.triggerAction != TriggerAction.StartOnTrigger)
+                {
+                    motor.setPower(ap.owner, 0.0, intakeParams.intakePower, 0.0, null);
+                }
                 actionPending = true;
             }
             else if (!ap.intakeAction && gotObject)

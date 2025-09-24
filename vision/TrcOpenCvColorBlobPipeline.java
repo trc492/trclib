@@ -1035,7 +1035,6 @@ public class TrcOpenCvColorBlobPipeline implements TrcOpenCvPipeline<TrcOpenCvDe
                 contoursOutput.addAll(filterContoursOutput);
             }
             // Process contour result.
-            tracer.traceInfo(instanceName, ct.name + ": [" + contoursOutput.size() + "] detected circles");
             for (MatOfPoint contour: contoursOutput)
             {
                 detectedObjectsList.add(new DetectedObject(ct.name, contour));
@@ -1043,7 +1042,6 @@ public class TrcOpenCvColorBlobPipeline implements TrcOpenCvPipeline<TrcOpenCvDe
         }
         if (performanceMetrics != null) performanceMetrics.logProcessingTime(startTime);
 
-        tracer.traceInfo(instanceName, "total detected objects=" + detectedObjectsList.size());
         DetectedObject[] detectedObjects = detectedObjectsList.toArray(new DetectedObject[0]);
         detectedObjectsUpdate.set(detectedObjects);
 

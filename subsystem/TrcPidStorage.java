@@ -158,17 +158,47 @@ public class TrcPidStorage implements TrcExclusiveSubsystem
         this.storageParams = storageParams;
         this.entryTriggerParams = entryTriggerParams;
         this.exitTriggerParams = exitTriggerParams;
+    }   //TrcPidStorage
 
+    /**
+     * This method enables/disables the entry trigger.
+     *
+     * @param enabled specifies true to enable trigger, false to disable.
+     */
+    public void setEntryTriggerEnabled(boolean enabled)
+    {
         if (entryTriggerParams != null)
         {
-            entryTriggerParams.trigger.enableTrigger(TrcTrigger.TriggerMode.OnBoth, this::onEntryTrigger);
+            if (enabled)
+            {
+                entryTriggerParams.trigger.enableTrigger(TrcTrigger.TriggerMode.OnBoth, this::onEntryTrigger);
+            }
+            else
+            {
+                entryTriggerParams.trigger.disableTrigger();
+            }
         }
+    }   //setEntryTriggerEnabled
 
+    /**
+     * This method enables/disables the exit trigger.
+     *
+     * @param enabled specifies true to enable trigger, false to disable.
+     */
+    public void setExitTriggerEnabled(boolean enabled)
+    {
         if (exitTriggerParams != null)
         {
-            exitTriggerParams.trigger.enableTrigger(TrcTrigger.TriggerMode.OnBoth, this::onExitTrigger);
+            if (enabled)
+            {
+                exitTriggerParams.trigger.enableTrigger(TrcTrigger.TriggerMode.OnBoth, this::onExitTrigger);
+            }
+            else
+            {
+                exitTriggerParams.trigger.disableTrigger();
+            }
         }
-    }   //TrcPidStorage
+    }   //setExitTriggerEnabled
 
     /**
      * This method cancels the operation which is stopping the motor.
