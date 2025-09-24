@@ -206,23 +206,6 @@ public class TrcRollerIntake implements TrcExclusiveSubsystem
         this.intakeParams = intakeParams;
         this.frontTriggerParams = frontTriggerParams;
         this.backTriggerParams = backTriggerParams;
-
-        if (frontTriggerParams != null)
-        {
-            frontTriggerParams.trigger.enableTrigger(
-                TriggerMode.OnBoth,
-                (context, canceled)->processTrigger(
-                    ((AtomicBoolean) context).get(), frontTriggerParams, canceled));
-        }
-
-        if (backTriggerParams != null)
-        {
-            backTriggerParams.trigger.enableTrigger(
-                TriggerMode.OnBoth,
-                (context, canceled)->processTrigger(
-                    ((AtomicBoolean) context).get(), backTriggerParams, canceled));
-        }
-
         timer = new TrcTimer(instanceName);
     }   //TrcRollerIntake
 
@@ -252,18 +235,21 @@ public class TrcRollerIntake implements TrcExclusiveSubsystem
 
         if (actionParams != null)
         {
-            if (!canceled)
+            if (!canceled && active)
             {
-                if (triggerParams.triggerAction == TriggerAction.StartOnTrigger && motor.getPower() == 0.0)
+                if (triggerParams == frontTriggerParams && triggerParams.triggerAction == TriggerAction.StartOnTrigger)
                 {
-                    // Start the Intake Motor if not already started.
+                    // Start the Intake Motor and disable front trigger.
                     motor.setPower(actionParams.owner, 0.0, intakeParams.intakePower, 0.0, null);
+                    setFrontTriggerEnabled(false);
                 }
-                else if (triggerParams.triggerAction == TriggerAction.FinishOnTrigger)
+                else if (triggerParams == backTriggerParams &&
+                         triggerParams.triggerAction == TriggerAction.FinishOnTrigger)
                 {
+                    // Finish the operation and disable the back trigger.
+                    setBackTriggerEnabled(false);
                     double finishDelay =
                         actionParams.intakeAction? intakeParams.intakeFinishDelay: intakeParams.ejectFinishDelay;
-
                     if (finishDelay > 0.0)
                     {
                         timer.set(finishDelay, (ctxt, cancel)-> finishAction(!cancel));
@@ -286,6 +272,52 @@ public class TrcRollerIntake implements TrcExclusiveSubsystem
             }
         }
     }   //processTrigger
+
+    /**
+     * This method enables/disables the front trigger of the Intake.
+     *
+     * @param enabled specifies true to enable the trigger, false to disable.
+     */
+    private void setFrontTriggerEnabled(boolean enabled)
+    {
+        if (frontTriggerParams != null)
+        {
+            if (enabled)
+            {
+                frontTriggerParams.trigger.enableTrigger(
+                    TriggerMode.OnBoth,
+                    (context, canceled)->processTrigger(
+                        ((AtomicBoolean) context).get(), frontTriggerParams, canceled));
+            }
+            else
+            {
+                frontTriggerParams.trigger.disableTrigger();
+            }
+        }
+    }   //setFrontTriggerEnabled
+
+    /**
+     * This method enables/disables the back trigger of the Intake.
+     *
+     * @param enabled specifies true to enable the trigger, false to disable.
+     */
+    private void setBackTriggerEnabled(boolean enabled)
+    {
+        if (backTriggerParams != null)
+        {
+            if (enabled)
+            {
+                backTriggerParams.trigger.enableTrigger(
+                    TriggerMode.OnBoth,
+                    (context, canceled)->processTrigger(
+                        ((AtomicBoolean) context).get(), backTriggerParams, canceled));
+            }
+            else
+            {
+                backTriggerParams.trigger.disableTrigger();
+            }
+        }
+    }   //setBackTriggerEnabled
 
     /**
      * This method checks if auto operation is active.
@@ -684,9 +716,14 @@ public class TrcRollerIntake implements TrcExclusiveSubsystem
     
             if (ap.intakeAction && !gotObject)
             {
-                // We are intaking but we don't have the object yet.
+                // We are intaking but we don't have the object yet, enable front and back trigger if there is one.
                 tracer.traceDebug(instanceName, "Start Intake.");
-                if (frontTriggerParams == null || frontTriggerParams.triggerAction != TriggerAction.StartOnTrigger)
+                setBackTriggerEnabled(true);
+                if (frontTriggerParams != null && frontTriggerParams.triggerAction == TriggerAction.StartOnTrigger)
+                {
+                    setFrontTriggerEnabled(true);
+                }
+                else
                 {
                     motor.setPower(ap.owner, 0.0, intakeParams.intakePower, 0.0, null);
                 }
@@ -699,7 +736,7 @@ public class TrcRollerIntake implements TrcExclusiveSubsystem
                 motor.setPower(ap.owner, 0.0, intakeParams.ejectPower, 0.0, null);
                 actionPending = true;
             }
-    
+
             if (actionPending)
             {
                 if (ap.timeout > 0.0)

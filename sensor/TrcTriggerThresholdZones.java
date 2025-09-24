@@ -238,14 +238,22 @@ public class TrcTriggerThresholdZones implements TrcTrigger
     {
         synchronized (triggerState)
         {
-            setTriggerParams(triggerMode, event);
-            if (triggerDelay != null)
+            // Enable trigger only if it's not already enabled.
+            if (!triggerState.triggerEnabled)
             {
-                timer.set(triggerDelay, (context, canceled) -> {if (!canceled) setEnabled(true);});
-            }
-            else
-            {
-                setEnabled(true);
+                setTriggerParams(triggerMode, event);
+                if (triggerDelay != null)
+                {
+                    timer.set(
+                        triggerDelay, (context, canceled) ->
+                        {
+                            if (!canceled) setEnabled(true);
+                        });
+                }
+                else
+                {
+                    setEnabled(true);
+                }
             }
         }
     }   //enableTrigger
@@ -264,14 +272,22 @@ public class TrcTriggerThresholdZones implements TrcTrigger
     {
         synchronized (triggerState)
         {
-            setTriggerParams(triggerMode, callback);
-            if (triggerDelay != null)
+            // Enable trigger only if it's not already enabled.
+            if (!triggerState.triggerEnabled)
             {
-                timer.set(triggerDelay, (context, canceled) -> {if (!canceled) setEnabled(true);});
-            }
-            else
-            {
-                setEnabled(true);
+                setTriggerParams(triggerMode, callback);
+                if (triggerDelay != null)
+                {
+                    timer.set(
+                        triggerDelay, (context, canceled) ->
+                        {
+                            if (!canceled) setEnabled(true);
+                        });
+                }
+                else
+                {
+                    setEnabled(true);
+                }
             }
         }
     }   //enableTrigger

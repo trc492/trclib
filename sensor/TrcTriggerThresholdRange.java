@@ -171,7 +171,7 @@ public class TrcTriggerThresholdRange implements TrcTrigger
         {
             // Cancel previous trigger delay timer if there is one.
             timer.cancel();
-            if (enabled && !triggerState.triggerEnabled)
+            if (enabled)
             {
                 if (triggerState.lowerThreshold == null || triggerState.upperThreshold == null ||
                     triggerState.settlingPeriod == null)
@@ -184,7 +184,7 @@ public class TrcTriggerThresholdRange implements TrcTrigger
                 triggerState.cachedData.clear();
                 triggerTaskObj.registerTask(TrcTaskMgr.TaskType.PRE_PERIODIC_TASK);
             }
-            else if (!enabled && triggerState.triggerEnabled)
+            else
             {
                 triggerTaskObj.unregisterTask();
                 triggerState.triggerEvent.cancel();
@@ -208,14 +208,22 @@ public class TrcTriggerThresholdRange implements TrcTrigger
     {
         synchronized (triggerState)
         {
-            setTriggerParams(triggerMode, event);
-            if (triggerDelay != null)
+            // Enable trigger only if it's not already enabled.
+            if (!triggerState.triggerEnabled)
             {
-                timer.set(triggerDelay, (context, canceled) -> {if (!canceled) setEnabled(true);});
-            }
-            else
-            {
-                setEnabled(true);
+                setTriggerParams(triggerMode, event);
+                if (triggerDelay != null)
+                {
+                    timer.set(
+                        triggerDelay, (context, canceled) ->
+                        {
+                            if (!canceled) setEnabled(true);
+                        });
+                }
+                else
+                {
+                    setEnabled(true);
+                }
             }
         }
     }   //enableTrigger
@@ -232,14 +240,22 @@ public class TrcTriggerThresholdRange implements TrcTrigger
     {
         synchronized (triggerState)
         {
-            setTriggerParams(triggerMode, callback);
-            if (triggerDelay != null)
+            // Enable trigger only if it's not already enabled.
+            if (!triggerState.triggerEnabled)
             {
-                timer.set(triggerDelay, (context, canceled) -> {if (!canceled) setEnabled(true);});
-            }
-            else
-            {
-                setEnabled(true);
+                setTriggerParams(triggerMode, callback);
+                if (triggerDelay != null)
+                {
+                    timer.set(
+                        triggerDelay, (context, canceled) ->
+                        {
+                            if (!canceled) setEnabled(true);
+                        });
+                }
+                else
+                {
+                    setEnabled(true);
+                }
             }
         }
     }   //enableTrigger

@@ -402,7 +402,7 @@ public class TrcPidStorage implements TrcExclusiveSubsystem
                 instanceName,
                 "onEntryTrigger(active=" + active +
                 ", numObj=" + numObjects +
-                ", advOnTrigger=" + exitTriggerParams.advanceOnTrigger);
+                ", advOnTrigger=" + entryTriggerParams.advanceOnTrigger);
 
             if (entryTriggerParams.triggerCallback != null)
             {
