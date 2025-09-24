@@ -25,6 +25,7 @@ package trclib.subsystem;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import trclib.motor.TrcMotor;
+import trclib.robotcore.TrcDbgTrace;
 import trclib.robotcore.TrcEvent;
 import trclib.robotcore.TrcExclusiveSubsystem;
 import trclib.sensor.TrcTrigger;
@@ -133,6 +134,7 @@ public class TrcPidStorage implements TrcExclusiveSubsystem
 
     }   //class TriggerParams
 
+    public final TrcDbgTrace tracer;
     protected final String instanceName;
     public final TrcMotor motor;
     private final StorageParams storageParams;
@@ -153,6 +155,7 @@ public class TrcPidStorage implements TrcExclusiveSubsystem
         String instanceName, TrcMotor motor, StorageParams storageParams, TriggerParams entryTriggerParams,
         TriggerParams exitTriggerParams)
     {
+        this.tracer = new TrcDbgTrace();
         this.instanceName = instanceName;
         this.motor = motor;
         this.storageParams = storageParams;
@@ -167,6 +170,7 @@ public class TrcPidStorage implements TrcExclusiveSubsystem
      */
     public void setEntryTriggerEnabled(boolean enabled)
     {
+        tracer.traceInfo(instanceName, "setEntryTriggerEnabled(enabled=" + enabled + ")");
         if (entryTriggerParams != null)
         {
             if (enabled)
@@ -187,6 +191,7 @@ public class TrcPidStorage implements TrcExclusiveSubsystem
      */
     public void setExitTriggerEnabled(boolean enabled)
     {
+        tracer.traceInfo(instanceName, "setExitTriggerEnabled(enabled=" + enabled + ")");
         if (exitTriggerParams != null)
         {
             if (enabled)
@@ -207,6 +212,7 @@ public class TrcPidStorage implements TrcExclusiveSubsystem
      */
     public void cancel(String owner)
     {
+        tracer.traceInfo(instanceName, "cancel(owner=" + owner + ")");
         if (validateOwnership(owner))
         {
             motor.cancel();
@@ -229,6 +235,8 @@ public class TrcPidStorage implements TrcExclusiveSubsystem
      */
     public void zeroCalibrate(String owner, double calPower, TrcEvent event)
     {
+        tracer.traceInfo(
+            instanceName, "zeroCalibrate(owner=" + owner + ", calPower=" + calPower + ", event=" + event + ")");
         motor.zeroCalibrate(owner, calPower, event);
     }   //zeroCalibrate
 
@@ -390,6 +398,11 @@ public class TrcPidStorage implements TrcExclusiveSubsystem
                     advance();
                 }
             }
+            tracer.traceInfo(
+                instanceName,
+                "onEntryTrigger(active=" + active +
+                ", numObj=" + numObjects +
+                ", advOnTrigger=" + exitTriggerParams.advanceOnTrigger);
 
             if (entryTriggerParams.triggerCallback != null)
             {
@@ -397,6 +410,10 @@ public class TrcPidStorage implements TrcExclusiveSubsystem
                 callbackEvent.setCallback(entryTriggerParams.triggerCallback, entryTriggerParams.callbackContext);
                 callbackEvent.signal();
             }
+        }
+        else
+        {
+            tracer.traceInfo(instanceName, "Cancel entry trigger.");
         }
     }   //onEntryTrigger
 
@@ -420,6 +437,11 @@ public class TrcPidStorage implements TrcExclusiveSubsystem
                     advance();
                 }
             }
+            tracer.traceInfo(
+                instanceName,
+                "onExitTrigger(active=" + active +
+                ", numObj=" + numObjects +
+                ", advOnTrigger=" + exitTriggerParams.advanceOnTrigger);
 
             if (exitTriggerParams.triggerCallback != null)
             {
@@ -427,6 +449,10 @@ public class TrcPidStorage implements TrcExclusiveSubsystem
                 callbackEvent.setCallback(exitTriggerParams.triggerCallback, exitTriggerParams.callbackContext);
                 callbackEvent.signal();
             }
+        }
+        else
+        {
+            tracer.traceInfo(instanceName, "Cancel exit trigger.");
         }
     }   //onExitTrigger
 
