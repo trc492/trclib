@@ -643,7 +643,7 @@ public class TrcOpenCvColorBlobPipeline implements TrcOpenCvPipeline<TrcOpenCvDe
     private static final Scalar ANNOTATE_RECT_WHITE = new Scalar(255, 255, 255, 255);
     private static final int ANNOTATE_RECT_THICKNESS = 2;
     private static final Scalar ANNOTATE_TEXT_COLOR = new Scalar(0, 255, 255, 255);
-    private static final double ANNOTATE_FONT_SCALE = 0.5;
+    private static final double ANNOTATE_FONT_SCALE = 0.6;
     private static final int NUM_INTERMEDIATE_MATS = 7;
     private static final int DEF_BLUR_KERNEL_WIDTH = 5;
     private static final int DEF_BLUR_KERNEL_HEIGHT = 5;
@@ -923,7 +923,6 @@ public class TrcOpenCvColorBlobPipeline implements TrcOpenCvPipeline<TrcOpenCvDe
     public DetectedObject[] process(Mat input)
     {
         ArrayList<DetectedObject> detectedObjectsList = new ArrayList<>();
-        ArrayList<MatOfPoint> contoursOutput = new ArrayList<>();
         double startTime;
         Mat output;
         int matIndex = 0;
@@ -943,6 +942,8 @@ public class TrcOpenCvColorBlobPipeline implements TrcOpenCvPipeline<TrcOpenCvDe
         Mat colorConvertedMat = input;
         for (ColorThresholds ct: pipelineParams.colorThresholdsList)
         {
+            ArrayList<MatOfPoint> contoursOutput = new ArrayList<>();
+
             matIndex = ctStartMat;
             input = colorConvertedMat;
             // Do color filtering.
