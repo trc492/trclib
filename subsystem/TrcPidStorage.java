@@ -402,7 +402,7 @@ public class TrcPidStorage implements TrcExclusiveSubsystem
                 instanceName,
                 "onEntryTrigger(active=" + active +
                 ", numObj=" + numObjects +
-                ", advOnTrigger=" + entryTriggerParams.advanceOnTrigger);
+                ", advOnTrigger=" + entryTriggerParams.advanceOnTrigger + ")");
 
             if (entryTriggerParams.triggerCallback != null)
             {
@@ -441,7 +441,7 @@ public class TrcPidStorage implements TrcExclusiveSubsystem
                 instanceName,
                 "onExitTrigger(active=" + active +
                 ", numObj=" + numObjects +
-                ", advOnTrigger=" + exitTriggerParams.advanceOnTrigger);
+                ", advOnTrigger=" + exitTriggerParams.advanceOnTrigger + ")");
 
             if (exitTriggerParams.triggerCallback != null)
             {
