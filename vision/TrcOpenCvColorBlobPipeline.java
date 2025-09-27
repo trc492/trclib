@@ -645,8 +645,7 @@ public class TrcOpenCvColorBlobPipeline implements TrcOpenCvPipeline<TrcOpenCvDe
     private static final Scalar ANNOTATE_TEXT_COLOR = new Scalar(0, 255, 255, 255);
     private static final double ANNOTATE_FONT_SCALE = 0.6;
     private static final int NUM_INTERMEDIATE_MATS = 7;
-    private static final int DEF_BLUR_KERNEL_WIDTH = 5;
-    private static final int DEF_BLUR_KERNEL_HEIGHT = 5;
+    private static final int DEF_BLUR_KERNEL_SIZE = 5;
 
     public final TrcDbgTrace tracer;
     private final String instanceName;
@@ -662,10 +661,11 @@ public class TrcOpenCvColorBlobPipeline implements TrcOpenCvPipeline<TrcOpenCvDe
     private boolean drawCrosshair = false;
     private boolean drawRotatedRect = false;
     private int morphOp = Imgproc.MORPH_CLOSE;
-    private Mat kernelMat = null;
+    private Mat morphKernelMat = null;
     private boolean circleDetectionEnabled = false;
     private double minCircleDistance = 0.0;
-    private Size blurKernelSize = null;
+    private Size gaussianBlurKernelSize = null;
+    private Integer medianBlurKernelSize = null;
     private boolean cannyEdgeEnabled = false;
     private double cannyEdgeThreshold1 = 0.0;
     private double cannyEdgeThreshold2 = 0.0;
@@ -793,61 +793,46 @@ public class TrcOpenCvColorBlobPipeline implements TrcOpenCvPipeline<TrcOpenCvDe
      * @param kernelShape specifies the kernel shape.
      * @param kernelSize specifies the kernel size.
      */
-    public void setMorphologyOp(int morphOp, int kernelShape, Size kernelSize)
+    public void enableMorphology(int morphOp, int kernelShape, Size kernelSize)
     {
-        if (kernelMat != null)
+        if (morphKernelMat != null)
         {
             // Release an existing kernel mat if there is one.
-            kernelMat.release();
+            morphKernelMat.release();
         }
         this.morphOp = morphOp;
-        kernelMat = Imgproc.getStructuringElement(kernelShape, kernelSize);
-    }   //setMorphologyOp
+        morphKernelMat = Imgproc.getStructuringElement(kernelShape, kernelSize);
+    }   //enableMorphology
 
     /**
      * This method enables Morphology operation in the pipeline with default kernel shape and size.
      *
      * @param morphOp specifies the Morphology operation.
      */
-    public void setMorphologyOp(int morphOp)
+    public void enableMorphology(int morphOp)
     {
-        setMorphologyOp(morphOp, Imgproc.MORPH_ELLIPSE, new Size(5, 5));
-    }   //setMorphologyOp
+        enableMorphology(morphOp, Imgproc.MORPH_ELLIPSE, new Size(5, 5));
+    }   //enableMorphology
 
     /**
      * This method enables Morphology operation in the pipeline with default kernel shape and size.
      */
-    public void setMorphologyOp()
+    public void enableMorphology()
     {
-        setMorphologyOp(Imgproc.MORPH_CLOSE, Imgproc.MORPH_ELLIPSE, new Size(5, 5));
-    }   //setMorphologyOp
+        enableMorphology(Imgproc.MORPH_CLOSE, Imgproc.MORPH_ELLIPSE, new Size(5, 5));
+    }   //enableMorphology
 
     /**
-     * This method enables blur operation for circle detection.
-     *
-     * @param kernelWidth specifies the kernel width in pixels.
-     * @param kernelHeight specifies the kernel height in pixels.
+     * This method disables Morphology operation in the pipeline.
      */
-    public void enableCircleBlur(int kernelWidth, int kernelHeight)
+    public void disableMorphology()
     {
-        blurKernelSize = new Size(kernelWidth, kernelHeight);
-    }   //enableCircleBlur
-
-    /**
-     * This method enables blur operation in circle detection.
-     */
-    public void enableCircleBlur()
-    {
-        enableCircleBlur(DEF_BLUR_KERNEL_WIDTH, DEF_BLUR_KERNEL_HEIGHT);
-    }   //enableCircleBlur
-
-    /**
-     * This method disables blur operation in circle detection.
-     */
-    public void disableCircleBlur()
-    {
-        blurKernelSize = null;
-    }   //disableCircleBlur
+        if (morphKernelMat != null)
+        {
+            morphKernelMat.release();
+            morphKernelMat = null;
+        }
+    }   //disableMorphology
 
     /**
      * This method enables circle detection in the pipeline with the given parameters.
@@ -870,6 +855,52 @@ public class TrcOpenCvColorBlobPipeline implements TrcOpenCvPipeline<TrcOpenCvDe
         this.circleDetectionEnabled = false;
         tracer.traceInfo(instanceName, "Disabling Circle Detection.");
     }   //disableCircleDetection
+
+    /**
+     * This method enables blur operation for circle detection.
+     *
+     * @param useGaussianBlur specifies true to use Gaussian Blur, false to use Median Blur.
+     * @param kernelSize specifies the kernel size in pixels.
+     */
+    public void enableCircleBlur(boolean useGaussianBlur, int kernelSize)
+    {
+        tracer.traceInfo(
+            instanceName,
+            "Enabling Circle Blur (%s): KernelSize=%d", useGaussianBlur? "Gaussian": "Median", kernelSize);
+        if (useGaussianBlur)
+        {
+            gaussianBlurKernelSize = new Size(kernelSize, kernelSize);
+            medianBlurKernelSize = null;
+        }
+        else
+        {
+            if (kernelSize % 2 == 0 || kernelSize <= 1)
+            {
+                throw new IllegalArgumentException("kernelSize for Median Blur must be odd and greater than 1.");
+            }
+            medianBlurKernelSize = kernelSize;
+            gaussianBlurKernelSize = null;
+        }
+    }   //enableCircleBlur
+
+    /**
+     * This method enables blur operation for circle detection.
+     *
+     * @param useGaussianBlur specifies true to use Gaussian Blur, false to use Median Blur.
+     */
+    public void enableCircleBlur(boolean useGaussianBlur)
+    {
+        enableCircleBlur(useGaussianBlur, DEF_BLUR_KERNEL_SIZE);
+    }   //enableCircleBlur
+
+    /**
+     * This method disables blur operation for circle detection.
+     */
+    public void disableCircleBlur()
+    {
+        gaussianBlurKernelSize = null;
+        medianBlurKernelSize = null;
+    }   //disableCircleBlur
 
     /**
      * This method enables Canny Edge Detection with the specified threshold values.
@@ -951,10 +982,10 @@ public class TrcOpenCvColorBlobPipeline implements TrcOpenCvPipeline<TrcOpenCvDe
             Core.inRange(input, new Scalar(ct.lowThresholds), new Scalar(ct.highThresholds), output);
             input = output;
             // Do morphology.
-            if (kernelMat != null)
+            if (morphKernelMat != null)
             {
                 output = intermediateMats[++matIndex];
-                Imgproc.morphologyEx(input, output, morphOp, kernelMat);
+                Imgproc.morphologyEx(input, output, morphOp, morphKernelMat);
                 input = output;
             }
 
@@ -969,11 +1000,17 @@ public class TrcOpenCvColorBlobPipeline implements TrcOpenCvPipeline<TrcOpenCvDe
                 output = intermediateMats[++matIndex];
                 Imgproc.cvtColor(input, output, Imgproc.COLOR_RGB2GRAY);
                 input = output;
-                // Blur result.
-                if (blurKernelSize != null)
+                // Circle Blur.
+                if (gaussianBlurKernelSize != null)
                 {
                     output = intermediateMats[++matIndex];
-                    Imgproc.GaussianBlur(input, output, blurKernelSize, 2, 2);
+                    Imgproc.GaussianBlur(input, output, gaussianBlurKernelSize, 2, 2);
+                    input = output;
+                }
+                else if (medianBlurKernelSize != null)
+                {
+                    output = intermediateMats[++matIndex];
+                    Imgproc.medianBlur(input, output, medianBlurKernelSize);
                     input = output;
                 }
                 // Hough Circle Detection.
