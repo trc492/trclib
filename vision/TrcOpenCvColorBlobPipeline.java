@@ -641,9 +641,9 @@ public class TrcOpenCvColorBlobPipeline implements TrcOpenCvPipeline<TrcOpenCvDe
 
     private static final Scalar ANNOTATE_RECT_COLOR = new Scalar(0, 255, 0, 255);
     private static final Scalar ANNOTATE_RECT_WHITE = new Scalar(255, 255, 255, 255);
-    private static final int ANNOTATE_RECT_THICKNESS = 2;
+    private static final int ANNOTATE_RECT_THICKNESS = 1;
     private static final Scalar ANNOTATE_TEXT_COLOR = new Scalar(0, 255, 255, 255);
-    private static final double ANNOTATE_FONT_SCALE = 0.6;
+    private static final double ANNOTATE_FONT_SCALE = 0.3;
     private static final int NUM_INTERMEDIATE_MATS = 7;
     private static final int DEF_BLUR_KERNEL_SIZE = 5;
 
@@ -927,6 +927,22 @@ public class TrcOpenCvColorBlobPipeline implements TrcOpenCvPipeline<TrcOpenCvDe
         tracer.traceInfo(instanceName, "Disabling Canny Edge Detection.");
     }   //disableCannyEdgeDetection
 
+    /**
+     * This method checks if the mat is the same type as expected. If not, it will recreate the mat with the expected
+     * type and size.
+     *
+     * @param mat specifies the mat.
+     * @param size specifies the size to recreate.
+     * @param cvType specifies the type to recreate.
+     */
+    private void setExpectedMatType(Mat mat, Size size, int cvType)
+    {
+        if (mat.type() != cvType)
+        {
+            mat.create(size, cvType);
+        }
+    }   //setExpectedMatType
+
     //
     // Implements TrcOpenCvPipeline interface.
     //
@@ -965,6 +981,7 @@ public class TrcOpenCvColorBlobPipeline implements TrcOpenCvPipeline<TrcOpenCvDe
         if (pipelineParams.colorConversion != null)
         {
             output = intermediateMats[++matIndex];
+            setExpectedMatType(output, input.size(), CvType.CV_32FC3);
             Imgproc.cvtColor(input, output, pipelineParams.colorConversion);
             input = output;
         }
@@ -979,12 +996,14 @@ public class TrcOpenCvColorBlobPipeline implements TrcOpenCvPipeline<TrcOpenCvDe
             input = colorConvertedMat;
             // Do color filtering.
             output = intermediateMats[++matIndex];
+            setExpectedMatType(output, input.size(), CvType.CV_8UC1);
             Core.inRange(input, new Scalar(ct.lowThresholds), new Scalar(ct.highThresholds), output);
             input = output;
             // Do morphology.
             if (morphKernelMat != null)
             {
                 output = intermediateMats[++matIndex];
+                setExpectedMatType(output, input.size(), CvType.CV_8UC1);
                 Imgproc.morphologyEx(input, output, morphOp, morphKernelMat);
                 input = output;
             }
@@ -993,23 +1012,27 @@ public class TrcOpenCvColorBlobPipeline implements TrcOpenCvPipeline<TrcOpenCvDe
             {
                 // Apply mask to the original image.
                 output = intermediateMats[++matIndex];
+                setExpectedMatType(output, input.size(), CvType.CV_32FC3);
                 output.setTo(new Scalar(0));
                 Core.bitwise_and(intermediateMats[0], intermediateMats[0], output, input);
                 input = output;
                 // Convert masked result to gray.
                 output = intermediateMats[++matIndex];
+                setExpectedMatType(output, input.size(), CvType.CV_8UC1);
                 Imgproc.cvtColor(input, output, Imgproc.COLOR_RGB2GRAY);
                 input = output;
                 // Circle Blur.
                 if (gaussianBlurKernelSize != null)
                 {
                     output = intermediateMats[++matIndex];
+                    setExpectedMatType(output, input.size(), CvType.CV_8UC1);
                     Imgproc.GaussianBlur(input, output, gaussianBlurKernelSize, 2, 2);
                     input = output;
                 }
                 else if (medianBlurKernelSize != null)
                 {
                     output = intermediateMats[++matIndex];
+                    setExpectedMatType(output, input.size(), CvType.CV_8UC1);
                     Imgproc.medianBlur(input, output, medianBlurKernelSize);
                     input = output;
                 }
@@ -1054,6 +1077,7 @@ public class TrcOpenCvColorBlobPipeline implements TrcOpenCvPipeline<TrcOpenCvDe
             else if (cannyEdgeEnabled)
             {
                 output = intermediateMats[++matIndex];
+                setExpectedMatType(output, input.size(), CvType.CV_8UC1);
                 Imgproc.Canny(input, output, cannyEdgeThreshold1, cannyEdgeThreshold2);
                 input = output;
             }
@@ -1252,9 +1276,9 @@ public class TrcOpenCvColorBlobPipeline implements TrcOpenCvPipeline<TrcOpenCvDe
         Point[] imgPts = imagePoints.toArray();
 
         // Draw the axis lines
-        Imgproc.line(img, imgPts[0], imgPts[1], new Scalar(0, 0, 255), 2); // X axis in red
-        Imgproc.line(img, imgPts[0], imgPts[2], new Scalar(0, 255, 0), 2); // Y axis in green
-        Imgproc.line(img, imgPts[0], imgPts[3], new Scalar(255, 0, 0), 2); // Z axis in blue
+        Imgproc.line(img, imgPts[0], imgPts[1], new Scalar(0, 0, 255), 1); // X axis in red
+        Imgproc.line(img, imgPts[0], imgPts[2], new Scalar(0, 255, 0), 1); // Y axis in green
+        Imgproc.line(img, imgPts[0], imgPts[3], new Scalar(255, 0, 0), 1); // Z axis in blue
     }   //drawAxes
 
     /**
