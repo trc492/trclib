@@ -24,6 +24,7 @@ package trclib.controller;
 
 import java.util.EmptyStackException;
 import java.util.Stack;
+import java.util.function.DoubleSupplier;
 
 import trclib.dataprocessor.TrcUtil;
 import trclib.dataprocessor.TrcWarpSpace;
@@ -153,21 +154,6 @@ public class TrcPidController
     }   //class FFCoefficients
 
     /**
-     * PID controller needs input from a feedback device for calculating the output power. Whoever is providing this
-     * input must implement this interface.
-     */
-    public interface PidInput
-    {
-        /**
-         * This method is called by the PID controller to get input data from the feedback device. The feedback
-         * device can be motor encoders, gyro, ultrasonic sensor, light sensor etc.
-         *
-         * @return input value of the feedback device.
-         */
-        double get();
-    }   //interface PidInput
-
-    /**
      * This class stores the PID controller state.
      */
     private static class PidCtrlState
@@ -237,7 +223,7 @@ public class TrcPidController
     private final TrcDashboard dashboard = TrcDashboard.getInstance();
     public final TrcDbgTrace tracer;
     private final String instanceName;
-    private final PidInput pidInput;
+    private final DoubleSupplier pidInput;
 
     private boolean inverted = false;
     private boolean absSetPoint = false;
@@ -260,7 +246,8 @@ public class TrcPidController
      * @param ffCoeffs specifies the FeedForward coefficients.
      * @param pidInput specifies the method to call for getting input.
      */
-    public TrcPidController(String instanceName, PidCoefficients pidCoeffs, FFCoefficients ffCoeffs, PidInput pidInput)
+    public TrcPidController(
+        String instanceName, PidCoefficients pidCoeffs, FFCoefficients ffCoeffs, DoubleSupplier pidInput)
     {
         this.tracer = new TrcDbgTrace();
         this.instanceName = instanceName;
@@ -279,7 +266,7 @@ public class TrcPidController
      * @param pidCoeffs specifies the PID coefficients.
      * @param pidInput specifies the method to call to get PID sensor input.
      */
-    public TrcPidController(String instanceName, PidCoefficients pidCoeffs, PidInput pidInput)
+    public TrcPidController(String instanceName, PidCoefficients pidCoeffs, DoubleSupplier pidInput)
     {
         this(instanceName, pidCoeffs, null, pidInput);
     }   //TrcPidController
@@ -332,16 +319,6 @@ public class TrcPidController
     {
         setTraceLevel(msgLevel, false, null);
     }   //setTraceLevel
-
-    /**
-     * This method returns the PidInput interface.
-     *
-     * @return PidInput interface.
-     */
-    public PidInput getPidInput()
-    {
-        return pidInput;
-    }   //getPidInput
 
     /**
      * This method inverts the sign of the calculated error. Normally, the calculated error starts with a large
@@ -715,7 +692,7 @@ public class TrcPidController
     public void setTarget(double target, TrcWarpSpace warpSpace)
     {
         // Read from input device without holding a lock on this object, since this could be a long-running call.
-        final double input = pidInput.get();
+        final double input = pidInput.getAsDouble();
 
         synchronized (pidCtrlState)
         {
@@ -967,7 +944,7 @@ public class TrcPidController
      */
     public double getCurrentInput()
     {
-        return pidInput != null? pidInput.get(): pidCtrlState.input;
+        return pidInput != null? pidInput.getAsDouble(): pidCtrlState.input;
     }   //getCurrentInput
 
    /**
@@ -988,7 +965,7 @@ public class TrcPidController
     {
         if (input == null)
         {
-            input = pidInput.get();
+            input = pidInput.getAsDouble();
         }
 
         synchronized (pidCtrlState)
@@ -1125,7 +1102,7 @@ public class TrcPidController
      */
     public double calculate()
     {
-        return calculate(pidInput.get(), null, null, null);
+        return calculate(pidInput.getAsDouble(), null, null, null);
     }   //calculate
 
     /**

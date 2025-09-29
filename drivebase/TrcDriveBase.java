@@ -28,6 +28,7 @@ import org.apache.commons.math3.linear.RealVector;
 
 import java.util.Arrays;
 import java.util.Stack;
+import java.util.function.DoubleSupplier;
 
 import trclib.controller.TrcPidController;
 import trclib.dataprocessor.TrcUtil;
@@ -88,8 +89,8 @@ public abstract class TrcDriveBase implements TrcExclusiveSubsystem
                     nextDriveOrientation = INVERTED;
                     break;
 
-                default:
                 case INVERTED:
+                default:
                     nextDriveOrientation = ROBOT;
                     break;
             }
@@ -1118,8 +1119,8 @@ public abstract class TrcDriveBase implements TrcExclusiveSubsystem
      * @param yPidInput specifies the Y PidInput provider.
      */
     public void enableAntiTipping(
-        TrcPidController.PidCoefficients xTippingPidCoeffs, double xTolerance, TrcPidController.PidInput xPidInput,
-        TrcPidController.PidCoefficients yTippingPidCoeffs, double yTolerance, TrcPidController.PidInput yPidInput)
+        TrcPidController.PidCoefficients xTippingPidCoeffs, double xTolerance, DoubleSupplier xPidInput,
+        TrcPidController.PidCoefficients yTippingPidCoeffs, double yTolerance, DoubleSupplier yPidInput)
     {
         if (yTippingPidCoeffs == null || yPidInput == null)
         {
@@ -1135,13 +1136,13 @@ public abstract class TrcDriveBase implements TrcExclusiveSubsystem
 
             xTippingPidCtrl = new TrcPidController("xAntiTippingPidCtrl", xTippingPidCoeffs, xPidInput);
             xTippingPidCtrl.setAbsoluteSetPoint(true);
-            xTippingPidCtrl.setTarget(xPidInput.get());
+            xTippingPidCtrl.setTarget(xPidInput.getAsDouble());
             xTippingTolerance = xTolerance;
         }
 
         yTippingPidCtrl = new TrcPidController("yAntiTippingPidCtrl", yTippingPidCoeffs, yPidInput);
         yTippingPidCtrl.setAbsoluteSetPoint(true);
-        yTippingPidCtrl.setTarget(yPidInput.get());
+        yTippingPidCtrl.setTarget(yPidInput.getAsDouble());
         yTippingTolerance = yTolerance;
 
         antiTippingEnabled = true;
@@ -1155,7 +1156,7 @@ public abstract class TrcDriveBase implements TrcExclusiveSubsystem
      * @param yPidInput specifies the Y PidInput provider.
      */
     public void enableAntiTipping(
-        TrcPidController.PidCoefficients yTippingPidCoeffs, double yTolerance, TrcPidController.PidInput yPidInput)
+        TrcPidController.PidCoefficients yTippingPidCoeffs, double yTolerance, DoubleSupplier yPidInput)
     {
         enableAntiTipping(null, 0.0, null, yTippingPidCoeffs, yTolerance, yPidInput);
     }   //enableAntiTipping
@@ -1237,9 +1238,9 @@ public abstract class TrcDriveBase implements TrcExclusiveSubsystem
         Double maxMotorVel, TrcPidController.PidCoefficients velPidCoeffs, double velPidTolerance, boolean softwarePid)
     {
         this.maxMotorVel = maxMotorVel;
-        for (int i = 0; i < motors.length; i++)
+        for (TrcMotor motor : motors)
         {
-            motors[i].setVelocityPidParameters(velPidCoeffs, velPidTolerance, softwarePid);
+            motor.setVelocityPidParameters(velPidCoeffs, velPidTolerance, softwarePid, null);
         }
     }   //enableMotorVelocityControl
 

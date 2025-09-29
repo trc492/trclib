@@ -22,6 +22,8 @@
 
 package trclib.pathdrive;
 
+import java.util.function.DoubleSupplier;
+
 import trclib.controller.TrcPidController;
 import trclib.driverio.TrcTone;
 import trclib.robotcore.TrcLoopProfiler;
@@ -135,9 +137,9 @@ public class TrcPidDrive
      */
     public TrcPidDrive(
         String instanceName, TrcDriveBase driveBase,
-        TrcPidController.PidCoefficients xPidCoeffs, double xTolerance, TrcPidController.PidInput xPidInput,
-        TrcPidController.PidCoefficients yPidCoeffs, double yTolerance, TrcPidController.PidInput yPidInput,
-        TrcPidController.PidCoefficients turnPidCoeffs, double turnTolerance, TrcPidController.PidInput turnPidInput)
+        TrcPidController.PidCoefficients xPidCoeffs, double xTolerance, DoubleSupplier xPidInput,
+        TrcPidController.PidCoefficients yPidCoeffs, double yTolerance, DoubleSupplier yPidInput,
+        TrcPidController.PidCoefficients turnPidCoeffs, double turnTolerance, DoubleSupplier turnPidInput)
     {
         this.tracer = new TrcDbgTrace();
         this.instanceName = instanceName;
@@ -175,8 +177,8 @@ public class TrcPidDrive
      */
     public TrcPidDrive(
         String instanceName, TrcDriveBase driveBase,
-        TrcPidController.PidCoefficients yPidCoeffs, double yTolerance, TrcPidController.PidInput yPidInput,
-        TrcPidController.PidCoefficients turnPidCoeffs, double turnTolerance, TrcPidController.PidInput turnPidInput)
+        TrcPidController.PidCoefficients yPidCoeffs, double yTolerance, DoubleSupplier yPidInput,
+        TrcPidController.PidCoefficients turnPidCoeffs, double turnTolerance, DoubleSupplier turnPidInput)
     {
         this(instanceName, driveBase, null, 0.0, null,
              yPidCoeffs, yTolerance, yPidInput, turnPidCoeffs, turnTolerance, turnPidInput);

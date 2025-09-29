@@ -22,6 +22,8 @@
 
 package trclib.archive;
 
+import java.util.function.DoubleSupplier;
+
 import trclib.controller.TrcPidController;
 
 /**
@@ -48,7 +50,7 @@ public class TrcCascadePidController extends TrcPidController
      */
     public TrcCascadePidController(
         String instanceName, PidCoefficients primaryPidCoefficients, PidCoefficients secondaryPidCoefficients,
-        PidInput primaryInput, PidInput secondaryInput)
+        DoubleSupplier primaryInput, DoubleSupplier secondaryInput)
     {
         super(instanceName + ".primary", primaryPidCoefficients, primaryInput);
         secondaryCtrl = new TrcPidController(instanceName + ".secondary", secondaryPidCoefficients, secondaryInput);

@@ -24,6 +24,7 @@ package trclib.motor;
 
 import java.util.ArrayList;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.function.DoubleSupplier;
 
 import trclib.controller.TrcPidController;
 import trclib.dataprocessor.TrcUtil;
@@ -2263,9 +2264,11 @@ public abstract class TrcMotor implements TrcMotorController, TrcExclusiveSubsys
      * @param softwarePid specifies true to use software PID control, false to use native motor PID control.
      * @param enableSquid specifies true to enable SQUID control mode, false to disable (only applicable if
      *        softwarePid is true).
+     * @param pidInput specifies the method to call to get Velocity PID input, can be null to use built-in getVelocity.
      */
     public void setVelocityPidParameters(
-        TrcPidController.PidCoefficients pidCoeff, double tolerance, boolean softwarePid, boolean enableSquid)
+        TrcPidController.PidCoefficients pidCoeff, double tolerance, boolean softwarePid, boolean enableSquid,
+        DoubleSupplier pidInput)
     {
         softwarePidEnabled = softwarePid;
         if (softwarePidEnabled)
@@ -2276,7 +2279,8 @@ public abstract class TrcMotor implements TrcMotorController, TrcExclusiveSubsys
             }
             else
             {
-                velPidCtrl = new TrcPidController(instanceName + ".velPidCtrl", pidCoeff, this::getVelocity);
+                velPidCtrl = new TrcPidController(
+                    instanceName + ".velPidCtrl", pidCoeff, pidInput != null? pidInput: this::getVelocity);
                 // Set to absolute setpoint because velocity PID control is generally absolute.
                 velPidCtrl.setAbsoluteSetPoint(true);
             }
@@ -2297,11 +2301,12 @@ public abstract class TrcMotor implements TrcMotorController, TrcExclusiveSubsys
      * @param pidCoeff specifies the PID coefficients to set.
      * @param tolerance specifies the PID tolerance.
      * @param softwarePid specifies true to use software PID control, false to use native motor PID control.
+     * @param pidInput specifies the method to call to get Velocity PID input, can be null to use built-in getVelocity.
      */
     public void setVelocityPidParameters(
-        TrcPidController.PidCoefficients pidCoeff, double tolerance, boolean softwarePid)
+        TrcPidController.PidCoefficients pidCoeff, double tolerance, boolean softwarePid, DoubleSupplier pidInput)
     {
-        setVelocityPidParameters(pidCoeff, tolerance, softwarePid, false);
+        setVelocityPidParameters(pidCoeff, tolerance, softwarePid, false, pidInput);
     }   //setVelocityPidParameters
 
     /**
@@ -2318,13 +2323,14 @@ public abstract class TrcMotor implements TrcMotorController, TrcExclusiveSubsys
      * @param softwarePid specifies true to use software PID control, false to use native motor PID control.
      * @param enableSquid specifies true to enable SQUID control mode, false to disable (only applicable if
      *        softwarePid is true).
+     * @param pidInput specifies the method to call to get Velocity PID input, can be null to use built-in getVelocity.
      */
     public void setVelocityPidParameters(
         double kP, double kI, double kD, double kF, double iZone, double tolerance, boolean softwarePid,
-        boolean enableSquid)
+        boolean enableSquid, DoubleSupplier pidInput)
     {
         setVelocityPidParameters(
-            new TrcPidController.PidCoefficients(kP, kI, kD, kF, iZone), tolerance, softwarePid, enableSquid);
+            new TrcPidController.PidCoefficients(kP, kI, kD, kF, iZone), tolerance, softwarePid, enableSquid, pidInput);
     }   //setVelocityPidParameters
 
     /**
@@ -2339,11 +2345,13 @@ public abstract class TrcMotor implements TrcMotorController, TrcExclusiveSubsys
      * @param iZone specifies IZone, can be 0.0 if not provided.
      * @param tolerance specifies the PID tolerance.
      * @param softwarePid specifies true to use software PID control, false to use native motor PID control.
+     * @param pidInput specifies the method to call to get Velocity PID input, can be null to use built-in getVelocity.
      */
     public void setVelocityPidParameters(
-        double kP, double kI, double kD, double kF, double iZone, double tolerance, boolean softwarePid)
+        double kP, double kI, double kD, double kF, double iZone, double tolerance, boolean softwarePid,
+        DoubleSupplier pidInput)
     {
-        setVelocityPidParameters(kP, kI, kD, kF, iZone, tolerance, softwarePid, false);
+        setVelocityPidParameters(kP, kI, kD, kF, iZone, tolerance, softwarePid, false, pidInput);
     }   //setVelocityPidParameters
 
     /**
@@ -2359,12 +2367,14 @@ public abstract class TrcMotor implements TrcMotorController, TrcExclusiveSubsys
      * @param softwarePid specifies true to use software PID control, false to use native motor PID control.
      * @param enableSquid specifies true to enable SQUID control mode, false to disable (only applicable if
      *        softwarePid is true).
+     * @param pidInput specifies the method to call to get Velocity PID input, can be null to use built-in getVelocity.
      */
     public void setVelocityPidParameters(
-        double kP, double kI, double kD, double kF, double tolerance, boolean softwarePid, boolean enableSquid)
+        double kP, double kI, double kD, double kF, double tolerance, boolean softwarePid, boolean enableSquid,
+        DoubleSupplier pidInput)
     {
         setVelocityPidParameters(
-            new TrcPidController.PidCoefficients(kP, kI, kD, kF, 0.0), tolerance, softwarePid, enableSquid);
+            new TrcPidController.PidCoefficients(kP, kI, kD, kF, 0.0), tolerance, softwarePid, enableSquid, pidInput);
     }   //setVelocityPidParameters
 
     /**
@@ -2378,11 +2388,12 @@ public abstract class TrcMotor implements TrcMotorController, TrcExclusiveSubsys
      * @param kF specifies the Kf coefficient.
      * @param tolerance specifies the PID tolerance.
      * @param softwarePid specifies true to use software PID control, false to use native motor PID control.
+     * @param pidInput specifies the method to call to get Velocity PID input, can be null to use built-in getVelocity.
      */
     public void setVelocityPidParameters(
-        double kP, double kI, double kD, double kF, double tolerance, boolean softwarePid)
+        double kP, double kI, double kD, double kF, double tolerance, boolean softwarePid, DoubleSupplier pidInput)
     {
-        setVelocityPidParameters(kP, kI, kD, kF, 0.0, tolerance, softwarePid, false);
+        setVelocityPidParameters(kP, kI, kD, kF, 0.0, tolerance, softwarePid, false, pidInput);
     }   //setVelocityPidParameters
 
     /**
@@ -2499,10 +2510,11 @@ public abstract class TrcMotor implements TrcMotorController, TrcExclusiveSubsys
      * @param softwarePid specifies true to use software PID control, false to use native motor PID control.
      * @param enableSquid specifies true to enable SQUID control mode, false to disable (only applicable if
      *        softwarePid is true).
+     * @param pidInput specifies the method to call to get Position PID input, can be null to use built-in getPosition.
      */
     public void setPositionPidParameters(
         TrcPidController.PidCoefficients pidCoeff, TrcPidController.FFCoefficients ffCoeff, double tolerance,
-        boolean softwarePid, boolean enableSquid)
+        boolean softwarePid, boolean enableSquid, DoubleSupplier pidInput)
     {
         softwarePidEnabled = softwarePid;
         if (softwarePidEnabled)
@@ -2513,7 +2525,8 @@ public abstract class TrcMotor implements TrcMotorController, TrcExclusiveSubsys
             }
             else
             {
-                posPidCtrl = new TrcPidController(instanceName + ".posPidCtrl", pidCoeff, ffCoeff, this::getPosition);
+                posPidCtrl = new TrcPidController(
+                    instanceName + ".posPidCtrl", pidCoeff, ffCoeff, pidInput != null? pidInput: this::getPosition);
                 // Set to absolute setpoint because position PID control is generally absolute.
                 posPidCtrl.setAbsoluteSetPoint(true);
             }
@@ -2536,11 +2549,13 @@ public abstract class TrcMotor implements TrcMotorController, TrcExclusiveSubsys
      * @param softwarePid specifies true to use software PID control, false to use native motor PID control.
      * @param enableSquid specifies true to enable SQUID control mode, false to disable (only applicable if
      *        softwarePid is true).
+     * @param pidInput specifies the method to call to get Position PID input, can be null to use built-in getPosition.
      */
     public void setPositionPidParameters(
-        TrcPidController.PidCoefficients pidCoeff, double tolerance, boolean softwarePid, boolean enableSquid)
+        TrcPidController.PidCoefficients pidCoeff, double tolerance, boolean softwarePid, boolean enableSquid,
+        DoubleSupplier pidInput)
     {
-        setPositionPidParameters(pidCoeff, null, tolerance, softwarePid, enableSquid);
+        setPositionPidParameters(pidCoeff, null, tolerance, softwarePid, enableSquid, pidInput);
     }   //setPositionPidParameters
 
     /**
@@ -2551,11 +2566,12 @@ public abstract class TrcMotor implements TrcMotorController, TrcExclusiveSubsys
      * @param pidCoeff specifies the PID coefficients to set.
      * @param tolerance specifies the PID tolerance.
      * @param softwarePid specifies true to use software PID control, false to use native motor PID control.
+     * @param pidInput specifies the method to call to get Position PID input, can be null to use built-in getPosition.
      */
     public void setPositionPidParameters(
-        TrcPidController.PidCoefficients pidCoeff, double tolerance, boolean softwarePid)
+        TrcPidController.PidCoefficients pidCoeff, double tolerance, boolean softwarePid, DoubleSupplier pidInput)
     {
-        setPositionPidParameters(pidCoeff, null, tolerance, softwarePid, false);
+        setPositionPidParameters(pidCoeff, null, tolerance, softwarePid, false, pidInput);
     }   //setPositionPidParameters
 
     /**
@@ -2572,13 +2588,15 @@ public abstract class TrcMotor implements TrcMotorController, TrcExclusiveSubsys
      * @param softwarePid specifies true to use software PID control, false to use native motor PID control.
      * @param enableSquid specifies true to enable SQUID control mode, false to disable (only applicable if
      *        softwarePid is true).
+     * @param pidInput specifies the method to call to get Position PID input, can be null to use built-in getPosition.
      */
     public void setPositionPidParameters(
         double kP, double kI, double kD, double kF, double iZone, double tolerance, boolean softwarePid,
-        boolean enableSquid)
+        boolean enableSquid, DoubleSupplier pidInput)
     {
         setPositionPidParameters(
-            new TrcPidController.PidCoefficients(kP, kI, kD, kF, iZone), null, tolerance, softwarePid, enableSquid);
+            new TrcPidController.PidCoefficients(kP, kI, kD, kF, iZone), null, tolerance, softwarePid, enableSquid,
+            pidInput);
     }   //setPositionPidParameters
 
     /**
@@ -2593,11 +2611,13 @@ public abstract class TrcMotor implements TrcMotorController, TrcExclusiveSubsys
      * @param iZone specifies IZone, can be 0.0 if not provided.
      * @param tolerance specifies the PID tolerance.
      * @param softwarePid specifies true to use software PID control, false to use native motor PID control.
+     * @param pidInput specifies the method to call to get Position PID input, can be null to use built-in getPosition.
      */
     public void setPositionPidParameters(
-        double kP, double kI, double kD, double kF, double iZone, double tolerance, boolean softwarePid)
+        double kP, double kI, double kD, double kF, double iZone, double tolerance, boolean softwarePid,
+        DoubleSupplier pidInput)
     {
-        setPositionPidParameters(kP, kI, kD, kF, iZone, tolerance, softwarePid, false);
+        setPositionPidParameters(kP, kI, kD, kF, iZone, tolerance, softwarePid, false, pidInput);
     }   //setPositionPidParameters
 
     /**
@@ -2613,12 +2633,15 @@ public abstract class TrcMotor implements TrcMotorController, TrcExclusiveSubsys
      * @param softwarePid specifies true to use software PID control, false to use native motor PID control.
      * @param enableSquid specifies true to enable SQUID control mode, false to disable (only applicable if
      *        softwarePid is true).
+     * @param pidInput specifies the method to call to get Position PID input, can be null to use built-in getPosition.
      */
     public void setPositionPidParameters(
-        double kP, double kI, double kD, double kF, double tolerance, boolean softwarePid, boolean enableSquid)
+        double kP, double kI, double kD, double kF, double tolerance, boolean softwarePid, boolean enableSquid,
+        DoubleSupplier pidInput)
     {
         setPositionPidParameters(
-            new TrcPidController.PidCoefficients(kP, kI, kD, kF, 0.0), null, tolerance, softwarePid, enableSquid);
+            new TrcPidController.PidCoefficients(kP, kI, kD, kF, 0.0), null, tolerance, softwarePid, enableSquid,
+            pidInput);
     }   //setPositionPidParameters
 
     /**
@@ -2632,11 +2655,12 @@ public abstract class TrcMotor implements TrcMotorController, TrcExclusiveSubsys
      * @param kF specifies the Kf coefficient.
      * @param tolerance specifies the PID tolerance.
      * @param softwarePid specifies true to use software PID control, false to use native motor PID control.
+     * @param pidInput specifies the method to call to get Position PID input, can be null to use built-in getPosition.
      */
     public void setPositionPidParameters(
-        double kP, double kI, double kD, double kF, double tolerance, boolean softwarePid)
+        double kP, double kI, double kD, double kF, double tolerance, boolean softwarePid, DoubleSupplier pidInput)
     {
-        setPositionPidParameters(kP, kI, kD, kF, 0.0, tolerance, softwarePid, false);
+        setPositionPidParameters(kP, kI, kD, kF, 0.0, tolerance, softwarePid, false, pidInput);
     }   //setPositionPidParameters
 
     /**
@@ -2753,9 +2777,11 @@ public abstract class TrcMotor implements TrcMotorController, TrcExclusiveSubsys
      * @param softwarePid specifies true to use software PID control, false to use native motor PID control.
      * @param enableSquid specifies true to enable SQUID control mode, false to disable (only applicable if
      *        softwarePid is true).
+     * @param pidInput specifies the method to call to get Curret PID input, can be null to use built-in getCurrent.
      */
     public void setCurrentPidParameters(
-        TrcPidController.PidCoefficients pidCoeff, double tolerance, boolean softwarePid, boolean enableSquid)
+        TrcPidController.PidCoefficients pidCoeff, double tolerance, boolean softwarePid, boolean enableSquid,
+        DoubleSupplier pidInput)
     {
         softwarePidEnabled = softwarePid;
         if (softwarePidEnabled)
@@ -2766,7 +2792,8 @@ public abstract class TrcMotor implements TrcMotorController, TrcExclusiveSubsys
             }
             else
             {
-                currentPidCtrl = new TrcPidController(instanceName + ".currentPidCtrl", pidCoeff, this::getCurrent);
+                currentPidCtrl = new TrcPidController(
+                    instanceName + ".currentPidCtrl", pidCoeff, pidInput != null? pidInput: this::getCurrent);
                 // Set to absolute setpoint because current PID control is generally absolute.
                 currentPidCtrl.setAbsoluteSetPoint(true);
             }
@@ -2787,11 +2814,12 @@ public abstract class TrcMotor implements TrcMotorController, TrcExclusiveSubsys
      * @param pidCoeff specifies the PID coefficients to set.
      * @param tolerance specifies the PID tolerance.
      * @param softwarePid specifies true to use software PID control, false to use native motor PID control.
+     * @param pidInput specifies the method to call to get Curret PID input, can be null to use built-in getCurrent.
      */
     public void setCurrentPidParameters(
-        TrcPidController.PidCoefficients pidCoeff, double tolerance, boolean softwarePid)
+        TrcPidController.PidCoefficients pidCoeff, double tolerance, boolean softwarePid, DoubleSupplier pidInput)
     {
-        setCurrentPidParameters(pidCoeff, tolerance, softwarePid, false);
+        setCurrentPidParameters(pidCoeff, tolerance, softwarePid, false, pidInput);
     }   //setCurrentPidParameters
 
     /**
@@ -2808,13 +2836,14 @@ public abstract class TrcMotor implements TrcMotorController, TrcExclusiveSubsys
      * @param softwarePid specifies true to use software PID control, false to use native motor PID control.
      * @param enableSquid specifies true to enable SQUID control mode, false to disable (only applicable if
      *        softwarePid is true).
+     * @param pidInput specifies the method to call to get Curret PID input, can be null to use built-in getCurrent.
      */
     public void setCurrentPidParameters(
         double kP, double kI, double kD, double kF, double iZone, double tolerance, boolean softwarePid,
-        boolean enableSquid)
+        boolean enableSquid, DoubleSupplier pidInput)
     {
         setCurrentPidParameters(
-            new TrcPidController.PidCoefficients(kP, kI, kD, kF, iZone), tolerance, softwarePid, enableSquid);
+            new TrcPidController.PidCoefficients(kP, kI, kD, kF, iZone), tolerance, softwarePid, enableSquid, pidInput);
     }   //setCurrentPidParameters
 
     /**
@@ -2829,11 +2858,13 @@ public abstract class TrcMotor implements TrcMotorController, TrcExclusiveSubsys
      * @param iZone specifies IZone, can be 0.0 if not provided.
      * @param tolerance specifies the PID tolerance.
      * @param softwarePid specifies true to use software PID control, false to use native motor PID control.
+     * @param pidInput specifies the method to call to get Curret PID input, can be null to use built-in getCurrent.
      */
     public void setCurrentPidParameters(
-        double kP, double kI, double kD, double kF, double iZone, double tolerance, boolean softwarePid)
+        double kP, double kI, double kD, double kF, double iZone, double tolerance, boolean softwarePid,
+        DoubleSupplier pidInput)
     {
-        setCurrentPidParameters(kP, kI, kD, kF, iZone, tolerance, softwarePid, false);
+        setCurrentPidParameters(kP, kI, kD, kF, iZone, tolerance, softwarePid, false, pidInput);
     }   //setCurrentPidParameters
 
     /**
@@ -2849,12 +2880,14 @@ public abstract class TrcMotor implements TrcMotorController, TrcExclusiveSubsys
      * @param softwarePid specifies true to use software PID control, false to use native motor PID control.
      * @param enableSquid specifies true to enable SQUID control mode, false to disable (only applicable if
      *        softwarePid is true).
+     * @param pidInput specifies the method to call to get Curret PID input, can be null to use built-in getCurrent.
      */
     public void setCurrentPidParameters(
-        double kP, double kI, double kD, double kF, double tolerance, boolean softwarePid, boolean enableSquid)
+        double kP, double kI, double kD, double kF, double tolerance, boolean softwarePid, boolean enableSquid,
+        DoubleSupplier pidInput)
     {
         setCurrentPidParameters(
-            new TrcPidController.PidCoefficients(kP, kI, kD, kF, 0.0), tolerance, softwarePid, enableSquid);
+            new TrcPidController.PidCoefficients(kP, kI, kD, kF, 0.0), tolerance, softwarePid, enableSquid, pidInput);
     }   //setCurrentPidParameters
 
     /**
@@ -2868,11 +2901,12 @@ public abstract class TrcMotor implements TrcMotorController, TrcExclusiveSubsys
      * @param kF specifies the Kf coefficient.
      * @param tolerance specifies the PID tolerance.
      * @param softwarePid specifies true to use software PID control, false to use native motor PID control.
+     * @param pidInput specifies the method to call to get Curret PID input, can be null to use built-in getCurrent.
      */
     public void setCurrentPidParameters(
-        double kP, double kI, double kD, double kF, double tolerance, boolean softwarePid)
+        double kP, double kI, double kD, double kF, double tolerance, boolean softwarePid, DoubleSupplier pidInput)
     {
-        setCurrentPidParameters(kP, kI, kD, kF, 0.0, tolerance, softwarePid, false);
+        setCurrentPidParameters(kP, kI, kD, kF, 0.0, tolerance, softwarePid, false, pidInput);
     }   //setCurrentPidParameters
 
     /**
