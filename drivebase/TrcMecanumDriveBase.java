@@ -155,14 +155,7 @@ public class TrcMecanumDriveBase extends TrcSimpleDriveBase
             {
                 wheelPower = motorPowerMapper.translateMotorPower(wheelPower, lfMotor.getVelocity());
             }
-            if (maxMotorVel != null)
-            {
-                lfMotor.setVelocity(wheelPower * maxMotorVel);
-            }
-            else
-            {
-                lfMotor.setPower(wheelPower);
-            }
+            lfMotor.setPower(wheelPower);
             if (wheelPower != 0.0) wheelsPowered = true;
 
             wheelPower = wheelPowers[MotorType.RIGHT_FRONT.value];
@@ -170,14 +163,7 @@ public class TrcMecanumDriveBase extends TrcSimpleDriveBase
             {
                 wheelPower = motorPowerMapper.translateMotorPower(wheelPower, rfMotor.getVelocity());
             }
-            if (maxMotorVel != null)
-            {
-                rfMotor.setVelocity(wheelPower * maxMotorVel);
-            }
-            else
-            {
-                rfMotor.setPower(wheelPower);
-            }
+            rfMotor.setPower(wheelPower);
             if (wheelPower != 0.0) wheelsPowered = true;
 
             wheelPower = wheelPowers[MotorType.LEFT_BACK.value];
@@ -185,14 +171,7 @@ public class TrcMecanumDriveBase extends TrcSimpleDriveBase
             {
                 wheelPower = motorPowerMapper.translateMotorPower(wheelPower, lbMotor.getVelocity());
             }
-            if (maxMotorVel != null)
-            {
-                lbMotor.setVelocity(wheelPower * maxMotorVel);
-            }
-            else
-            {
-                lbMotor.setPower(wheelPower);
-            }
+            lbMotor.setPower(wheelPower);
             if (wheelPower != 0.0) wheelsPowered = true;
 
             wheelPower = wheelPowers[MotorType.RIGHT_BACK.value];
@@ -200,14 +179,7 @@ public class TrcMecanumDriveBase extends TrcSimpleDriveBase
             {
                 wheelPower = motorPowerMapper.translateMotorPower(wheelPower, rbMotor.getVelocity());
             }
-            if (maxMotorVel != null)
-            {
-                rbMotor.setVelocity(wheelPower * maxMotorVel);
-            }
-            else
-            {
-                rbMotor.setPower(wheelPower);
-            }
+            rbMotor.setPower(wheelPower);
             if (wheelPower != 0.0) wheelsPowered = true;
 
             setDriveTime(owner, driveTime, event);

@@ -258,7 +258,6 @@ public abstract class TrcDriveBase implements TrcExclusiveSubsystem
     private final Stack<Odometry> referenceOdometryStack = new Stack<>();
     private DriveOrientation driveOrientation = DriveOrientation.ROBOT;
     private double fieldForwardHeading;
-    protected Double maxMotorVel = null;
 
     private String driveOwner = null;
     protected double stallStartTime = 0.0;
@@ -1227,7 +1226,7 @@ public abstract class TrcDriveBase implements TrcExclusiveSubsystem
      * This method enables velocity control on the drive motors. When enabled, instead of sending percentage power to
      * the motors, we will send percentage of max motor velocity to the motors.
      *
-     * @param maxMotorVel specifies the maximum velocity of the motor in scaled unit/sec if enabled, null if disabled.
+     * @param maxMotorVel specifies the maximum velocity of the motor in scaled unit/sec if enabled.
      *        Generally, drive motors are not scaled, so the unit is really motor native unit. In FRC, this would be
      *        rotation/sec. In FTC, this would be encoder counts/sec.
      * @param velPidCoeffs specifies the velocity control PID coefficients.
@@ -1235,12 +1234,11 @@ public abstract class TrcDriveBase implements TrcExclusiveSubsystem
      * @param softwarePid specifies true to use software PID, false to use motor native PID.
      */
     public void enableMotorVelocityControl(
-        Double maxMotorVel, TrcPidController.PidCoefficients velPidCoeffs, double velPidTolerance, boolean softwarePid)
+        double maxMotorVel, TrcPidController.PidCoefficients velPidCoeffs, double velPidTolerance, boolean softwarePid)
     {
-        this.maxMotorVel = maxMotorVel;
         for (TrcMotor motor : motors)
         {
-            motor.setVelocityPidParameters(velPidCoeffs, velPidTolerance, softwarePid, null);
+            motor.enablePercentageVelocityControl(maxMotorVel, velPidCoeffs, velPidTolerance, softwarePid);
         }
     }   //enableMotorVelocityControl
 
@@ -1250,7 +1248,10 @@ public abstract class TrcDriveBase implements TrcExclusiveSubsystem
      */
     public void disableMotorVelocityControl()
     {
-        this.maxMotorVel = null;
+        for (TrcMotor motor : motors)
+        {
+            motor.disablePercentageVelocityControl();
+        }
     }   //disableMotorVelocityControl
 
     /**

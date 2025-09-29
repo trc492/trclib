@@ -269,6 +269,7 @@ public abstract class TrcMotor implements TrcMotorController, TrcExclusiveSubsys
     private TrcPerformanceTimer pidCtrlTaskPerformanceTimer = null;
     private boolean odometryEnabled = false;
     private TrcEvent releaseOwnershipEvent = null;
+    private Double maxMotorVel = null;
     // Configurations for software simulation of motor controller features.
     private boolean softwarePidEnabled = false;
     private Double batteryNominalVoltage = null;
@@ -1481,10 +1482,21 @@ public abstract class TrcMotor implements TrcMotorController, TrcExclusiveSubsys
                 switch (params.setToControlMode)
                 {
                     case Power:
-                        setControllerMotorPower(params.motorValue, true);
-                        break;
-
+                        if (maxMotorVel == null)
+                        {
+                            setControllerMotorPower(params.motorValue, true);
+                            break;
+                        }
+                        //
+                        // Intentionally fall to next.
+                        //
                     case Velocity:
+                        if (params.setToControlMode == ControlMode.Power)
+                        {
+                            // We are doing percentage velocity control.
+                            params.setToControlMode = ControlMode.Velocity;
+                            params.motorValue *= maxMotorVel;
+                        }
                         closeLoopControlTarget = params.motorValue;
                         if (softwarePidEnabled)
                         {
@@ -1611,6 +1623,30 @@ public abstract class TrcMotor implements TrcMotorController, TrcExclusiveSubsys
             taskParams.timeout = timeout != 0.0? timeout + TrcTimer.getCurrentTime(): 0.0;
         }
     }   //setTaskParams
+
+    /**
+     * This method enables velocity control on the motor. When enabled, instead of sending percentage power to the
+     * motor, we will send percentage of max motor velocity to the motor.
+     *
+     * @param maxMotorVel specifies the maximum velocity of the motor in scaled unit/sec if enabled.
+     * @param velPidCoeffs specifies the velocity control PID coefficients.
+     * @param velPidTolerance specifies the PID tolerance.
+     * @param softwarePid specifies true to use software PID, false to use motor native PID.
+     */
+    public void enablePercentageVelocityControl(
+        double maxMotorVel, TrcPidController.PidCoefficients velPidCoeffs, double velPidTolerance, boolean softwarePid)
+    {
+        this.maxMotorVel = maxMotorVel;
+        setVelocityPidParameters(velPidCoeffs, velPidTolerance, softwarePid, null);
+    }   //enablePercentageVelocityControl
+
+    /**
+     * This method disables velocity control on the motor. When disabled, it sends percentage power to the motor.
+     */
+    public void disablePercentageVelocityControl()
+    {
+        this.maxMotorVel = null;
+    }   //disablePercentageVelocityControl
 
     /**
      * This method sets the motor value. The value can be power, velocity or current. If the motor is not in the
