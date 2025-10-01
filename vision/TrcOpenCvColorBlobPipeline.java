@@ -967,7 +967,7 @@ public class TrcOpenCvColorBlobPipeline implements TrcOpenCvPipeline<TrcOpenCvDe
      * @return array of detected objects.
      */
     @Override
-    public DetectedObject[] process(Mat input)
+    public synchronized DetectedObject[] process(Mat input)
     {
         ArrayList<DetectedObject> detectedObjectsList = new ArrayList<>();
         double startTime;
