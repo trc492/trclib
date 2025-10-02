@@ -967,13 +967,14 @@ public class TrcOpenCvColorBlobPipeline implements TrcOpenCvPipeline<TrcOpenCvDe
      * @return array of detected objects.
      */
     @Override
-    public synchronized DetectedObject[] process(Mat input)
+    public DetectedObject[] process(Mat input)
     {
         ArrayList<DetectedObject> detectedObjectsList = new ArrayList<>();
         double startTime;
         Mat output;
         int matIndex = 0;
 
+        // Original camera image is CV_8UC4.
         intermediateMats[matIndex] = input;
         startTime = TrcTimer.getCurrentTime();
 
@@ -981,7 +982,7 @@ public class TrcOpenCvColorBlobPipeline implements TrcOpenCvPipeline<TrcOpenCvDe
         if (pipelineParams.colorConversion != null)
         {
             output = intermediateMats[++matIndex];
-            setExpectedMatType(output, input.size(), CvType.CV_32FC3);
+            setExpectedMatType(output, input.size(), CvType.CV_8UC3);
             Imgproc.cvtColor(input, output, pipelineParams.colorConversion);
             input = output;
         }
@@ -1012,7 +1013,7 @@ public class TrcOpenCvColorBlobPipeline implements TrcOpenCvPipeline<TrcOpenCvDe
             {
                 // Apply mask to the original image.
                 output = intermediateMats[++matIndex];
-                setExpectedMatType(output, input.size(), CvType.CV_32FC3);
+                setExpectedMatType(output, input.size(), CvType.CV_8UC4);
                 output.setTo(new Scalar(0));
                 Core.bitwise_and(intermediateMats[0], intermediateMats[0], output, input);
                 input = output;
