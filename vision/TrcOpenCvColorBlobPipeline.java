@@ -750,7 +750,10 @@ public class TrcOpenCvColorBlobPipeline implements TrcOpenCvPipeline<TrcOpenCvDe
             throw new IllegalArgumentException("highThresholds must be an array of 3 doubles.");
         }
 
-        pipelineParams.colorThresholdsList.add(new ColorThresholds(name, lowThresholds, highThresholds));
+        synchronized (pipelineParams)
+        {
+            pipelineParams.colorThresholdsList.add(new ColorThresholds(name, lowThresholds, highThresholds));
+        }
     }   //addColorThresholds
 
     /**
@@ -764,8 +767,11 @@ public class TrcOpenCvColorBlobPipeline implements TrcOpenCvPipeline<TrcOpenCvDe
      */
     public void setColorThresholds(String name, double[] lowThresholds, double[] highThresholds)
     {
-        pipelineParams.colorThresholdsList.clear();
-        addColorThresholds(name, lowThresholds, highThresholds);
+        synchronized (pipelineParams)
+        {
+            pipelineParams.colorThresholdsList.clear();
+            addColorThresholds(name, lowThresholds, highThresholds);
+        }
     }   //setColorThresholds
 
     /**
@@ -776,13 +782,17 @@ public class TrcOpenCvColorBlobPipeline implements TrcOpenCvPipeline<TrcOpenCvDe
      */
     public boolean isColorThresholdsEnabled(String name)
     {
-        for (ColorThresholds ct: pipelineParams.colorThresholdsList)
+        synchronized (pipelineParams)
         {
-            if (ct.name.equals(name))
+            for (ColorThresholds ct : pipelineParams.colorThresholdsList)
             {
-                return true;
+                if (ct.name.equals(name))
+                {
+                    return true;
+                }
             }
         }
+
         return false;
     }   //isColorThresholdsEnabled
 
@@ -970,178 +980,184 @@ public class TrcOpenCvColorBlobPipeline implements TrcOpenCvPipeline<TrcOpenCvDe
     public DetectedObject[] process(Mat input)
     {
         ArrayList<DetectedObject> detectedObjectsList = new ArrayList<>();
+        DetectedObject[] detectedObjects = null;
         double startTime;
         Mat output;
         int matIndex = 0;
 
-        // Original camera image is CV_8UC4.
-        intermediateMats[matIndex] = input;
-        startTime = TrcTimer.getCurrentTime();
-
-        // Do color space conversion.
-        if (pipelineParams.colorConversion != null)
+        synchronized (pipelineParams)
         {
-            output = intermediateMats[++matIndex];
-            setExpectedMatType(output, input.size(), CvType.CV_8UC3);
-            Imgproc.cvtColor(input, output, pipelineParams.colorConversion);
-            input = output;
-        }
+            // Original camera image is CV_8UC4.
+            intermediateMats[matIndex] = input;
+            startTime = TrcTimer.getCurrentTime();
 
-        int ctStartMat = matIndex;
-        Mat colorConvertedMat = input;
-        for (ColorThresholds ct: pipelineParams.colorThresholdsList)
-        {
-            ArrayList<MatOfPoint> contoursOutput = new ArrayList<>();
-
-            matIndex = ctStartMat;
-            input = colorConvertedMat;
-            // Do color filtering.
-            output = intermediateMats[++matIndex];
-            setExpectedMatType(output, input.size(), CvType.CV_8UC1);
-            Core.inRange(input, new Scalar(ct.lowThresholds), new Scalar(ct.highThresholds), output);
-            input = output;
-            // Do morphology.
-            if (morphKernelMat != null)
+            // Do color space conversion.
+            if (pipelineParams.colorConversion != null)
             {
                 output = intermediateMats[++matIndex];
-                setExpectedMatType(output, input.size(), CvType.CV_8UC1);
-                Imgproc.morphologyEx(input, output, morphOp, morphKernelMat);
+                setExpectedMatType(output, input.size(), CvType.CV_8UC3);
+                Imgproc.cvtColor(input, output, pipelineParams.colorConversion);
                 input = output;
             }
 
-            if (circleDetectionEnabled)
+            int ctStartMat = matIndex;
+            Mat colorConvertedMat = input;
+            for (ColorThresholds ct : pipelineParams.colorThresholdsList)
             {
-                // Apply mask to the original image.
-                output = intermediateMats[++matIndex];
-                setExpectedMatType(output, input.size(), CvType.CV_8UC4);
-                output.setTo(new Scalar(0));
-                Core.bitwise_and(intermediateMats[0], intermediateMats[0], output, input);
-                input = output;
-                // Convert masked result to gray.
+                ArrayList<MatOfPoint> contoursOutput = new ArrayList<>();
+
+                matIndex = ctStartMat;
+                input = colorConvertedMat;
+                // Do color filtering.
                 output = intermediateMats[++matIndex];
                 setExpectedMatType(output, input.size(), CvType.CV_8UC1);
-                Imgproc.cvtColor(input, output, Imgproc.COLOR_RGB2GRAY);
+                Core.inRange(input, new Scalar(ct.lowThresholds), new Scalar(ct.highThresholds), output);
                 input = output;
-                // Circle Blur.
-                if (gaussianBlurKernelSize != null)
+                // Do morphology.
+                if (morphKernelMat != null)
                 {
                     output = intermediateMats[++matIndex];
                     setExpectedMatType(output, input.size(), CvType.CV_8UC1);
-                    Imgproc.GaussianBlur(input, output, gaussianBlurKernelSize, 2, 2);
+                    Imgproc.morphologyEx(input, output, morphOp, morphKernelMat);
                     input = output;
                 }
-                else if (medianBlurKernelSize != null)
+
+                if (circleDetectionEnabled)
                 {
+                    // Apply mask to the original image.
+                    output = intermediateMats[++matIndex];
+                    setExpectedMatType(output, input.size(), CvType.CV_8UC4);
+                    output.setTo(new Scalar(0));
+                    Core.bitwise_and(intermediateMats[0], intermediateMats[0], output, input);
+                    input = output;
+                    // Convert masked result to gray.
                     output = intermediateMats[++matIndex];
                     setExpectedMatType(output, input.size(), CvType.CV_8UC1);
-                    Imgproc.medianBlur(input, output, medianBlurKernelSize);
+                    Imgproc.cvtColor(input, output, Imgproc.COLOR_RGB2GRAY);
                     input = output;
-                }
-                // Hough Circle Detection.
-                Mat circles = new Mat();
-                Imgproc.HoughCircles(
-                    input,
-                    circles,
-                    Imgproc.CV_HOUGH_GRADIENT,
-                    1.0,                // dp (accumulator resolution)
-                    minCircleDistance,  // minDist (min distance between circle centers)
-                    100.0,              // param1: upper threshold for Canny
-                    30.0,               // param2: threshold for center detection (smaller = more circles)
-                    (int) (pipelineParams.filterContourParams.widthRange[0]/2.0),    // min radius
-                    (int) (pipelineParams.filterContourParams.widthRange[1]/2.0));   // max radius
-                // Create contours for detected circles.
-                for (int i = 0; i < circles.cols(); i++)
-                {
-                    double[] data = circles.get(0, i);
-                    if (data == null) continue;
-
-                    Point center = new Point(data[0], data[1]);
-                    int radius = (int) Math.round(data[2]);
-
-                    // approximate circle with 16-point polygon
-                    Point[] pts = new Point[16];
-                    for (int j = 0; j < pts.length; j++)
+                    // Circle Blur.
+                    if (gaussianBlurKernelSize != null)
                     {
-                        double angle = 2*Math.PI*j/16;
-                        pts[j] = new Point(center.x + radius*Math.cos(angle), center.y + radius*Math.sin(angle));
+                        output = intermediateMats[++matIndex];
+                        setExpectedMatType(output, input.size(), CvType.CV_8UC1);
+                        Imgproc.GaussianBlur(input, output, gaussianBlurKernelSize, 2, 2);
+                        input = output;
                     }
-                    MatOfPoint circleContour = new MatOfPoint();
-                    circleContour.fromArray(pts);
-                    contoursOutput.add(circleContour);
-//                    // Optional: draw on input for visualization
-//                    Imgproc.circle(intermediateMats[0], center, radius, new Scalar(255,255,255), 2);
-//                    Imgproc.circle(intermediateMats[0], center, 2, new Scalar(255,255,255), -1);
+                    else if (medianBlurKernelSize != null)
+                    {
+                        output = intermediateMats[++matIndex];
+                        setExpectedMatType(output, input.size(), CvType.CV_8UC1);
+                        Imgproc.medianBlur(input, output, medianBlurKernelSize);
+                        input = output;
+                    }
+                    // Hough Circle Detection.
+                    Mat circles = new Mat();
+                    Imgproc.HoughCircles(
+                        input,
+                        circles,
+                        Imgproc.CV_HOUGH_GRADIENT,
+                        1.0,                // dp (accumulator resolution)
+                        minCircleDistance,  // minDist (min distance between circle centers)
+                        100.0,              // param1: upper threshold for Canny
+                        30.0,               // param2: threshold for center detection (smaller = more circles)
+                        (int) (pipelineParams.filterContourParams.widthRange[0]/2.0),    // min radius
+                        (int) (pipelineParams.filterContourParams.widthRange[1]/2.0));   // max radius
+                    // Create contours for detected circles.
+                    for (int i = 0; i < circles.cols(); i++)
+                    {
+                        double[] data = circles.get(0, i);
+                        if (data == null) continue;
+
+                        Point center = new Point(data[0], data[1]);
+                        int radius = (int) Math.round(data[2]);
+
+                        // approximate circle with 16-point polygon
+                        Point[] pts = new Point[16];
+                        for (int j = 0; j < pts.length; j++)
+                        {
+                            double angle = 2*Math.PI*j/16;
+                            pts[j] = new Point(center.x + radius*Math.cos(angle), center.y + radius*Math.sin(angle));
+                        }
+                        MatOfPoint circleContour = new MatOfPoint();
+                        circleContour.fromArray(pts);
+                        contoursOutput.add(circleContour);
+//                        // Optional: draw on input for visualization
+//                        Imgproc.circle(intermediateMats[0], center, radius, new Scalar(255,255,255), 2);
+//                        Imgproc.circle(intermediateMats[0], center, 2, new Scalar(255,255,255), -1);
+                    }
+                    circles.release();
                 }
-                circles.release();
-            }
-            // Canny Edge detection is not applicable for circle detection.
-            else if (cannyEdgeEnabled)
-            {
-                output = intermediateMats[++matIndex];
-                setExpectedMatType(output, input.size(), CvType.CV_8UC1);
-                Imgproc.Canny(input, output, cannyEdgeThreshold1, cannyEdgeThreshold2);
-                input = output;
-            }
-            // Circle Detection creates its own contours.
-            if (!circleDetectionEnabled)
-            {
-                // Find contours.
-                Imgproc.findContours(
-                    input, contoursOutput, hierarchy, pipelineParams.contourRetrievalMode, Imgproc.CHAIN_APPROX_SIMPLE);
-            }
-            // Do contour filtering.
-            if (pipelineParams.filterContourParams != null)
-            {
-                ArrayList<MatOfPoint> filterContoursOutput = new ArrayList<>();
-                filterContours(contoursOutput, pipelineParams.filterContourParams, filterContoursOutput);
-                contoursOutput.clear();
-                contoursOutput.addAll(filterContoursOutput);
-            }
-            // Process contour result.
-            for (MatOfPoint contour: contoursOutput)
-            {
-                detectedObjectsList.add(new DetectedObject(ct.name, contour));
-            }
-        }
-        if (performanceMetrics != null) performanceMetrics.logProcessingTime(startTime);
-
-        DetectedObject[] detectedObjects = detectedObjectsList.toArray(new DetectedObject[0]);
-        detectedObjectsUpdate.set(detectedObjects);
-
-        if (annotateEnabled)
-        {
-            Mat annotateMat = getIntermediateOutput(intermediateStep);
-            Scalar rectColor, textColor;
-
-            if (annotateMat.type() != CvType.CV_8UC1)
-            {
-                rectColor = ANNOTATE_RECT_COLOR;
-                textColor = ANNOTATE_TEXT_COLOR;
-            }
-            else
-            {
-                rectColor = ANNOTATE_RECT_WHITE;
-                textColor = ANNOTATE_RECT_WHITE;
-            }
-
-            if (detectedObjects.length > 0)
-            {
-                annotateFrame(
-                    annotateMat, detectedObjects, drawRotatedRect, drawCrosshair, rectColor, ANNOTATE_RECT_THICKNESS,
-                    textColor, ANNOTATE_FONT_SCALE);
-                if (pipelineParams.cameraMatrix != null)
+                // Canny Edge detection is not applicable for circle detection.
+                else if (cannyEdgeEnabled)
                 {
-                    drawAxes(annotateMat);
+                    output = intermediateMats[++matIndex];
+                    setExpectedMatType(output, input.size(), CvType.CV_8UC1);
+                    Imgproc.Canny(input, output, cannyEdgeThreshold1, cannyEdgeThreshold2);
+                    input = output;
+                }
+                // Circle Detection creates its own contours.
+                if (!circleDetectionEnabled)
+                {
+                    // Find contours.
+                    Imgproc.findContours(
+                        input, contoursOutput, hierarchy, pipelineParams.contourRetrievalMode,
+                        Imgproc.CHAIN_APPROX_SIMPLE);
+                }
+                // Do contour filtering.
+                if (pipelineParams.filterContourParams != null)
+                {
+                    ArrayList<MatOfPoint> filterContoursOutput = new ArrayList<>();
+                    filterContours(contoursOutput, pipelineParams.filterContourParams, filterContoursOutput);
+                    contoursOutput.clear();
+                    contoursOutput.addAll(filterContoursOutput);
+                }
+                // Process contour result.
+                for (MatOfPoint contour : contoursOutput)
+                {
+                    detectedObjectsList.add(new DetectedObject(ct.name, contour));
                 }
             }
+            if (performanceMetrics != null) performanceMetrics.logProcessingTime(startTime);
 
-            if (drawCrosshair)
+            detectedObjects = detectedObjectsList.toArray(new DetectedObject[0]);
+            detectedObjectsUpdate.set(detectedObjects);
+
+            if (annotateEnabled)
             {
-                int imageRows = annotateMat.rows();
-                int imageCols = annotateMat.cols();
-                Imgproc.drawMarker(
-                    annotateMat, new Point(imageCols/2.0, imageRows/2.0), rectColor, Imgproc.MARKER_CROSS,
-                    Math.max(imageRows, imageCols), ANNOTATE_RECT_THICKNESS);
+                Mat annotateMat = getIntermediateOutput(intermediateStep);
+                Scalar rectColor, textColor;
+
+                if (annotateMat.type() != CvType.CV_8UC1)
+                {
+                    rectColor = ANNOTATE_RECT_COLOR;
+                    textColor = ANNOTATE_TEXT_COLOR;
+                }
+                else
+                {
+                    rectColor = ANNOTATE_RECT_WHITE;
+                    textColor = ANNOTATE_RECT_WHITE;
+                }
+
+                if (detectedObjects.length > 0)
+                {
+                    annotateFrame(
+                        annotateMat, detectedObjects, drawRotatedRect, drawCrosshair, rectColor,
+                        ANNOTATE_RECT_THICKNESS,
+                        textColor, ANNOTATE_FONT_SCALE);
+                    if (pipelineParams.cameraMatrix != null)
+                    {
+                        drawAxes(annotateMat);
+                    }
+                }
+
+                if (drawCrosshair)
+                {
+                    int imageRows = annotateMat.rows();
+                    int imageCols = annotateMat.cols();
+                    Imgproc.drawMarker(
+                        annotateMat, new Point(imageCols/2.0, imageRows/2.0), rectColor, Imgproc.MARKER_CROSS,
+                        Math.max(imageRows, imageCols), ANNOTATE_RECT_THICKNESS);
+                }
             }
         }
 
