@@ -59,27 +59,70 @@ import trclib.timer.TrcTimer;
  */
 public class TrcOpenCvColorBlobPipeline implements TrcOpenCvPipeline<TrcOpenCvDetector.DetectedObject<?>>
 {
+    public enum ColorConversion
+    {
+        RGBToYCrCb(Imgproc.COLOR_RGB2YCrCb),
+        RGBToHSV(Imgproc.COLOR_RGB2HSV);
+
+        public final int value;
+        ColorConversion(int value)
+        {
+            this.value = value;
+        }   //ColorConversion
+    }   //enum ColorConversion
+
+    public static class Annotation
+    {
+        public boolean enabled = false;
+        public boolean drawRotatedRect = false;
+        public boolean drawCrosshair = false;
+
+        public void setAnnotation(boolean enabled, boolean drawRotatedRect, boolean drawCrosshair)
+        {
+            this.enabled = enabled;
+            this.drawRotatedRect = drawRotatedRect;
+            this.drawCrosshair = drawCrosshair;
+        }   //setAnnotation
+
+        public void setAnnotationEnabled(boolean enabled)
+        {
+            this.enabled = enabled;
+        }   //setAnnotationEnabled
+
+        @Override
+        public String toString()
+        {
+            return "(enabled=" + enabled +
+                   ",drawRotatedRect=" + drawRotatedRect +
+                   ",drawCrosshair=" + drawCrosshair + ")";
+        }   //toString
+    }   //class Annotation
+
     /**
      * This class encapsulates color thresholding operation properties of the pipeline.
      */
     public static class ColorThresholds
     {
-        public String name;
-        public double[] lowThresholds;
-        public double[] highThresholds;
+        // Hide the name field from Dashboard.
+        private String name = "";
+        public boolean enabled = true;
+        public double[] lowThresholds = new double[3];
+        public double[] highThresholds = new double[3];
 
         /**
          * Constructor: Create an instance of the object.
          *
          * @param name specifies the name of the color ranges. This will be used to label the detected object.
+         * @param enabled specifies true to enable the filter, false to disable.
          * @param lowThresholds specifies the low threshold values of the color space (e.g. {R, G, B}, {H, S, V}, or
          *        {Y, Cr, Cb} etc.)
          * @param highThresholds specifies the high threshold values of the color space (e.g. {R, G, B}, {H, S, V}, or
          *        {Y, Cr, Cb} etc.)
          */
-        public ColorThresholds(String name, double[] lowThresholds, double[] highThresholds)
+        public ColorThresholds(String name, boolean enabled, double[] lowThresholds, double[] highThresholds)
         {
             this.name = name;
+            this.enabled = enabled;
             this.lowThresholds = lowThresholds;
             this.highThresholds = highThresholds;
         }   //ColorThresholds
@@ -88,12 +131,142 @@ public class TrcOpenCvColorBlobPipeline implements TrcOpenCvPipeline<TrcOpenCvDe
         public String toString()
         {
             return "(name=" + name +
-                   ",lowThreshold=" + Arrays.toString(lowThresholds) +
+                   ",enabled=" + enabled +
+                   ",lowThresholds=" + Arrays.toString(lowThresholds) +
                    ",highThresholds=" + Arrays.toString(highThresholds) + ")";
         }   //toString
-
     }   //class ColorThresholds
 
+    public static class Morphology
+    {
+        public boolean enabled = false;
+        public boolean close = true;
+        public int kernelSize = 5;
+        private Mat kernelMat = null;
+
+        public void setMorphology(boolean enabled, boolean close, int kernelSize)
+        {
+            this.enabled = enabled;
+            if (kernelMat != null)
+            {
+                kernelMat.release();
+                kernelMat = null;
+            }
+
+            if (enabled)
+            {
+                this.close = close;
+                this.kernelSize = kernelSize;
+                kernelMat = Imgproc.getStructuringElement(Imgproc.CV_SHAPE_ELLIPSE, new Size(kernelSize, kernelSize));
+            }
+            else
+            {
+                this.close = false;
+                this.kernelSize = 0;
+            }
+        }   //setMorphology
+
+        public void setMorphologyEnabled(boolean enabled)
+        {
+            this.enabled = enabled;
+        }   //setMorphologyEnabled
+
+        @Override
+        public String toString()
+        {
+            return "(enabled=" + enabled +
+                   ",close=" + close +
+                   ",kernelSize=" + kernelSize + ")";
+        }   //toString
+    }   //class Morphology
+
+    public static class CircleDetection
+    {
+        public boolean enabled = false;
+        public double minCircleDistance = 0.0;
+
+        public void setCircleDetection(boolean enabled, double minCircleDistance)
+        {
+            this.enabled = enabled;
+            this.minCircleDistance = minCircleDistance;
+        }   //setCircleDetection
+
+        public void setCircleDetectionEnabled(boolean enabled)
+        {
+            this.enabled = enabled;
+        }   //setCircleDetectionEnabled
+
+        @Override
+        public String toString()
+        {
+            return "(enabled=" + enabled +
+                   ",minCircleDistance=" + minCircleDistance + ")";
+        }   //toString
+    }   //class CircleDetection
+
+    public static class CircleBlur
+    {
+        public boolean enabled = false;
+        public boolean useGaussian = true;
+        public int kSize = 0;
+        public Size kernelSize = null;
+
+        public void setCircleBlur(boolean enabled, boolean useGaussian, int kSize)
+        {
+            if (!useGaussian && (kSize % 2 == 0 || kSize <= 1))
+            {
+                throw new IllegalArgumentException("kernelSize for Median Blur must be odd and greater than 1.");
+            }
+
+            this.enabled = enabled;
+            this.useGaussian = useGaussian;
+            if (useGaussian)
+            {
+                this.kernelSize = new Size(kSize, kSize);
+            }
+        }   //setCircleBlur
+
+        public void setCircleBlurEnabled(boolean enabled)
+        {
+            this.enabled = enabled;
+        }   //setCircleBlurEnabled
+
+        @Override
+        public String toString()
+        {
+            return "(enabled=" + enabled +
+                   ",useGaussian=" + useGaussian +
+                   ",kSize=" + kSize +
+                   ",kernelSize=" + kernelSize + ")";
+        }   //toString
+    }   //class CircleBlur
+
+    public static class CannyEdgeDetection
+    {
+        public boolean enabled = false;
+        public double threshold1 = 0.0;
+        public double threshold2 = 0.0;
+
+        public void setCannyEdgeDetection(boolean enabled, double threshold1, double threshold2)
+        {
+            this.enabled = enabled;
+            this.threshold1 = threshold1;
+            this.threshold2 = threshold2;
+        }   //setCannyEdgeDetection
+
+        public void setCannyEdgeDetectionEnabled(boolean enabled)
+        {
+            this.enabled = enabled;
+        }   //setCannyEdgeDetectionEnabled
+
+        @Override
+        public String toString()
+        {
+            return "(enabled=" + enabled +
+                   ",threshold1=" + threshold1 +
+                   ",threshold2=" + threshold2 + ")";
+        }   //toString
+    }   //class CannyEdgeDetection
     /**
      * This class encapsulates all the filter contour parameters.
      */
@@ -181,13 +354,13 @@ public class TrcOpenCvColorBlobPipeline implements TrcOpenCvPipeline<TrcOpenCvDe
         @Override
         public String toString()
         {
-            return "minArea=" + minArea +
+            return "(minArea=" + minArea +
                    ",minPerim=" + minPerimeter +
                    ",width=(" + widthRange[0] + "," + widthRange[1] + ")" +
                    ",height=(" + heightRange[0] + "," + heightRange[1] + ")" +
                    ",solidity=(" + solidityRange[0] + "," + solidityRange[1] + ")" +
                    ",vertices=(" + verticesRange[0] + "," + verticesRange[1] + ")" +
-                   ",aspectRatio=(" + aspectRatioRange[0] + "," + aspectRatioRange[1] + ")";
+                   ",aspectRatio=(" + aspectRatioRange[0] + "," + aspectRatioRange[1] + "))";
         }   //toString
 
     }   //class FilterContourParams
@@ -197,16 +370,138 @@ public class TrcOpenCvColorBlobPipeline implements TrcOpenCvPipeline<TrcOpenCvDe
      */
     public static class PipelineParams
     {
+        public Annotation annotation = new Annotation();
+        public ColorConversion colorConversion = null;
+        public ArrayList<ColorThresholds> colorThresholdsList = new ArrayList<>();
+        public Morphology morphology = new Morphology();
+        public CircleDetection circleDetection = new CircleDetection();
+        public CircleBlur circleBlur = new CircleBlur();
+        public CannyEdgeDetection cannyEdgeDetection = new CannyEdgeDetection();
+        public boolean externalContour = true;
+        public FilterContourParams filterContourParams = new FilterContourParams();
         public double objWidth = 0.0;
         public double objHeight = 0.0;
-        public Integer colorConversion = null;
-        public ArrayList<ColorThresholds> colorThresholdsList;
-        public int contourRetrievalMode = Imgproc.RETR_EXTERNAL;
-        public FilterContourParams filterContourParams = null;
         public Mat cameraMatrix = null;
         public MatOfDouble distCoeffs = null;
         public TrcPose3D cameraPose = null;
         public MatOfPoint3f objPoints = null;
+
+        /**
+         * This method enables annotation.
+         *
+         * @param drawRotatedRect specifies true to draw rotated rectangle instead of bounding rectangle.
+         * @param drawCrosshair specifies true to draw crosshair.
+         * @return this object for chaining.
+         */
+        public PipelineParams setAnnotation(boolean drawRotatedRect, boolean drawCrosshair)
+        {
+            annotation.setAnnotation(true, drawRotatedRect, drawCrosshair);
+            return this;
+        }   //setAnnotation
+
+        /**
+         * This method sets the Color Conversion for the pipeline.
+         *
+         * @param colorConversion specifies the color conversion, null if no conversion needed.
+         * @return this object for chaining.
+         */
+        public PipelineParams setColorConversion(ColorConversion colorConversion)
+        {
+            this.colorConversion = colorConversion;
+            return this;
+        }   //setColorConversion
+
+        /**
+         * This method adds a set of color thresholds. It allows the same pipeline to detect different color blobs.
+         *
+         * @param name specifies the name of the color ranges. This will be used to label the detected object.
+         * @param enabled specifies true to enable this color threshold set, false to disable.
+         * @param lowThresholds specifies the low threshold values of the color space (e.g. {R, G, B}, {H, S, V}, or
+         *        {Y, Cr, Cb} etc.)
+         * @param highThresholds specifies the high threshold values of the color space (e.g. {R, G, B}, {H, S, V}, or
+         *        {Y, Cr, Cb} etc.)
+         * @return this object for chaining.
+         */
+        public PipelineParams addColorThresholds(
+            String name, boolean enabled, double[] lowThresholds, double[] highThresholds)
+        {
+            if (lowThresholds.length != 3)
+            {
+                throw new IllegalArgumentException("lowThresholds must be an array of 3 doubles.");
+            }
+
+            if (highThresholds.length != 3)
+            {
+                throw new IllegalArgumentException("highThresholds must be an array of 3 doubles.");
+            }
+
+            colorThresholdsList.add(new ColorThresholds(name, enabled, lowThresholds, highThresholds));
+            return this;
+        }   //addColorThresholds
+
+        /**
+         * This method enables morphology and sets its parameters.
+         *
+         * @param close specifies true to perform morphology CLOSE, false to perform morphology OPEN.
+         * @param kernelSize specifies the kernel size (same width and height).
+         * @return this object for chaining.
+         */
+        public PipelineParams setMorphology(boolean close, int kernelSize)
+        {
+            morphology.setMorphology(true, close, kernelSize);
+            return this;
+        }   //setMorphology
+
+        /**
+         * This method enables circle detection and sets its parameter.
+         *
+         * @param minCircleDistance specifies the minimum circle distance.
+         * @return this object for chaining.
+         */
+        public PipelineParams setCircleDetection(double minCircleDistance)
+        {
+            circleDetection.setCircleDetection(true, minCircleDistance);
+            return this;
+        }   //setCircleDetection
+
+        /**
+         * This method enables circle blur and sets its parameter.
+         *
+         * @param useGaussian specifies true to use Gaussian Blur, false to use Median Blur.
+         * @param kernelSize specifies the kernel size (same width and height).
+         * @return this object for chaining.
+         */
+        public PipelineParams setCircleBlur(boolean useGaussian, int kernelSize)
+        {
+            circleBlur.setCircleBlur(true, useGaussian, kernelSize);
+            return this;
+        }   //setCircleBlur
+
+        /**
+         * This method enables circle blur and sets its parameter.
+         *
+         * @param threshold1 specifies threshold 1 value.
+         * @param threshold2 specifies threshold 2 value.
+         * @return this object for chaining.
+         */
+        public PipelineParams setCannyEdgeDetection(double threshold1, double threshold2)
+        {
+            cannyEdgeDetection.setCannyEdgeDetection(true, threshold1, threshold2);
+            return this;
+        }   //setCannyEdgeDetection
+
+        /**
+         * This method sets contour detection parameters.
+         *
+         * @param filterParams specifies the contour filtering parameters.
+         * @return this object for chaining.
+         */
+        public PipelineParams setFilterContourParams(boolean external, FilterContourParams filterParams)
+        {
+            externalContour = external;
+            filterContourParams = filterParams;
+            return this;
+        }   //setFilterContourParams
 
         /**
          * This method sets the detected object's real world size.
@@ -221,62 +516,6 @@ public class TrcOpenCvColorBlobPipeline implements TrcOpenCvPipeline<TrcOpenCvDe
             this.objHeight = objHeight;
             return this;
         }   //setObjectSize
-
-        /**
-         * This method sets the parameters for color conversion and color thresholding.
-         *
-         * @param colorConversion specifies the conversion target color space, can be null if no conversion needed.
-         * @param name specifies the name of the color ranges. This will be used to label the detected object.
-         * @param lowThresholds specifies the low threshold values of the color space (e.g. {R, G, B}, {H, S, V}, or
-         *        {Y, Cr, Cb} etc.)
-         * @param highThresholds specifies the high threshold values of the color space (e.g. {R, G, B}, {H, S, V}, or
-         *        {Y, Cr, Cb} etc.)
-         * @return this object for chaining.
-         */
-        public PipelineParams setColorThresholds(
-            Integer colorConversion, String name, double[] lowThresholds, double[] highThresholds)
-        {
-            this.colorConversion = colorConversion;
-            this.colorThresholdsList = new ArrayList<>();
-            this.colorThresholdsList.add(new ColorThresholds(name, lowThresholds, highThresholds));
-            return this;
-        }   //setColorThresholds
-
-        /**
-         * This method adds another set of color thresholds. This allows the same pipeline to detect different color
-         * blobs.
-         *
-         * @param name specifies the name of the color ranges. This will be used to label the detected object.
-         * @param lowThresholds specifies the low threshold values of the color space (e.g. {R, G, B}, {H, S, V}, or
-         *        {Y, Cr, Cb} etc.)
-         * @param highThresholds specifies the high threshold values of the color space (e.g. {R, G, B}, {H, S, V}, or
-         *        {Y, Cr, Cb} etc.)
-         * @return this object for chaining.
-         */
-        public PipelineParams addColorThresholds(String name, double[] lowThresholds, double[] highThresholds)
-        {
-            if (colorThresholdsList == null)
-            {
-                throw new IllegalStateException("Must call setColorThresholds first.");
-            }
-
-            colorThresholdsList.add(new ColorThresholds(name, lowThresholds, highThresholds));
-            return this;
-        }   //addColorThresholds
-
-        /**
-         * This method sets contour detection parameters.
-         *
-         * @param externalContourOnly specifies true to detect external contour only (i.e. no internal holes).
-         * @param filterParams specifies the contour filtering parameters.
-         * @return this object for chaining.
-         */
-        public PipelineParams setContourDetectionParams(boolean externalContourOnly, FilterContourParams filterParams)
-        {
-            this.contourRetrievalMode = externalContourOnly? Imgproc.RETR_EXTERNAL: Imgproc.RETR_LIST;
-            this.filterContourParams = filterParams;
-            return this;
-        }   //setContourDetectionParams
 
         /**
          * This method sets the parameters used for SolvePnp operation.
@@ -311,12 +550,17 @@ public class TrcOpenCvColorBlobPipeline implements TrcOpenCvPipeline<TrcOpenCvDe
         @Override
         public String toString()
         {
-            return "objWidth=" + objWidth +
-                   ",objHeight=" + objHeight +
-                   ",colorConversion=" + colorConversion +
-                   ",externalContourOnly=" + (contourRetrievalMode == Imgproc.RETR_EXTERNAL) +
-                   ",filterContourParams=" + filterContourParams +
-                   ",cameraPose=" + cameraPose;
+            return "\tannotation=" + annotation +
+                   "\n\tcolorConversion=" + colorConversion +
+                   "\n\tcolorThresholds=" + colorThresholdsList.toString() +
+                   "\n\tmorphology=" + morphology +
+                   "\n\tcircleDetection=" + circleDetection +
+                   "\n\tcircleBlur=" + circleBlur +
+                   "\n\tcannyEdge=" + cannyEdgeDetection +
+                   "\n\tfilterParams=" + filterContourParams +
+                   "\n\tobjWidth=" + objWidth +
+                   "\n\tobjHeight=" + objHeight +
+                   "\n\tcameraPose=" + cameraPose;
         }   //toString
 
     }   //class PipelineParams
@@ -657,18 +901,6 @@ public class TrcOpenCvColorBlobPipeline implements TrcOpenCvPipeline<TrcOpenCvDe
 
     private final AtomicReference<DetectedObject[]> detectedObjectsUpdate = new AtomicReference<>();
     private int intermediateStep = 0;
-    private boolean annotateEnabled = false;
-    private boolean drawCrosshair = false;
-    private boolean drawRotatedRect = false;
-    private int morphOp = Imgproc.MORPH_CLOSE;
-    private Mat morphKernelMat = null;
-    private boolean circleDetectionEnabled = false;
-    private double minCircleDistance = 0.0;
-    private Size gaussianBlurKernelSize = null;
-    private Integer medianBlurKernelSize = null;
-    private boolean cannyEdgeEnabled = false;
-    private double cannyEdgeThreshold1 = 0.0;
-    private double cannyEdgeThreshold2 = 0.0;
     private TrcVisionPerformanceMetrics performanceMetrics = null;
 
     /**
@@ -732,47 +964,22 @@ public class TrcOpenCvColorBlobPipeline implements TrcOpenCvPipeline<TrcOpenCvDe
     /**
      * This method adds another set of color threshold values.
      *
-     * @param name specifies the name of the color ranges. This will be used to label the detected object.
-     * @param lowThresholds specifies the low threshold values of the color space (e.g. {R, G, B}, {H, S, V}, or
-     *        {Y, Cr, Cb} etc.)
-     * @param highThresholds specifies the high threshold values of the color space (e.g. {R, G, B}, {H, S, V}, or
-     *        {Y, Cr, Cb} etc.)
+     * @param name specifies the name of the color thresholds set.
+     * @param enabled specifies true to enable this color threshold set, false to disable.
      */
-    public void addColorThresholds(String name, double[] lowThresholds, double[] highThresholds)
-    {
-        if (lowThresholds.length != 3)
-        {
-            throw new IllegalArgumentException("lowThresholds must be an array of 3 doubles.");
-        }
-
-        if (highThresholds.length != 3)
-        {
-            throw new IllegalArgumentException("highThresholds must be an array of 3 doubles.");
-        }
-
-        synchronized (pipelineParams)
-        {
-            pipelineParams.colorThresholdsList.add(new ColorThresholds(name, lowThresholds, highThresholds));
-        }
-    }   //addColorThresholds
-
-    /**
-     * This method sets the color threshold values set.
-     *
-     * @param name specifies the name of the color ranges. This will be used to label the detected object.
-     * @param lowThresholds specifies the low threshold values of the color space (e.g. {R, G, B}, {H, S, V}, or
-     *        {Y, Cr, Cb} etc.)
-     * @param highThresholds specifies the high threshold values of the color space (e.g. {R, G, B}, {H, S, V}, or
-     *        {Y, Cr, Cb} etc.)
-     */
-    public void setColorThresholds(String name, double[] lowThresholds, double[] highThresholds)
+    public void setColorThresholdsEnabled(String name, boolean enabled)
     {
         synchronized (pipelineParams)
         {
-            pipelineParams.colorThresholdsList.clear();
-            addColorThresholds(name, lowThresholds, highThresholds);
+            for (ColorThresholds ct: pipelineParams.colorThresholdsList)
+            {
+                if (ct.name.equals(name))
+                {
+                    ct.enabled = enabled;
+                }
+            }
         }
-    }   //setColorThresholds
+    }   //setColorThresholdsEnabled
 
     /**
      * This method checks if the specified color threshold set is enabled.
@@ -788,7 +995,7 @@ public class TrcOpenCvColorBlobPipeline implements TrcOpenCvPipeline<TrcOpenCvDe
             {
                 if (ct.name.equals(name))
                 {
-                    return true;
+                    return ct.enabled;
                 }
             }
         }
@@ -797,145 +1004,56 @@ public class TrcOpenCvColorBlobPipeline implements TrcOpenCvPipeline<TrcOpenCvDe
     }   //isColorThresholdsEnabled
 
     /**
-     * This method enables Morphology operation in the pipeline with the specifies kernel shape and size.
+     * This method enables/disables Morphology operation in the pipeline.
      *
-     * @param morphOp specifies the Morphology operation.
-     * @param kernelShape specifies the kernel shape.
-     * @param kernelSize specifies the kernel size.
+     * @param enabled specifies true to enable, false to disable.
      */
-    public void enableMorphology(int morphOp, int kernelShape, Size kernelSize)
+    public void setMorphologyEnabled(boolean enabled)
     {
-        if (morphKernelMat != null)
+        synchronized (pipelineParams)
         {
-            // Release an existing kernel mat if there is one.
-            morphKernelMat.release();
+            pipelineParams.morphology.setMorphologyEnabled(enabled);
         }
-        this.morphOp = morphOp;
-        morphKernelMat = Imgproc.getStructuringElement(kernelShape, kernelSize);
-    }   //enableMorphology
+    }   //setMorphologyEnabled
 
     /**
-     * This method enables Morphology operation in the pipeline with default kernel shape and size.
+     * This method enables/disables circle detection in the pipeline.
      *
-     * @param morphOp specifies the Morphology operation.
+     * @param enabled specifies true to enable, false to disable.
      */
-    public void enableMorphology(int morphOp)
+    public void setCircleDetectionEnabled(boolean enabled)
     {
-        enableMorphology(morphOp, Imgproc.MORPH_ELLIPSE, new Size(5, 5));
-    }   //enableMorphology
-
-    /**
-     * This method enables Morphology operation in the pipeline with default kernel shape and size.
-     */
-    public void enableMorphology()
-    {
-        enableMorphology(Imgproc.MORPH_CLOSE, Imgproc.MORPH_ELLIPSE, new Size(5, 5));
-    }   //enableMorphology
-
-    /**
-     * This method disables Morphology operation in the pipeline.
-     */
-    public void disableMorphology()
-    {
-        if (morphKernelMat != null)
+        synchronized (pipelineParams)
         {
-            morphKernelMat.release();
-            morphKernelMat = null;
+            pipelineParams.circleDetection.setCircleDetectionEnabled(enabled);
         }
-    }   //disableMorphology
+    }   //setCircleDetectionEnabled
 
     /**
-     * This method enables circle detection in the pipeline with the given parameters.
+     * This method enables/disables circle blur in the pipeline.
      *
-     * @param minCircleDistance specifies the minimum distance between detected circle centers.
+     * @param enabled specifies true to enable, false to disable.
      */
-    public void enableCircleDetection(double minCircleDistance)
+    public void setCircleBlurEnabled(boolean enabled)
     {
-        this.minCircleDistance = minCircleDistance;
-        this.circleDetectionEnabled = true;
-        tracer.traceInfo(instanceName, "Enabling Circle Detection: minCircleDistance=%f", minCircleDistance);
-    }   //enableCircleDetection
-
-    /**
-     * This method disables circle detection in the pipeline.
-     */
-    public void disableCircleDetection()
-    {
-        this.minCircleDistance = 0.0;
-        this.circleDetectionEnabled = false;
-        tracer.traceInfo(instanceName, "Disabling Circle Detection.");
-    }   //disableCircleDetection
-
-    /**
-     * This method enables blur operation for circle detection.
-     *
-     * @param useGaussianBlur specifies true to use Gaussian Blur, false to use Median Blur.
-     * @param kernelSize specifies the kernel size in pixels.
-     */
-    public void enableCircleBlur(boolean useGaussianBlur, int kernelSize)
-    {
-        tracer.traceInfo(
-            instanceName,
-            "Enabling Circle Blur (%s): KernelSize=%d", useGaussianBlur? "Gaussian": "Median", kernelSize);
-        if (useGaussianBlur)
+        synchronized (pipelineParams)
         {
-            gaussianBlurKernelSize = new Size(kernelSize, kernelSize);
-            medianBlurKernelSize = null;
+            pipelineParams.circleBlur.setCircleBlurEnabled(enabled);
         }
-        else
+    }   //setCircleBlurEnabled
+
+    /**
+     * This method enables/disables canny edge detection in the pipeline.
+     *
+     * @param enabled specifies true to enable, false to disable.
+     */
+    public void setCannyEdgeDetectionEnabled(boolean enabled)
+    {
+        synchronized (pipelineParams)
         {
-            if (kernelSize % 2 == 0 || kernelSize <= 1)
-            {
-                throw new IllegalArgumentException("kernelSize for Median Blur must be odd and greater than 1.");
-            }
-            medianBlurKernelSize = kernelSize;
-            gaussianBlurKernelSize = null;
+            pipelineParams.cannyEdgeDetection.setCannyEdgeDetectionEnabled(enabled);
         }
-    }   //enableCircleBlur
-
-    /**
-     * This method enables blur operation for circle detection.
-     *
-     * @param useGaussianBlur specifies true to use Gaussian Blur, false to use Median Blur.
-     */
-    public void enableCircleBlur(boolean useGaussianBlur)
-    {
-        enableCircleBlur(useGaussianBlur, DEF_BLUR_KERNEL_SIZE);
-    }   //enableCircleBlur
-
-    /**
-     * This method disables blur operation for circle detection.
-     */
-    public void disableCircleBlur()
-    {
-        gaussianBlurKernelSize = null;
-        medianBlurKernelSize = null;
-    }   //disableCircleBlur
-
-    /**
-     * This method enables Canny Edge Detection with the specified threshold values.
-     *
-     * @param threshold1 specifies threshold 1 value.
-     * @param threshold2 specifies threshold 2 value.
-     */
-    public void enableCannyEdgeDetection(double threshold1, double threshold2)
-    {
-        this.cannyEdgeThreshold1 = threshold1;
-        this.cannyEdgeThreshold2 = threshold2;
-        this.cannyEdgeEnabled = true;
-        tracer.traceInfo(
-            instanceName, "Enabling Canny Edge Detection: threshold1=%f, threshold2=%f", threshold1, threshold2);
-    }   //enableCannyEdgeDetection
-
-    /**
-     * This method disables Canny Edge Detection.
-     */
-    public void disableCannyEdgeDetection()
-    {
-        this.cannyEdgeThreshold1 = this.cannyEdgeThreshold2 = 0.0;
-        this.cannyEdgeEnabled = false;
-        tracer.traceInfo(instanceName, "Disabling Canny Edge Detection.");
-    }   //disableCannyEdgeDetection
+    }   //setCannyEdgeDetectionEnabled
 
     /**
      * This method checks if the mat is the same type as expected. If not, it will recreate the mat with the expected
@@ -996,7 +1114,10 @@ public class TrcOpenCvColorBlobPipeline implements TrcOpenCvPipeline<TrcOpenCvDe
             {
                 output = intermediateMats[++matIndex];
                 setExpectedMatType(output, input.size(), CvType.CV_8UC3);
-                Imgproc.cvtColor(input, output, pipelineParams.colorConversion);
+                tracer.traceDebug(
+                    instanceName, "[%d] cvtColor: type=0x%02x, colorConv=%s",
+                    matIndex, output.type(), pipelineParams.colorConversion);
+                Imgproc.cvtColor(input, output, pipelineParams.colorConversion.value);
                 input = output;
             }
 
@@ -1004,6 +1125,9 @@ public class TrcOpenCvColorBlobPipeline implements TrcOpenCvPipeline<TrcOpenCvDe
             Mat colorConvertedMat = input;
             for (ColorThresholds ct : pipelineParams.colorThresholdsList)
             {
+                tracer.traceDebug(instanceName, "ColorThreshold: colorThreshold=%s", ct);
+                if (!ct.enabled) continue;
+
                 ArrayList<MatOfPoint> contoursOutput = new ArrayList<>();
 
                 matIndex = ctStartMat;
@@ -1011,43 +1135,55 @@ public class TrcOpenCvColorBlobPipeline implements TrcOpenCvPipeline<TrcOpenCvDe
                 // Do color filtering.
                 output = intermediateMats[++matIndex];
                 setExpectedMatType(output, input.size(), CvType.CV_8UC1);
+                tracer.traceDebug(instanceName, "[%d] inRange: type0x%02x", matIndex, output.type());
                 Core.inRange(input, new Scalar(ct.lowThresholds), new Scalar(ct.highThresholds), output);
                 input = output;
                 // Do morphology.
-                if (morphKernelMat != null)
+                if (pipelineParams.morphology.enabled)
                 {
                     output = intermediateMats[++matIndex];
                     setExpectedMatType(output, input.size(), CvType.CV_8UC1);
-                    Imgproc.morphologyEx(input, output, morphOp, morphKernelMat);
+                    tracer.traceDebug(
+                        instanceName, "[%d] morphology: type=0x%02x, morphology=%s",
+                        matIndex, output.type(), pipelineParams.morphology);
+                    Imgproc.morphologyEx(
+                        input, output, pipelineParams.morphology.close? Imgproc.MORPH_CLOSE: Imgproc.MORPH_OPEN,
+                        pipelineParams.morphology.kernelMat);
                     input = output;
                 }
 
-                if (circleDetectionEnabled)
+                if (pipelineParams.circleDetection.enabled)
                 {
+                    tracer.traceDebug(instanceName, "CircleDetection: %s", pipelineParams.circleDetection);
                     // Apply mask to the original image.
                     output = intermediateMats[++matIndex];
                     setExpectedMatType(output, input.size(), CvType.CV_8UC4);
                     output.setTo(new Scalar(0));
+                    tracer.traceDebug(instanceName, "[%d] circleMask: type=0x%02x", matIndex, output.type());
                     Core.bitwise_and(intermediateMats[0], intermediateMats[0], output, input);
                     input = output;
                     // Convert masked result to gray.
                     output = intermediateMats[++matIndex];
                     setExpectedMatType(output, input.size(), CvType.CV_8UC1);
+                    tracer.traceDebug(instanceName, "[%d] convertToGray: type=0x%02x", matIndex, output.type());
                     Imgproc.cvtColor(input, output, Imgproc.COLOR_RGB2GRAY);
                     input = output;
                     // Circle Blur.
-                    if (gaussianBlurKernelSize != null)
+                    if (pipelineParams.circleBlur.enabled)
                     {
                         output = intermediateMats[++matIndex];
                         setExpectedMatType(output, input.size(), CvType.CV_8UC1);
-                        Imgproc.GaussianBlur(input, output, gaussianBlurKernelSize, 2, 2);
-                        input = output;
-                    }
-                    else if (medianBlurKernelSize != null)
-                    {
-                        output = intermediateMats[++matIndex];
-                        setExpectedMatType(output, input.size(), CvType.CV_8UC1);
-                        Imgproc.medianBlur(input, output, medianBlurKernelSize);
+                        tracer.traceDebug(
+                            instanceName, "[%d] blur: type=0x%02x, blur=%s",
+                            matIndex, output.type(), pipelineParams.circleBlur);
+                        if (pipelineParams.circleBlur.useGaussian)
+                        {
+                            Imgproc.GaussianBlur(input, output, pipelineParams.circleBlur.kernelSize, 2, 2);
+                        }
+                        else
+                        {
+                            Imgproc.medianBlur(input, output, pipelineParams.circleBlur.kSize);
+                        }
                         input = output;
                     }
                     // Hough Circle Detection.
@@ -1057,7 +1193,7 @@ public class TrcOpenCvColorBlobPipeline implements TrcOpenCvPipeline<TrcOpenCvDe
                         circles,
                         Imgproc.CV_HOUGH_GRADIENT,
                         1.0,                // dp (accumulator resolution)
-                        minCircleDistance,  // minDist (min distance between circle centers)
+                        pipelineParams.circleDetection.minCircleDistance,   // min distance between circle centers
                         100.0,              // param1: upper threshold for Canny
                         30.0,               // param2: threshold for center detection (smaller = more circles)
                         (int) (pipelineParams.filterContourParams.widthRange[0]/2.0),    // min radius
@@ -1071,6 +1207,7 @@ public class TrcOpenCvColorBlobPipeline implements TrcOpenCvPipeline<TrcOpenCvDe
                         Point center = new Point(data[0], data[1]);
                         int radius = (int) Math.round(data[2]);
 
+                        tracer.traceDebug(instanceName, "[circle %d] center=%s, radius=%d", i, center, radius);
                         // approximate circle with 16-point polygon
                         Point[] pts = new Point[16];
                         for (int j = 0; j < pts.length; j++)
@@ -1088,25 +1225,36 @@ public class TrcOpenCvColorBlobPipeline implements TrcOpenCvPipeline<TrcOpenCvDe
                     circles.release();
                 }
                 // Canny Edge detection is not applicable for circle detection.
-                else if (cannyEdgeEnabled)
+                else if (pipelineParams.cannyEdgeDetection.enabled)
                 {
                     output = intermediateMats[++matIndex];
                     setExpectedMatType(output, input.size(), CvType.CV_8UC1);
-                    Imgproc.Canny(input, output, cannyEdgeThreshold1, cannyEdgeThreshold2);
+                    tracer.traceDebug(
+                        instanceName, "[%d] cannyEdge: type=0x%02x, cannyEdge=%s",
+                        matIndex, output.type(), pipelineParams.cannyEdgeDetection);
+                    Imgproc.Canny(
+                        input, output, pipelineParams.cannyEdgeDetection.threshold1,
+                        pipelineParams.cannyEdgeDetection.threshold2);
                     input = output;
                 }
                 // Circle Detection creates its own contours.
-                if (!circleDetectionEnabled)
+                if (!pipelineParams.circleDetection.enabled)
                 {
                     // Find contours.
+                    tracer.traceDebug(
+                        instanceName, "findContour: type=0x%02x, external=%s",
+                        output.type(), pipelineParams.externalContour);
                     Imgproc.findContours(
-                        input, contoursOutput, hierarchy, pipelineParams.contourRetrievalMode,
+                        input, contoursOutput, hierarchy,
+                        pipelineParams.externalContour? Imgproc.RETR_EXTERNAL: Imgproc.RETR_LIST,
                         Imgproc.CHAIN_APPROX_SIMPLE);
                 }
                 // Do contour filtering.
                 if (pipelineParams.filterContourParams != null)
                 {
                     ArrayList<MatOfPoint> filterContoursOutput = new ArrayList<>();
+                    tracer.traceDebug(
+                        instanceName, "filterContour: filter=%s", pipelineParams.filterContourParams);
                     filterContours(contoursOutput, pipelineParams.filterContourParams, filterContoursOutput);
                     contoursOutput.clear();
                     contoursOutput.addAll(filterContoursOutput);
@@ -1116,13 +1264,14 @@ public class TrcOpenCvColorBlobPipeline implements TrcOpenCvPipeline<TrcOpenCvDe
                 {
                     detectedObjectsList.add(new DetectedObject(ct.name, contour));
                 }
+                tracer.traceDebug(instanceName, "DetectedObj: num=%d", detectedObjectsList.size());
             }
             if (performanceMetrics != null) performanceMetrics.logProcessingTime(startTime);
 
             detectedObjects = detectedObjectsList.toArray(new DetectedObject[0]);
             detectedObjectsUpdate.set(detectedObjects);
 
-            if (annotateEnabled)
+            if (pipelineParams.annotation.enabled)
             {
                 Mat annotateMat = getIntermediateOutput(intermediateStep);
                 Scalar rectColor, textColor;
@@ -1141,16 +1290,16 @@ public class TrcOpenCvColorBlobPipeline implements TrcOpenCvPipeline<TrcOpenCvDe
                 if (detectedObjects.length > 0)
                 {
                     annotateFrame(
-                        annotateMat, detectedObjects, drawRotatedRect, drawCrosshair, rectColor,
-                        ANNOTATE_RECT_THICKNESS,
-                        textColor, ANNOTATE_FONT_SCALE);
+                        annotateMat, detectedObjects, pipelineParams.annotation.drawRotatedRect,
+                        pipelineParams.annotation.drawCrosshair, rectColor, ANNOTATE_RECT_THICKNESS, textColor,
+                        ANNOTATE_FONT_SCALE);
                     if (pipelineParams.cameraMatrix != null)
                     {
                         drawAxes(annotateMat);
                     }
                 }
 
-                if (drawCrosshair)
+                if (pipelineParams.annotation.drawCrosshair)
                 {
                     int imageRows = annotateMat.rows();
                     int imageCols = annotateMat.cols();
@@ -1184,10 +1333,13 @@ public class TrcOpenCvColorBlobPipeline implements TrcOpenCvPipeline<TrcOpenCvDe
     @Override
     public void enableAnnotation(boolean drawRotatedRect, boolean drawCrosshair)
     {
-        this.annotateEnabled = true;
-        this.drawRotatedRect = drawRotatedRect;
-        this.drawCrosshair = drawCrosshair;
-    }   //setAnnotateEnabled
+        synchronized (pipelineParams)
+        {
+            pipelineParams.annotation.enabled = true;
+            pipelineParams.annotation.drawRotatedRect = drawRotatedRect;
+            pipelineParams.annotation.drawCrosshair = drawCrosshair;
+        }
+    }   //enableAnnotation
 
     /**
      * This method disables image annotation.
@@ -1195,9 +1347,12 @@ public class TrcOpenCvColorBlobPipeline implements TrcOpenCvPipeline<TrcOpenCvDe
     @Override
     public void disableAnnotation()
     {
-        this.annotateEnabled = false;
-        this.drawRotatedRect = false;
-        this.drawCrosshair = false;
+        synchronized (pipelineParams)
+        {
+            pipelineParams.annotation.enabled = false;
+            pipelineParams.annotation.drawRotatedRect = false;
+            pipelineParams.annotation.drawCrosshair = false;
+        }
     }   //disableAnnotation
 
     /**
@@ -1208,7 +1363,10 @@ public class TrcOpenCvColorBlobPipeline implements TrcOpenCvPipeline<TrcOpenCvDe
     @Override
     public boolean isAnnotateEnabled()
     {
-        return annotateEnabled;
+        synchronized (pipelineParams)
+        {
+            return pipelineParams.annotation.enabled;
+        }
     }   //isAnnotateEnabled
 
     /**
