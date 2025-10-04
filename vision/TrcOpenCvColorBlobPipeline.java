@@ -1139,6 +1139,10 @@ public class TrcOpenCvColorBlobPipeline implements TrcOpenCvPipeline<TrcOpenCvDe
 
             int ctStartMat = matIndex;
             Mat colorConvertedMat = input;
+            if (pipelineParams.colorThresholdSets == null)
+            {
+                pipelineParams.buildColorThresholdSets();
+            }
             for (ColorThresholds ct : pipelineParams.colorThresholdSets)
             {
                 tracer.traceDebug(instanceName, "ColorThreshold: colorThreshold=%s", ct);
