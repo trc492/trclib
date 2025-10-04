@@ -372,7 +372,8 @@ public class TrcOpenCvColorBlobPipeline implements TrcOpenCvPipeline<TrcOpenCvDe
     {
         public Annotation annotation = new Annotation();
         public ColorConversion colorConversion = null;
-        public ArrayList<ColorThresholds> colorThresholdsList = new ArrayList<>();
+        private ArrayList<ColorThresholds> colorThresholdsList = new ArrayList<>();
+        public ColorThresholds[] colorThresholdSets = null;
         public Morphology morphology = new Morphology();
         public CircleDetection circleDetection = new CircleDetection();
         public CircleBlur circleBlur = new CircleBlur();
@@ -438,6 +439,21 @@ public class TrcOpenCvColorBlobPipeline implements TrcOpenCvPipeline<TrcOpenCvDe
             colorThresholdsList.add(new ColorThresholds(name, enabled, lowThresholds, highThresholds));
             return this;
         }   //addColorThresholds
+
+        /**
+         * This method creates the ColorThreshold sets from the ColorThresholdsList. This must be called after adding
+         * the last ColorThresholds.
+         *
+         * @return this object for chaining.
+         */
+        public PipelineParams buildColorThresholdSets()
+        {
+            if (colorThresholdSets == null)
+            {
+                colorThresholdSets = colorThresholdsList.toArray(new ColorThresholds[0]);
+            }
+            return this;
+        }   //buildColorThresholdSets
 
         /**
          * This method enables morphology and sets its parameters.
@@ -552,7 +568,7 @@ public class TrcOpenCvColorBlobPipeline implements TrcOpenCvPipeline<TrcOpenCvDe
         {
             return "\tannotation=" + annotation +
                    "\n\tcolorConversion=" + colorConversion +
-                   "\n\tcolorThresholds=" + colorThresholdsList.toString() +
+                   "\n\tcolorThresholds=" + Arrays.toString(colorThresholdSets) +
                    "\n\tmorphology=" + morphology +
                    "\n\tcircleDetection=" + circleDetection +
                    "\n\tcircleBlur=" + circleBlur +
@@ -1123,7 +1139,7 @@ public class TrcOpenCvColorBlobPipeline implements TrcOpenCvPipeline<TrcOpenCvDe
 
             int ctStartMat = matIndex;
             Mat colorConvertedMat = input;
-            for (ColorThresholds ct : pipelineParams.colorThresholdsList)
+            for (ColorThresholds ct : pipelineParams.colorThresholdSets)
             {
                 tracer.traceDebug(instanceName, "ColorThreshold: colorThreshold=%s", ct);
                 if (!ct.enabled) continue;
