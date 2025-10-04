@@ -104,7 +104,7 @@ public class TrcOpenCvColorBlobPipeline implements TrcOpenCvPipeline<TrcOpenCvDe
     public static class ColorThresholds
     {
         // Hide the name field from Dashboard.
-        private String name = "";
+        public final String name;
         public boolean enabled = true;
         public double[] lowThresholds = new double[3];
         public double[] highThresholds = new double[3];
@@ -142,41 +142,60 @@ public class TrcOpenCvColorBlobPipeline implements TrcOpenCvPipeline<TrcOpenCvDe
         public boolean enabled = false;
         public boolean close = true;
         public int kernelSize = 5;
+        private int createdKernelSize = 0;
         private Mat kernelMat = null;
 
-        public void setMorphology(boolean enabled, boolean close, int kernelSize)
+        public void setMorphology(boolean enabled, boolean close, int kSize)
         {
             this.enabled = enabled;
-            if (kernelMat != null)
-            {
-                kernelMat.release();
-                kernelMat = null;
-            }
-
             if (enabled)
             {
                 this.close = close;
-                this.kernelSize = kernelSize;
-                kernelMat = Imgproc.getStructuringElement(Imgproc.CV_SHAPE_ELLIPSE, new Size(kernelSize, kernelSize));
+                // kSize was not specified, use default size.
+                if (kSize == 0)
+                {
+                    kSize = 5;
+                }
+
+                // We don't have a kernelMat or we are changing its size.
+                if (this.kernelMat == null || this.createdKernelSize != kSize)
+                {
+                    // Create a new kernelMat. If old one exist, release it first.
+                    if (kernelMat != null)
+                    {
+                        kernelMat.release();
+                    }
+                    this.kernelMat = Imgproc.getStructuringElement(
+                        Imgproc.CV_SHAPE_ELLIPSE, new Size(kSize, kSize));
+                    this.createdKernelSize = kSize;
+                    this.kernelSize = kSize;
+                }
             }
-            else
+            else if (kernelMat != null)
             {
-                this.close = false;
-                this.kernelSize = 0;
+                // Disabling, release the kernelMat.
+                this.kernelMat.release();
+                this.createdKernelSize = 0;
             }
         }   //setMorphology
 
-        public void setMorphologyEnabled(boolean enabled)
+        public void refreshKernelMat()
         {
-            this.enabled = enabled;
-        }   //setMorphologyEnabled
+            if (enabled && kernelSize != createdKernelSize)
+            {
+                // Dashboard has changed kernelSize.
+                TrcDbgTrace.globalTraceInfo(
+                    "Morphology", "Dashboard has changed kernelSize " + createdKernelSize + "->" + kernelSize);
+                setMorphology(true, close, kernelSize);
+            }
+        }   //refreshParams
 
         @Override
         public String toString()
         {
             return "(enabled=" + enabled +
                    ",close=" + close +
-                   ",kernelSize=" + kernelSize + ")";
+                   ",createdKernelSize=" + createdKernelSize + ")";
         }   //toString
     }   //class Morphology
 
@@ -208,27 +227,42 @@ public class TrcOpenCvColorBlobPipeline implements TrcOpenCvPipeline<TrcOpenCvDe
     {
         public boolean enabled = false;
         public boolean useGaussian = true;
-        public int kSize = 0;
+        public int kSize = 9;
         public Size kernelSize = null;
 
         public void setCircleBlur(boolean enabled, boolean useGaussian, int kSize)
         {
-            if (!useGaussian && (kSize % 2 == 0 || kSize <= 1))
+            if (!useGaussian)
             {
-                throw new IllegalArgumentException("kernelSize for Median Blur must be odd and greater than 1.");
+                if (kSize <= 1)
+                {
+                    kSize = 3;
+                }
+                else if (kSize % 2 == 0)
+                {
+                    kSize++;
+                }
+            }
+            else if (kSize == 0)
+            {
+                kSize = 9;
             }
 
             this.enabled = enabled;
             this.useGaussian = useGaussian;
-            if (useGaussian)
-            {
-                this.kernelSize = new Size(kSize, kSize);
-            }
+            this.kernelSize = new Size(kSize, kSize);
+            this.kSize = kSize;
         }   //setCircleBlur
 
-        public void setCircleBlurEnabled(boolean enabled)
+        public void refreshKernelSize()
         {
-            this.enabled = enabled;
+            if (enabled && kernelSize.width != kSize)
+            {
+                // Dashboard has changed kSize.
+                TrcDbgTrace.globalTraceInfo(
+                    "CircleBlur", "Dashboard has changed kSize " + kernelSize.width + "->" + kSize);
+                setCircleBlur(true, useGaussian, kSize);
+            }
         }   //setCircleBlurEnabled
 
         @Override
@@ -380,12 +414,6 @@ public class TrcOpenCvColorBlobPipeline implements TrcOpenCvPipeline<TrcOpenCvDe
         public CannyEdgeDetection cannyEdgeDetection = new CannyEdgeDetection();
         public boolean externalContour = true;
         public FilterContourParams filterContourParams = new FilterContourParams();
-        public double objWidth = 0.0;
-        public double objHeight = 0.0;
-        public Mat cameraMatrix = null;
-        public MatOfDouble distCoeffs = null;
-        public TrcPose3D cameraPose = null;
-        public MatOfPoint3f objPoints = null;
 
         /**
          * This method enables annotation.
@@ -519,6 +547,31 @@ public class TrcOpenCvColorBlobPipeline implements TrcOpenCvPipeline<TrcOpenCvDe
             return this;
         }   //setFilterContourParams
 
+
+        @Override
+        public String toString()
+        {
+            return "\tannotation=" + annotation +
+                   "\n\tcolorConversion=" + colorConversion +
+                   "\n\tcolorThresholds=" + Arrays.toString(colorThresholdSets) +
+                   "\n\tmorphology=" + morphology +
+                   "\n\tcircleDetection=" + circleDetection +
+                   "\n\tcircleBlur=" + circleBlur +
+                   "\n\tcannyEdge=" + cannyEdgeDetection +
+                   "\n\tfilterParams=" + filterContourParams;
+        }   //toString
+
+    }   //class PipelineParams
+
+    public static class SolvePnpParams
+    {
+        private double objWidth = 0.0;
+        private double objHeight = 0.0;
+        private Mat cameraMatrix = null;
+        private MatOfDouble distCoeffs = null;
+        private TrcPose3D cameraPose = null;
+        private MatOfPoint3f objPoints = null;
+
         /**
          * This method sets the detected object's real world size.
          *
@@ -526,7 +579,7 @@ public class TrcOpenCvColorBlobPipeline implements TrcOpenCvPipeline<TrcOpenCvDe
          * @param objHeight specifies the detected object's real world height.
          * @return this object for chaining.
          */
-        public PipelineParams setObjectSize(double objWidth, double objHeight)
+        public SolvePnpParams setObjectSize(double objWidth, double objHeight)
         {
             this.objWidth = objWidth;
             this.objHeight = objHeight;
@@ -544,7 +597,7 @@ public class TrcOpenCvColorBlobPipeline implements TrcOpenCvPipeline<TrcOpenCvDe
          * @param cameraPose specifies the camera pose from robot center.
          * @return this object for chaining.
          */
-        public PipelineParams setSolvePnpParams(
+        public SolvePnpParams setSolvePnpParams(
             double fx, double fy, double cx, double cy, double[] distCoeffs, TrcPose3D cameraPose)
         {
             cameraMatrix = new Mat(3, 3, CvType.CV_64FC1);
@@ -566,20 +619,12 @@ public class TrcOpenCvColorBlobPipeline implements TrcOpenCvPipeline<TrcOpenCvDe
         @Override
         public String toString()
         {
-            return "\tannotation=" + annotation +
-                   "\n\tcolorConversion=" + colorConversion +
-                   "\n\tcolorThresholds=" + Arrays.toString(colorThresholdSets) +
-                   "\n\tmorphology=" + morphology +
-                   "\n\tcircleDetection=" + circleDetection +
-                   "\n\tcircleBlur=" + circleBlur +
-                   "\n\tcannyEdge=" + cannyEdgeDetection +
-                   "\n\tfilterParams=" + filterContourParams +
-                   "\n\tobjWidth=" + objWidth +
+            return "\tobjWidth=" + objWidth +
                    "\n\tobjHeight=" + objHeight +
                    "\n\tcameraPose=" + cameraPose;
         }   //toString
 
-    }   //class PipelineParams
+    }   //class SolvePnpParams
 
     /**
      * This class encapsulates info of the detected object. It extends TrcOpenCvDetector.DetectedObject that requires
@@ -621,17 +666,17 @@ public class TrcOpenCvColorBlobPipeline implements TrcOpenCvPipeline<TrcOpenCvDe
             rotatedRect.points(vertices);
 
             // Solve PnP: assuming the object is a rectangle with known dimensions.
-            if (pipelineParams.cameraMatrix != null && pipelineParams.distCoeffs != null &&
+            if (solvePnpParams != null && solvePnpParams.cameraMatrix != null && solvePnpParams.distCoeffs != null &&
                 Calib3d.solvePnP(
                     // Define the 3D coordinates of the object corners in the object coordinate space
-                    pipelineParams.objPoints,                                  // Object points in 3D
+                    solvePnpParams.objPoints,                                  // Object points in 3D
                     new MatOfPoint2f(orderPoints(vertices)),    // Corresponding image points
-                    pipelineParams.cameraMatrix,
-                    pipelineParams.distCoeffs,
+                    solvePnpParams.cameraMatrix,
+                    solvePnpParams.distCoeffs,
                     rvec,
                     tvec))
             {
-                objPose = projectPose(rvec, tvec, pipelineParams.cameraPose);
+                objPose = projectPose(rvec, tvec, solvePnpParams.cameraPose);
 //                objPose = new TrcPose2D(tvec.get(0, 0)[0], tvec.get(2, 0)[0], -(Math.toDegrees(rvec.get(1, 0)[0])));
             }
             else
@@ -872,7 +917,7 @@ public class TrcOpenCvColorBlobPipeline implements TrcOpenCvPipeline<TrcOpenCvDe
         @Override
         public Double getObjectWidth()
         {
-            return pipelineParams.objWidth;
+            return solvePnpParams != null? solvePnpParams.objWidth: null;
         }   //getObjectWidth
 
         /**
@@ -910,6 +955,7 @@ public class TrcOpenCvColorBlobPipeline implements TrcOpenCvPipeline<TrcOpenCvDe
     public final TrcDbgTrace tracer;
     private final String instanceName;
     private final PipelineParams pipelineParams;
+    private final SolvePnpParams solvePnpParams;
     private final Mat[] intermediateMats;
     private final Mat hierarchy = new Mat();
     private final Mat rvec = new Mat();
@@ -923,13 +969,15 @@ public class TrcOpenCvColorBlobPipeline implements TrcOpenCvPipeline<TrcOpenCvDe
      * Constructor: Create an instance of the object.
      *
      * @param instanceName specifies the instance name.
-     * @param pipelineParams specifies the pipeline parameters.
+     * @param pipelineParams specifies pipeline parameters.
+     * @param solvePnpParams specifies SolvePnP parameters, can be null if not provided.
      */
-    public TrcOpenCvColorBlobPipeline(String instanceName, PipelineParams pipelineParams)
+    public TrcOpenCvColorBlobPipeline(String instanceName, PipelineParams pipelineParams, SolvePnpParams solvePnpParams)
     {
         this.tracer = new TrcDbgTrace();
         this.instanceName = instanceName;
         this.pipelineParams = pipelineParams;
+        this.solvePnpParams = solvePnpParams;
         intermediateMats = new Mat[NUM_INTERMEDIATE_MATS];
         // Allocate Intermediate Mats, intermediateMats[0] is always the input Mat, no need to allocate.
         for (int i = 1; i < intermediateMats.length; i++)
@@ -1018,58 +1066,6 @@ public class TrcOpenCvColorBlobPipeline implements TrcOpenCvPipeline<TrcOpenCvDe
 
         return false;
     }   //isColorThresholdsEnabled
-
-    /**
-     * This method enables/disables Morphology operation in the pipeline.
-     *
-     * @param enabled specifies true to enable, false to disable.
-     */
-    public void setMorphologyEnabled(boolean enabled)
-    {
-        synchronized (pipelineParams)
-        {
-            pipelineParams.morphology.setMorphologyEnabled(enabled);
-        }
-    }   //setMorphologyEnabled
-
-    /**
-     * This method enables/disables circle detection in the pipeline.
-     *
-     * @param enabled specifies true to enable, false to disable.
-     */
-    public void setCircleDetectionEnabled(boolean enabled)
-    {
-        synchronized (pipelineParams)
-        {
-            pipelineParams.circleDetection.setCircleDetectionEnabled(enabled);
-        }
-    }   //setCircleDetectionEnabled
-
-    /**
-     * This method enables/disables circle blur in the pipeline.
-     *
-     * @param enabled specifies true to enable, false to disable.
-     */
-    public void setCircleBlurEnabled(boolean enabled)
-    {
-        synchronized (pipelineParams)
-        {
-            pipelineParams.circleBlur.setCircleBlurEnabled(enabled);
-        }
-    }   //setCircleBlurEnabled
-
-    /**
-     * This method enables/disables canny edge detection in the pipeline.
-     *
-     * @param enabled specifies true to enable, false to disable.
-     */
-    public void setCannyEdgeDetectionEnabled(boolean enabled)
-    {
-        synchronized (pipelineParams)
-        {
-            pipelineParams.cannyEdgeDetection.setCannyEdgeDetectionEnabled(enabled);
-        }
-    }   //setCannyEdgeDetectionEnabled
 
     /**
      * This method checks if the mat is the same type as expected. If not, it will recreate the mat with the expected
@@ -1161,6 +1157,8 @@ public class TrcOpenCvColorBlobPipeline implements TrcOpenCvPipeline<TrcOpenCvDe
                 // Do morphology.
                 if (pipelineParams.morphology.enabled)
                 {
+                    // Check if Dashboard has changed Kernel Size.
+                    pipelineParams.morphology.refreshKernelMat();
                     output = intermediateMats[++matIndex];
                     setExpectedMatType(output, input.size(), CvType.CV_8UC1);
                     tracer.traceDebug(
@@ -1191,6 +1189,8 @@ public class TrcOpenCvColorBlobPipeline implements TrcOpenCvPipeline<TrcOpenCvDe
                     // Circle Blur.
                     if (pipelineParams.circleBlur.enabled)
                     {
+                        // Check if Dashboard has changed Kernel Size.
+                        pipelineParams.circleBlur.refreshKernelSize();
                         output = intermediateMats[++matIndex];
                         setExpectedMatType(output, input.size(), CvType.CV_8UC1);
                         tracer.traceDebug(
@@ -1313,7 +1313,7 @@ public class TrcOpenCvColorBlobPipeline implements TrcOpenCvPipeline<TrcOpenCvDe
                         annotateMat, detectedObjects, pipelineParams.annotation.drawRotatedRect,
                         pipelineParams.annotation.drawCrosshair, rectColor, ANNOTATE_RECT_THICKNESS, textColor,
                         ANNOTATE_FONT_SCALE);
-                    if (pipelineParams.cameraMatrix != null)
+                    if (solvePnpParams != null && solvePnpParams.cameraMatrix != null)
                     {
                         drawAxes(annotateMat);
                     }
@@ -1466,7 +1466,7 @@ public class TrcOpenCvColorBlobPipeline implements TrcOpenCvPipeline<TrcOpenCvDe
         // Project the 3D points to 2D image points
         MatOfPoint2f imagePoints = new MatOfPoint2f();
         Calib3d.projectPoints(
-            axisPoints, rvec, tvec, pipelineParams.cameraMatrix, pipelineParams.distCoeffs, imagePoints);
+            axisPoints, rvec, tvec, solvePnpParams.cameraMatrix, solvePnpParams.distCoeffs, imagePoints);
 
         Point[] imgPts = imagePoints.toArray();
 
