@@ -961,6 +961,7 @@ public class TrcOpenCvColorBlobPipeline implements TrcOpenCvPipeline<TrcOpenCvDe
     private final Mat rvec = new Mat();
     private final Mat tvec = new Mat();
 
+    private final Annotation rawAnnotation = new Annotation();
     private final AtomicReference<DetectedObject[]> detectedObjectsUpdate = new AtomicReference<>();
     private int intermediateStep = 0;
     private TrcVisionPerformanceMetrics performanceMetrics = null;
@@ -1291,7 +1292,7 @@ public class TrcOpenCvColorBlobPipeline implements TrcOpenCvPipeline<TrcOpenCvDe
             detectedObjects = detectedObjectsList.toArray(new DetectedObject[0]);
             detectedObjectsUpdate.set(detectedObjects);
 
-            if (pipelineParams.annotation.enabled)
+            if (rawAnnotation.enabled)
             {
                 Mat annotateMat = getIntermediateOutput(intermediateStep);
                 Scalar rectColor, textColor;
@@ -1310,8 +1311,8 @@ public class TrcOpenCvColorBlobPipeline implements TrcOpenCvPipeline<TrcOpenCvDe
                 if (detectedObjects.length > 0)
                 {
                     annotateFrame(
-                        annotateMat, detectedObjects, pipelineParams.annotation.drawRotatedRect,
-                        pipelineParams.annotation.drawCrosshair, rectColor, ANNOTATE_RECT_THICKNESS, textColor,
+                        annotateMat, detectedObjects, rawAnnotation.drawRotatedRect,
+                        rawAnnotation.drawCrosshair, rectColor, ANNOTATE_RECT_THICKNESS, textColor,
                         ANNOTATE_FONT_SCALE);
                     if (solvePnpParams != null && solvePnpParams.cameraMatrix != null)
                     {
@@ -1319,7 +1320,7 @@ public class TrcOpenCvColorBlobPipeline implements TrcOpenCvPipeline<TrcOpenCvDe
                     }
                 }
 
-                if (pipelineParams.annotation.drawCrosshair)
+                if (rawAnnotation.drawCrosshair)
                 {
                     int imageRows = annotateMat.rows();
                     int imageCols = annotateMat.cols();
@@ -1353,11 +1354,11 @@ public class TrcOpenCvColorBlobPipeline implements TrcOpenCvPipeline<TrcOpenCvDe
     @Override
     public void enableAnnotation(boolean drawRotatedRect, boolean drawCrosshair)
     {
-        synchronized (pipelineParams)
+        synchronized (rawAnnotation)
         {
-            pipelineParams.annotation.enabled = true;
-            pipelineParams.annotation.drawRotatedRect = drawRotatedRect;
-            pipelineParams.annotation.drawCrosshair = drawCrosshair;
+            rawAnnotation.enabled = true;
+            rawAnnotation.drawRotatedRect = drawRotatedRect;
+            rawAnnotation.drawCrosshair = drawCrosshair;
         }
     }   //enableAnnotation
 
@@ -1367,11 +1368,11 @@ public class TrcOpenCvColorBlobPipeline implements TrcOpenCvPipeline<TrcOpenCvDe
     @Override
     public void disableAnnotation()
     {
-        synchronized (pipelineParams)
+        synchronized (rawAnnotation)
         {
-            pipelineParams.annotation.enabled = false;
-            pipelineParams.annotation.drawRotatedRect = false;
-            pipelineParams.annotation.drawCrosshair = false;
+            rawAnnotation.enabled = false;
+            rawAnnotation.drawRotatedRect = false;
+            rawAnnotation.drawCrosshair = false;
         }
     }   //disableAnnotation
 
@@ -1383,9 +1384,9 @@ public class TrcOpenCvColorBlobPipeline implements TrcOpenCvPipeline<TrcOpenCvDe
     @Override
     public boolean isAnnotateEnabled()
     {
-        synchronized (pipelineParams)
+        synchronized (rawAnnotation)
         {
-            return pipelineParams.annotation.enabled;
+            return rawAnnotation.enabled;
         }
     }   //isAnnotateEnabled
 
