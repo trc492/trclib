@@ -47,7 +47,7 @@ public class TrcWrapValueConverter
 
     private boolean enabled = false;
     private double prevReading = 0.0;
-    private int numCrossovers = 0;
+    private int numRotations = 0;
 
     /**
      * Constructor: Creates an instance of the object.
@@ -115,8 +115,19 @@ public class TrcWrapValueConverter
     public synchronized void resetConverter()
     {
         prevReading = valueSupplier.getAsDouble();
-        numCrossovers = 0;
+        numRotations = 0;
+        tracer.traceDebug(instanceName, "resetConverter(numRot=%d)", numRotations);
     }   //resetConverter
+
+    /**
+     * This method returns the cumulated number of rotations.
+     *
+     * @return number of rotations.
+     */
+    public int getRotations()
+    {
+        return numRotations;
+    }   //getRotations
 
     /**
      * This method returns a continuous value from the sensor reading.
@@ -126,7 +137,7 @@ public class TrcWrapValueConverter
      */
     private double getContinuousValue(double reading)
     {
-        return reading + range * numCrossovers;
+        return reading + range*numRotations;
     }   //getContinuousValue
 
     /**
@@ -156,12 +167,12 @@ public class TrcWrapValueConverter
         {
             tracer.traceDebug(
                 instanceName, "prevReading=%f, currReading=%s, numCrossovers=%d",
-                prevReading, currReading, numCrossovers);
+                prevReading, currReading, numRotations);
             // Detected crossover.
             if (currReading > prevReading)
             {
                 // Crossing over backward.
-                numCrossovers--;
+                numRotations--;
 //                if (Math.abs(getContinuousValue(currReading) - getContinuousValue(prevReading)) > threshold)
 //                {
 //                    // Reading cannot jump more than threshold, it must be a glitch, ignore the crossover.
@@ -171,7 +182,7 @@ public class TrcWrapValueConverter
             else
             {
                 // Crossing over forward.
-                numCrossovers++;
+                numRotations++;
 //                if (Math.abs(getContinuousValue(currReading) - getContinuousValue(prevReading)) > threshold)
 //                {
 //                    // Reading cannot jump more than threshold, it must be a glitch, ignore the crossover.
@@ -180,7 +191,7 @@ public class TrcWrapValueConverter
             }
             tracer.traceDebug(
                 instanceName, "numCrossovers=%d, prevValue=%f, currValue=%f",
-                numCrossovers, getContinuousValue(prevReading), getContinuousValue(currReading));
+                numRotations, getContinuousValue(prevReading), getContinuousValue(currReading));
         }
         prevReading = currReading;
     }   //converterTask
