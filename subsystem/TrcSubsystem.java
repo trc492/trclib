@@ -81,18 +81,14 @@ public abstract class TrcSubsystem
     public abstract int updateStatus(int lineNum, boolean slowLoop);
 
     /**
-     * This method is called to initialize the Dashboard from subsystem parameters.
-     *
-     * @param subComponent specifies the sub-component of the Subsystem to be tuned, can be null if no sub-component.
+     * This method is called to update subsystem parameter to the Dashboard.
      */
-    public abstract void initDashboardFromSubsystemParams(String subComponent);
+    public abstract void updateParamsToDashboard();
 
     /**
-     * This method is called to initialize the subsystem parameters from the Dashboard for tuning.
-     *
-     * @param subComponent specifies the sub-component of the Subsystem to be tuned, can be null if no sub-component.
+     * This method is called to update subsystem parameters from the Dashboard.
      */
-    public abstract void initSubsystemParamsForTuning(String subComponent);
+    public abstract void updateParamsFromDashboard();
 
     /**
      * Constructor: Creates an instance of the object.
@@ -180,6 +176,28 @@ public abstract class TrcSubsystem
             subsystemInfo.subsystem.resetState();
         }
     }   //resetStateAll
+
+    /**
+     * This method updates parameters to the Dashboard from all subsystems.
+     */
+    public static void updateSubsystemParamsToDashboard()
+    {
+        for (SubsystemInfo subsystemInfo: subsystemList)
+        {
+            subsystemInfo.subsystem.updateParamsToDashboard();
+        }
+    }   //updateSubsystemParamsToDashboard
+
+    /**
+     * This method updates parameters from the Dashboard to all subsystems.
+     */
+    public static void updateSubsystemParamsFromDashboard()
+    {
+        for (SubsystemInfo subsystemInfo: subsystemList)
+        {
+            subsystemInfo.subsystem.updateParamsFromDashboard();
+        }
+    }   //updateSubsystemParamsFromDashboard
 
     /**
      * This method enumerates all subsystems and calls their updateStatus method.

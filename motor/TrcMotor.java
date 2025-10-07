@@ -59,6 +59,138 @@ public abstract class TrcMotor implements TrcMotorController, TrcExclusiveSubsys
 {
     private static final String moduleName = TrcMotor.class.getSimpleName();
 
+    /**
+     * This class contains tunable parameters of the motor.
+     */
+    public static class TuneParams
+    {
+        public TrcPidController.PidCoefficients pidCoeffs = null;
+        public TrcPidController.FFCoefficients ffCoeffs = null;
+        public double pidTolerance = 1.0;
+        public boolean useSoftwarePid = true;
+        public boolean enableSquid = false;
+        public double pidTarget = 0.0;
+        public double gravityCompPower = 0.0;
+
+        /**
+         * This method sets the PID Coefficients of the motor. The PID Coefficients could be for position control,
+         * velocity control or current control.
+         *
+         * @param kP specifies Kp value.
+         * @param kI specifies Ki value.
+         * @param kD specifies Kd value.
+         * @param kF specifies Kf value.
+         * @param iZone specifies iZone value.
+         * @return this object for chaining.
+         */
+        public TuneParams setPidCoefficients(double kP, double kI, double kD, double kF, double iZone)
+        {
+            this.pidCoeffs = new TrcPidController.PidCoefficients(kP, kI, kD, kF, iZone);
+            return this;
+        }   //setPidCoefficients
+
+        /**
+         * This method sets the PID Coefficients of the motor. The PID Coefficients could be for position control,
+         * velocity control or current control.
+         *
+         * @param kP specifies Kp value.
+         * @param kI specifies Ki value.
+         * @param kD specifies Kd value.
+         * @param kF specifies Kf value.
+         * @return this object for chaining.
+         */
+        public TuneParams setPidCoefficients(double kP, double kI, double kD, double kF)
+        {
+            this.pidCoeffs = new TrcPidController.PidCoefficients(kP, kI, kD, kF, 0.0);
+            return this;
+        }   //setPidCoefficients
+
+        /**
+         * This method sets the PID Coefficients of the motor. The PID Coefficients could be for position control,
+         * velocity control or current control.
+         *
+         * @param kP specifies Kp value.
+         * @param kI specifies Ki value.
+         * @param kD specifies Kd value.
+         * @return this object for chaining.
+         */
+        public TuneParams setPidCoefficients(double kP, double kI, double kD)
+        {
+            this.pidCoeffs = new TrcPidController.PidCoefficients(kP, kI, kD, 0.0, 0.0);
+            return this;
+        }   //setPidCoefficients
+
+        /**
+         * This method sets the FeedForward Coefficients of the motor.
+         *
+         * @param kS specifies Ks value.
+         * @param kV specifies Kv value.
+         * @param kA specifies Ka value.
+         * @return this object for chaining.
+         */
+        public TuneParams setFFCoefficients(double kS, double kV, double kA)
+        {
+            this.ffCoeffs = new TrcPidController.FFCoefficients(kS, kV ,kA);
+            return this;
+        }   //setFFCoefficients
+
+        /**
+         * This method sets parameters related to PID control.
+         *
+         * @param pidTolerance specifies PID tolerance.
+         * @param useSoftwarePid specifies true to use software PID control, false to use motor native PID control.
+         * @param enableSquid specifies true to enable SQUID, false to disable.
+         * @return this object for chaining.
+         */
+        public TuneParams setPidParams(double pidTolerance, boolean useSoftwarePid, boolean enableSquid)
+        {
+            this.pidTolerance = pidTolerance;
+            this.useSoftwarePid = useSoftwarePid;
+            this.enableSquid = enableSquid;
+            return this;
+        }   //setPidParams
+
+        /**
+         * This method sets parameters related to PID control.
+         *
+         * @param pidTolerance specifies PID tolerance.
+         * @param useSoftwarePid specifies true to use software PID control, false to use motor native PID control.
+         * @return this object for chaining.
+         */
+        public TuneParams setPidParams(double pidTolerance, boolean useSoftwarePid)
+        {
+            this.pidTolerance = pidTolerance;
+            this.useSoftwarePid = useSoftwarePid;
+            this.enableSquid = false;
+            return this;
+        }   //setPidParams
+
+        /**
+         * This method sets parameters related to tuning.
+         *
+         * @param pidTarget specifies PID control target value.
+         * @param gravityCompPower specifies gravity compensation power.
+         * @return this object for chaining.
+         */
+        public TuneParams setTuningParams(double pidTarget, double gravityCompPower)
+        {
+            this.pidTarget = pidTarget;
+            this.gravityCompPower = gravityCompPower;
+            return this;
+        }   //setTuningParams
+
+        @Override
+        public String toString()
+        {
+            return "(pidCoeffs=" + pidCoeffs +
+                   ",ffCoeffs=" + ffCoeffs +
+                   ",pidTolerance=" + pidTolerance +
+                   ",useSoftwarePid=" + useSoftwarePid +
+                   ",enableSquid=" + enableSquid +
+                   ",gravityCompPower=" + gravityCompPower + ")";
+        }   //toString
+    }   //TuneParams
+
     public static class ExternalSensors
     {
         private TrcDigitalInput lowerLimitSwitch = null;

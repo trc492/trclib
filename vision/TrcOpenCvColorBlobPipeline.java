@@ -589,24 +589,19 @@ public class TrcOpenCvColorBlobPipeline implements TrcOpenCvPipeline<TrcOpenCvDe
         /**
          * This method sets the parameters used for SolvePnp operation.
          *
-         * @param fx specifies the focal length in x.
-         * @param fy specifies the focal length in y.
-         * @param cx specifies the principal point in x.
-         * @param cy specifies the principal point in y.
-         * @param distCoeffs specifies an array containing the lens distortion coefficients.
+         * @param lensInfo specifies the camera lens properties.
          * @param cameraPose specifies the camera pose from robot center.
          * @return this object for chaining.
          */
-        public SolvePnpParams setSolvePnpParams(
-            double fx, double fy, double cx, double cy, double[] distCoeffs, TrcPose3D cameraPose)
+        public SolvePnpParams setSolvePnpParams(TrcOpenCvDetector.LensInfo lensInfo, TrcPose3D cameraPose)
         {
             cameraMatrix = new Mat(3, 3, CvType.CV_64FC1);
             cameraMatrix.put(
                 0, 0,
-                fx, 0, cx,
-                0, fy, cy,
-                0, 0, 1);
-            this.distCoeffs = new MatOfDouble(distCoeffs);
+                lensInfo.fx,    0,              lensInfo.cx,
+                0,              lensInfo.fy,    lensInfo.cy,
+                0,              0,              1);
+            this.distCoeffs = new MatOfDouble(lensInfo.distCoeffs);
             this.cameraPose = cameraPose;
             this.objPoints = new MatOfPoint3f(
                 new Point3(-objWidth/2.0, -objHeight/2.0, 0.0),

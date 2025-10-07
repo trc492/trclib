@@ -43,6 +43,39 @@ import trclib.timer.TrcTimer;
 public abstract class TrcServo implements TrcExclusiveSubsystem
 {
     /**
+     * This class contains tunable parameters of the servo.
+     */
+    public static class TuneParams
+    {
+        public double minPos = 0.0;
+        public double maxPos = 0.0;
+        public double activateDuration = 0.0;
+
+        /**
+         * Constructor: Create an instance of the object.
+         *
+         * @param minPos specifies the minimum physical position of the servo range.
+         * @param maxPos specifies the maximum physical position of the servo range.
+         * @param activateDuration specifies the duration in seconds the servo will remain in maxPos before returning
+         *        to minPos.
+         */
+        public TuneParams(double minPos, double maxPos, double activateDuration)
+        {
+            this.minPos = minPos;
+            this.maxPos = maxPos;
+            this.activateDuration = activateDuration;
+        }   //TuneParams
+
+        @Override
+        public String toString()
+        {
+            return "(minPos=" + minPos +
+                   ",maxPos=" + maxPos +
+                   ",activateDuration=" + activateDuration + ")";
+        }   //toString
+    }   //TuneParams
+
+    /**
      * This method inverts the servo direction.
      *
      * @param inverted specifies true to invert the servo direction, false otherwise.

@@ -43,6 +43,39 @@ import trclib.timer.TrcTimer;
  */
 public class TrcTriggerThresholdRange implements TrcTrigger
 {
+    /**
+     * This class contains trigger parameters.
+     */
+    public static class TriggerParams
+    {
+        public double lowThreshold = 0.0;
+        public double highThreshold = 0.0;
+        public double settlingPeriod = 0.0;
+
+        /**
+         * Constructor: Create an instance of the object.
+         *
+         * @param lowThreshold specifies the low threshold value for the trigger.
+         * @param highThreshold specifies the high threshold value for the trigger.
+         * @param settingPeriod specifies the minimum period in seconds sensor value must stay within trigger
+         *        thresholds to be considered triggered.
+         */
+        public TriggerParams(double lowThreshold, double highThreshold, double settingPeriod)
+        {
+            this.lowThreshold = lowThreshold;
+            this.highThreshold = highThreshold;
+            this.settlingPeriod = settingPeriod;
+        }   //TriggerParams
+
+        @Override
+        public String toString()
+        {
+            return "(lowThreshold=" + lowThreshold +
+                   ",highThreshold=" + highThreshold +
+                   ",settingPeriod=" + settlingPeriod + ")";
+        }   //toString
+    }   //TriggerParams
+
     private static final int DEF_CACHE_SIZE = 10;
     /**
      * This class encapsulates the trigger state. Access to this object must be thread safe (i.e. needs to be

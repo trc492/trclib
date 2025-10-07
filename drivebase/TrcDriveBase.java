@@ -57,6 +57,146 @@ import trclib.timer.TrcTimer;
 public abstract class TrcDriveBase implements TrcExclusiveSubsystem
 {
     private final String moduleName = getClass().getSimpleName();
+
+    /**
+     * This class contains tunable parameters of the DriveBase.
+     */
+    public static class TuneParams
+    {
+        public double driveMotorMaxVelocity = 0.0;
+        public TrcPidController.PidCoefficients driveMotorVelPidCoeffs = null;
+        public double driveMotorVelPidTolerance = 0.0;
+        public boolean driveMotorSoftwarePid = false;
+
+        public double drivePidTolerance = 0.0;
+        public double turnPidTolerance = 0.0;
+        public double driveTime = 0.0;
+        public TrcPidController.PidCoefficients xDrivePidCoeffs = null;
+        public double xDriveTarget = 0.0;
+        public double xDrivePowerLimit = 1.0;
+        public TrcPidController.PidCoefficients yDrivePidCoeffs = null;
+        public double yDriveTarget = 0.0;
+        public double yDrivePowerLimit = 1.0;
+        public TrcPidController.PidCoefficients turnPidCoeffs = null;
+        public double turnTarget = 0.0;
+        public double turnPowerLimit = 1.0;
+        public TrcPidController.PidCoefficients velPidCoeffs = null;
+//        public boolean enableSquid = false;
+
+        public double profiledMaxDriveVelocity = 0.0;
+        public double profiledMaxDriveAcceleration = 0.0;
+        public double profiledMaxDriveDeceleration = 0.0;
+        public double profiledMaxTurnRate = 0.0;
+
+        /**
+         * This method sets parameters for drive motor velocity control.
+         *
+         * @param maxVelocity specifies the max motor velocity.
+         * @param velPidCoeffs specifies the velocity control PID Coefficients.
+         * @param pidTolerance specifies the velocity PID tolerance.
+         * @param useSoftwarePid specifies true to use software PID control, false to use motor native PID control.
+         * @return this object for chaining.
+         */
+        public TuneParams setDriveMotorVelocityControl(
+            double maxVelocity, TrcPidController.PidCoefficients velPidCoeffs, double pidTolerance,
+            boolean useSoftwarePid)
+        {
+            this.driveMotorMaxVelocity = maxVelocity;
+            this.driveMotorVelPidCoeffs = velPidCoeffs;
+            this.driveMotorVelPidTolerance = pidTolerance;
+            this.driveMotorSoftwarePid = useSoftwarePid;
+            return this;
+        }   //setDriveMotorVelocityControl
+
+        /**
+         * This method sets drive and turn tolerances of the drive base.
+         *
+         * @param driveTolerance specifies the drive tolerance in scaled unit.
+         * @param turnTolerance specifies the turn tolerance in scaled unit.
+         * @return this object for chaining.
+         */
+        public TuneParams setPidTolerances(double driveTolerance, double turnTolerance)
+        {
+            this.drivePidTolerance = driveTolerance;
+            this.turnPidTolerance = turnTolerance;
+            return this;
+        }   //setPidTolerances
+
+        /**
+         * This method sets the parameters for drive base PID control in the X direction.
+         *
+         * @param pidCoeffs specifies the PID Coefficients.
+         * @param powerLimit specifies the PID power limit.
+         * @return this object for chaining.
+         */
+        public TuneParams setXPidParams(TrcPidController.PidCoefficients pidCoeffs, double powerLimit)
+        {
+            this.xDrivePidCoeffs = pidCoeffs;
+            this.xDrivePowerLimit = powerLimit;
+            return this;
+        }   //setXPidParams
+
+        /**
+         * This method sets the parameters for drive base PID control in the Y direction.
+         *
+         * @param pidCoeffs specifies the PID Coefficients.
+         * @param powerLimit specifies the PID power limit.
+         * @return this object for chaining.
+         */
+        public TuneParams setYPidParams(TrcPidController.PidCoefficients pidCoeffs, double powerLimit)
+        {
+            this.yDrivePidCoeffs = pidCoeffs;
+            this.yDrivePowerLimit = powerLimit;
+            return this;
+        }   //setYPidParams
+
+        /**
+         * This method sets the parameters for drive base PID control for turning.
+         *
+         * @param pidCoeffs specifies the PID Coefficients.
+         * @param powerLimit specifies the PID power limit.
+         * @return this object for chaining.
+         */
+        public TuneParams setTurnPidParams(TrcPidController.PidCoefficients pidCoeffs, double powerLimit)
+        {
+            this.turnPidCoeffs = pidCoeffs;
+            this.turnPowerLimit = powerLimit;
+            return this;
+        }   //setTurnPidParams
+
+        /**
+         * This method sets the parameters for drive base velocity PID control. It is mainly used in PurePursuit drive.
+         *
+         * @param pidCoeffs specifies the PID Coefficients.
+         * @return this object for chaining.
+         */
+        public TuneParams setVelocityPidParams(TrcPidController.PidCoefficients pidCoeffs)
+        {
+            this.velPidCoeffs = pidCoeffs;
+            return this;
+        }   //setVelocityPidParams
+
+        /**
+         * This method sets the characteristics of the drive base. This is used in PurePursuit drive for motion
+         * profile drive.
+         *
+         * @param maxVelocity specifies the drive base maximum profiled velocity.
+         * @param maxAcceleration specifies the drive base maximum profiled acceleration.
+         * @param maxDeceleration specifies the drive base maximum profiled deceleration.
+         * @param maxTurnRate specifies the drive base maximum turn rate.
+         * @return this object for chaining.
+         */
+        public TuneParams setDriveCharacteristics(
+            double maxVelocity, double maxAcceleration, double maxDeceleration, double maxTurnRate)
+        {
+            this.profiledMaxDriveVelocity = maxVelocity;
+            this.profiledMaxDriveAcceleration = maxAcceleration;
+            this.profiledMaxDriveDeceleration = maxDeceleration;
+            this.profiledMaxTurnRate = maxTurnRate;
+            return this;
+        }   //setDriveCharacteristics
+    }   //class TuneParams
+
     //
     // If true, the change in pose is a twist, and is applied to the current pose using a non-zero curvature
     // (non-zero rotation velocity).

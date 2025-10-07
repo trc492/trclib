@@ -38,6 +38,55 @@ import trclib.robotcore.TrcDbgTrace;
 public abstract class TrcOpenCvDetector implements TrcVisionProcessor<Mat, TrcOpenCvDetector.DetectedObject<?>>
 {
     /**
+     * This class contains the Camera Lens info used by OpenCV SolvePnP.
+     */
+    public static class LensInfo
+    {
+        public double fx;
+        public double fy;
+        public double cx;
+        public double cy;
+        public double[] distCoeffs;
+
+        /**
+         * This method sets the camera lens focal length and principal point.
+         *
+         * @param fx specifies the focal length in x.
+         * @param fy specifies the focal length in y.
+         * @param cx specifies the principal point in x.
+         * @param cy specifies the principal point in y.
+         * @return this object for chaining.
+         */
+        public LensInfo setLensProperties(double fx, double fy, double cx, double cy)
+        {
+            this.fx = fx;
+            this.fy = fy;
+            this.cx = cx;
+            this.cy = cy;
+            return this;
+        }   //setLensProperties
+
+        /**
+         * This method sets the camera lens distortion coefficients.
+         *
+         * @param distCoeffs specifies an array containing the lens distortion coefficients.
+         * @return this object for chaining.
+         */
+        public LensInfo setDistortionCoefficents(double... distCoeffs)
+        {
+            this.distCoeffs = distCoeffs;
+            return this;
+        }   //setDistortionCoefficients
+
+        @Override
+        public String toString()
+        {
+            return "(fx=" + fx + ",fy=" + fy + ",cx=" + cx + ",cy=" + cy +
+                   ",distCoeffs=" + Arrays.toString(distCoeffs) + ")";
+        }   //toString
+    }   //class LensInfo
+
+    /**
      * This class encapsulates info of the detected object. It extends TrcVisionTargetInfo.ObjectInfo that requires
      * it to provide a method to return the detected object rect.
      */
