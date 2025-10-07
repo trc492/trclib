@@ -228,7 +228,7 @@ public class TrcOpenCvColorBlobPipeline implements TrcOpenCvPipeline<TrcOpenCvDe
         public boolean enabled = false;
         public boolean useGaussian = true;
         public int kSize = 9;
-        public Size kernelSize = null;
+        private Size kernelSize = null;
 
         public void setCircleBlur(boolean enabled, boolean useGaussian, int kSize)
         {
