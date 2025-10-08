@@ -49,9 +49,16 @@ public class TrcShooter implements TrcExclusiveSubsystem
      */
     public static class PanTiltParams
     {
-        private double powerLimit;
-        private double minPos, maxPos;
+        private final double powerLimit;
+        private final double minPos, maxPos;
 
+        /**
+         * Constructor: Create an instance of the object.
+         *
+         * @param powerLimit specifies the max power limit of the motor.
+         * @param minPos specifies the min position.
+         * @param maxPos specifies the max position.
+         */
         public PanTiltParams(double powerLimit, double minPos, double maxPos)
         {
             this.powerLimit = powerLimit;
