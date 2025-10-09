@@ -307,17 +307,23 @@ public class TrcPidStorage implements TrcExclusiveSubsystem
      *
      * @param owner specifies the owner ID to check if the caller has ownership of the storage.
      * @param units specifies the number of object units to advance or negative number to back up.
-     * @param event specifies the event to signal when done, can be null if not provided.
+     * @param completionEvent specifies the event to signal when done, can be null if not provided.
      */
-    public void move(String owner, int units, TrcEvent event)
+    public void move(String owner, int units, TrcEvent completionEvent)
     {
+        TrcEvent releaseOwnershipEvent = acquireOwnership(owner, completionEvent, tracer);
+        if (releaseOwnershipEvent != null) completionEvent = releaseOwnershipEvent;
+
         if (validateOwnership(owner))
         {
-            if (event != null)
+            if (completionEvent != null)
             {
-                event.clear();
+                completionEvent.clear();
             }
-            motor.setPosition(0.0, units*storageParams.objectDistance, false, storageParams.movePower, event);
+            double pos = motor.getPosition();
+            double target = pos + units*storageParams.objectDistance;
+            motor.setPosition(owner, 0.0, target, false, storageParams.movePower, completionEvent, 0.0);
+            tracer.traceInfo(instanceName, "move(from=%f, to=%f, power=%f)", pos, target, storageParams.movePower);
         }
     }   //move
 
