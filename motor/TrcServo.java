@@ -47,30 +47,34 @@ public abstract class TrcServo implements TrcExclusiveSubsystem
      */
     public static class TuneParams
     {
-        public double minPos = 0.0;
-        public double maxPos = 0.0;
+        public boolean inverted = false;
+        public double restPos = 0.0;
+        public double activatePos = 0.0;
         public double activateDuration = 0.0;
 
         /**
          * Constructor: Create an instance of the object.
          *
-         * @param minPos specifies the minimum physical position of the servo range.
-         * @param maxPos specifies the maximum physical position of the servo range.
-         * @param activateDuration specifies the duration in seconds the servo will remain in maxPos before returning
-         *        to minPos.
+         * @param inverted specifies true to invert the servo direction, false otherwise.
+         * @param restPos specifies the physical rest position of the servo.
+         * @param activatePos specifies the physical activate position of the servo.
+         * @param activateDuration specifies the duration in seconds the servo will remain in activatePos before
+         *        returning to restPos.
          */
-        public TuneParams(double minPos, double maxPos, double activateDuration)
+        public TuneParams(boolean inverted, double restPos, double activatePos, double activateDuration)
         {
-            this.minPos = minPos;
-            this.maxPos = maxPos;
+            this.inverted = inverted;
+            this.restPos = restPos;
+            this.activatePos = activatePos;
             this.activateDuration = activateDuration;
         }   //TuneParams
 
         @Override
         public String toString()
         {
-            return "(minPos=" + minPos +
-                   ",maxPos=" + maxPos +
+            return "(inverted=" + inverted +
+                   ",restPos=" + restPos +
+                   ",activatePos=" + activatePos +
                    ",activateDuration=" + activateDuration + ")";
         }   //toString
     }   //TuneParams
