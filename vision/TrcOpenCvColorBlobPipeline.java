@@ -306,28 +306,36 @@ public class TrcOpenCvColorBlobPipeline implements TrcOpenCvPipeline<TrcOpenCvDe
      */
     public static class FilterContourParams
     {
+        public boolean minAreaPerimeterFilterEnabled = false;
         public double minArea = 0.0;
         public double minPerimeter = 0.0;
+        public boolean widthHeightFilterEnabled = false;
         public double[] widthRange = {0.0, 1000.0};
         public double[] heightRange = {0.0, 1000.0};
+        public boolean solidityFilterEnabled = false;
         public double[] solidityRange = {0.0, 100.0};
+        public boolean verticesFilterEnabled = false;
         public double[] verticesRange = {0.0, 1000000.0};
+        public boolean aspectRatioFilterEnabled = false;
         public double[] aspectRatioRange = {0.0, 1000.0};
 
         public FilterContourParams setMinArea(double minArea)
         {
+            this.minAreaPerimeterFilterEnabled = true;
             this.minArea = minArea;
             return this;
         }   //setMinArea
 
         public FilterContourParams setMinPerimeter(double minPerimeter)
         {
+            this.minAreaPerimeterFilterEnabled = true;
             this.minPerimeter = minPerimeter;
             return this;
         }   //setMinPerimeter
 
         public FilterContourParams setWidthRange(double min, double max)
         {
+            this.widthHeightFilterEnabled = true;
             this.widthRange[0] = min;
             this.widthRange[1] = max;
             return this;
@@ -335,6 +343,7 @@ public class TrcOpenCvColorBlobPipeline implements TrcOpenCvPipeline<TrcOpenCvDe
 
         public FilterContourParams setHeightRange(double min, double max)
         {
+            this.widthHeightFilterEnabled = true;
             this.heightRange[0] = min;
             this.heightRange[1] = max;
             return this;
@@ -342,6 +351,7 @@ public class TrcOpenCvColorBlobPipeline implements TrcOpenCvPipeline<TrcOpenCvDe
 
         public FilterContourParams setSolidityRange(double min, double max)
         {
+            this.solidityFilterEnabled = true;
             this.solidityRange[0] = min;
             this.solidityRange[1] = max;
             return this;
@@ -349,6 +359,7 @@ public class TrcOpenCvColorBlobPipeline implements TrcOpenCvPipeline<TrcOpenCvDe
 
         public FilterContourParams setVerticesRange(double min, double max)
         {
+            this.verticesFilterEnabled = true;
             this.verticesRange[0] = min;
             this.verticesRange[1] = max;
             return this;
@@ -356,6 +367,7 @@ public class TrcOpenCvColorBlobPipeline implements TrcOpenCvPipeline<TrcOpenCvDe
 
         public FilterContourParams setAspectRatioRange(double min, double max)
         {
+            this.aspectRatioFilterEnabled = true;
             this.aspectRatioRange[0] = min;
             this.aspectRatioRange[1] = max;
             return this;
@@ -1494,52 +1506,72 @@ public class TrcOpenCvColorBlobPipeline implements TrcOpenCvPipeline<TrcOpenCvDe
             final MatOfPoint contour = inputContours.get(i);
             final Rect bb = Imgproc.boundingRect(contour);
             // Check width.
-            if (bb.width < filterContourParams.widthRange[0] || bb.width > filterContourParams.widthRange[1])
+            if (filterContourParams.widthHeightFilterEnabled)
             {
-                continue;
-            }
-            // Check height.
-            if (bb.height < filterContourParams.heightRange[0] || bb.height > filterContourParams.heightRange[1])
-            {
-                continue;
+                if (bb.width < filterContourParams.widthRange[0] || bb.width > filterContourParams.widthRange[1])
+                {
+                    continue;
+                }
+                // Check height.
+                if (bb.height < filterContourParams.heightRange[0] || bb.height > filterContourParams.heightRange[1])
+                {
+                    continue;
+                }
             }
             // Check area.
-            final double area = Imgproc.contourArea(contour);
-            if (area < filterContourParams.minArea)
+            Double area = null;
+            if (filterContourParams.minAreaPerimeterFilterEnabled)
             {
-                continue;
-            }
-            // Check perimeter.
-            if (Imgproc.arcLength(new MatOfPoint2f(contour.toArray()), true) < filterContourParams.minPerimeter)
-            {
-                continue;
+                area = Imgproc.contourArea(contour);
+                if (area < filterContourParams.minArea)
+                {
+                    continue;
+                }
+                // Check perimeter.
+                if (Imgproc.arcLength(new MatOfPoint2f(contour.toArray()), true) < filterContourParams.minPerimeter)
+                {
+                    continue;
+                }
             }
             // Check solidity.
-            Imgproc.convexHull(contour, hull);
-            MatOfPoint mopHull = new MatOfPoint();
-            mopHull.create((int) hull.size().height, 1, CvType.CV_32SC2);
-            for (int j = 0; j < hull.size().height; j++)
+            if (filterContourParams.solidityFilterEnabled)
             {
-                int index = (int)hull.get(j, 0)[0];
-                double[] point = new double[] { contour.get(index, 0)[0], contour.get(index, 0)[1]};
-                mopHull.put(j, 0, point);
-            }
-            final double solid = 100 * area / Imgproc.contourArea(mopHull);
-            if (solid < filterContourParams.solidityRange[0] || solid > filterContourParams.solidityRange[1])
-            {
-                continue;
+                if (area == null)
+                {
+                    area = Imgproc.contourArea(contour);
+                }
+                Imgproc.convexHull(contour, hull);
+                MatOfPoint mopHull = new MatOfPoint();
+                mopHull.create((int) hull.size().height, 1, CvType.CV_32SC2);
+                for (int j = 0; j < hull.size().height; j++)
+                {
+                    int index = (int) hull.get(j, 0)[0];
+                    double[] point = new double[]{contour.get(index, 0)[0], contour.get(index, 0)[1]};
+                    mopHull.put(j, 0, point);
+                }
+                final double solid = 100*area/Imgproc.contourArea(mopHull);
+                if (solid < filterContourParams.solidityRange[0] || solid > filterContourParams.solidityRange[1])
+                {
+                    continue;
+                }
             }
             // Check vertex count.
-            if (contour.rows() < filterContourParams.verticesRange[0] ||
-                contour.rows() > filterContourParams.verticesRange[1])
+            if (filterContourParams.verticesFilterEnabled)
             {
-                continue;
+                if (contour.rows() < filterContourParams.verticesRange[0] ||
+                    contour.rows() > filterContourParams.verticesRange[1])
+                {
+                    continue;
+                }
             }
             // Check aspect ratio.
-            final double ratio = bb.width / (double)bb.height;
-            if (ratio < filterContourParams.aspectRatioRange[0] || ratio > filterContourParams.aspectRatioRange[1])
+            if (filterContourParams.aspectRatioFilterEnabled)
             {
-                continue;
+                final double ratio = bb.width/(double) bb.height;
+                if (ratio < filterContourParams.aspectRatioRange[0] || ratio > filterContourParams.aspectRatioRange[1])
+                {
+                    continue;
+                }
             }
 
             output.add(contour);
