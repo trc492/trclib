@@ -412,6 +412,7 @@ public class TrcOpenCvColorBlobPipeline implements TrcOpenCvPipeline<TrcOpenCvDe
         public CircleDetection circleDetection = new CircleDetection();
         public CircleBlur circleBlur = new CircleBlur();
         public CannyEdgeDetection cannyEdgeDetection = new CannyEdgeDetection();
+        public boolean filterContourEnabled = false;
         public boolean externalContour = true;
         public FilterContourParams filterContourParams = new FilterContourParams();
 
@@ -542,6 +543,7 @@ public class TrcOpenCvColorBlobPipeline implements TrcOpenCvPipeline<TrcOpenCvDe
          */
         public PipelineParams setFilterContourParams(boolean external, FilterContourParams filterParams)
         {
+            filterContourEnabled = true;
             externalContour = external;
             filterContourParams = filterParams;
             return this;
@@ -1266,7 +1268,7 @@ public class TrcOpenCvColorBlobPipeline implements TrcOpenCvPipeline<TrcOpenCvDe
                         Imgproc.CHAIN_APPROX_SIMPLE);
                 }
                 // Do contour filtering.
-                if (pipelineParams.filterContourParams != null)
+                if (pipelineParams.filterContourEnabled && pipelineParams.filterContourParams != null)
                 {
                     ArrayList<MatOfPoint> filterContoursOutput = new ArrayList<>();
                     tracer.traceDebug(
