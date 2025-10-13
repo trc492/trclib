@@ -59,18 +59,6 @@ import trclib.timer.TrcTimer;
  */
 public class TrcOpenCvColorBlobPipeline implements TrcOpenCvPipeline<TrcOpenCvDetector.DetectedObject<?>>
 {
-    public enum ColorConversion
-    {
-        RGBToYCrCb(Imgproc.COLOR_RGB2YCrCb),
-        RGBToHSV(Imgproc.COLOR_RGB2HSV);
-
-        public final int value;
-        ColorConversion(int value)
-        {
-            this.value = value;
-        }   //ColorConversion
-    }   //enum ColorConversion
-
     public static class Annotation
     {
         public boolean enabled = false;
@@ -97,6 +85,37 @@ public class TrcOpenCvColorBlobPipeline implements TrcOpenCvPipeline<TrcOpenCvDe
                    ",drawCrosshair=" + drawCrosshair + ")";
         }   //toString
     }   //class Annotation
+
+    public static class Roi
+    {
+        public boolean enabled = false;
+        public Rect rectRoi = null;
+
+        public Roi(int left, int top, int right, int bottom)
+        {
+            enabled = true;
+            rectRoi = new Rect(left, top, right - left, bottom - top);
+        }   //Roi
+
+        @Override
+        public String toString()
+        {
+            return "(enabled=" + enabled +
+                   ",rect=" + rectRoi + ")";
+        }   //toString
+    }   //class Roi
+
+    public enum ColorConversion
+    {
+        RGBToYCrCb(Imgproc.COLOR_RGB2YCrCb),
+        RGBToHSV(Imgproc.COLOR_RGB2HSV);
+
+        public final int value;
+        ColorConversion(int value)
+        {
+            this.value = value;
+        }   //ColorConversion
+    }   //enum ColorConversion
 
     /**
      * This class encapsulates color thresholding operation properties of the pipeline.
@@ -306,6 +325,7 @@ public class TrcOpenCvColorBlobPipeline implements TrcOpenCvPipeline<TrcOpenCvDe
      */
     public static class FilterContourParams
     {
+        public boolean filterContourEnabled = false;
         public boolean minAreaPerimeterFilterEnabled = false;
         public double minArea = 0.0;
         public double minPerimeter = 0.0;
@@ -400,7 +420,8 @@ public class TrcOpenCvColorBlobPipeline implements TrcOpenCvPipeline<TrcOpenCvDe
         @Override
         public String toString()
         {
-            return "(minArea=" + minArea +
+            return "(enabled=" + filterContourEnabled +
+                   ",minArea=" + minArea +
                    ",minPerim=" + minPerimeter +
                    ",width=(" + widthRange[0] + "," + widthRange[1] + ")" +
                    ",height=(" + heightRange[0] + "," + heightRange[1] + ")" +
@@ -417,14 +438,14 @@ public class TrcOpenCvColorBlobPipeline implements TrcOpenCvPipeline<TrcOpenCvDe
     public static class PipelineParams
     {
         public Annotation annotation = new Annotation();
+        public Roi roi = null;
         public ColorConversion colorConversion = null;
-        private ArrayList<ColorThresholds> colorThresholdsList = new ArrayList<>();
+        private final ArrayList<ColorThresholds> colorThresholdsList = new ArrayList<>();
         public ColorThresholds[] colorThresholdSets = null;
         public Morphology morphology = new Morphology();
         public CircleDetection circleDetection = new CircleDetection();
         public CircleBlur circleBlur = new CircleBlur();
         public CannyEdgeDetection cannyEdgeDetection = new CannyEdgeDetection();
-        public boolean filterContourEnabled = false;
         public boolean externalContour = true;
         public FilterContourParams filterContourParams = new FilterContourParams();
 
@@ -440,6 +461,48 @@ public class TrcOpenCvColorBlobPipeline implements TrcOpenCvPipeline<TrcOpenCvDe
             annotation.setAnnotation(true, drawRotatedRect, drawCrosshair);
             return this;
         }   //setAnnotation
+
+        /**
+         * This method sets the Region Of Interest in Unity Center Coordinates.
+         *
+         * @param left specifies the left coordinate in the range between -1 and 1 from image center.
+         * @param top specifies the top coordinate in the range between -1 and 1 from image center.
+         * @param right specifies the right coordinate in the range between -1 and 1 from image center.
+         * @param bottom specifies the bottom coordinate in the range between -1 and 1 from image center.
+         * @param imageWidth specifies the image width.
+         * @param imageHeight specifies the image height.
+         * @return this object for chaining.
+         */
+        public PipelineParams setRoi(
+            double left, double top, double right, double bottom, int imageWidth, int imageHeight)
+        {
+            if (left >= right || top >= bottom || left < -1.0 || top < -1.0 || right > 1.0 || bottom > 1.0)
+            {
+                throw new IllegalArgumentException("Invalid Roi values.");
+            }
+
+            left = TrcUtil.scaleRange(left, -1.0, 1.0, 0.0, (double) imageWidth);
+            top = TrcUtil.scaleRange(top, -1.0, 1.0, 0.0, (double) imageHeight);
+            right = TrcUtil.scaleRange(right, -1.0, 1.0, 0.0, (double) imageWidth);
+            bottom = TrcUtil.scaleRange(bottom, -1.0, 1.0, 0.0, (double) imageHeight);
+            roi = new Roi((int) left, (int) top, (int) right, (int) bottom);
+            return this;
+        }   //setRoi
+
+        /**
+         * This method sets the Region Of Interest in Image Coordinates.
+         *
+         * @param left specifies the left Roi in image coordinate
+         * @param top specifies the top Roi in image coordinate.
+         * @param right specifies the right Roi in image coordinate.
+         * @param bottom specifies the bottom Roi in image coordinate.
+         * @return this object for chaining.
+         */
+        public PipelineParams setRoi(int left, int top, int right, int bottom)
+        {
+            roi = new Roi(left, top, right, bottom);
+            return this;
+        }   //setRoi
 
         /**
          * This method sets the Color Conversion for the pipeline.
@@ -555,9 +618,9 @@ public class TrcOpenCvColorBlobPipeline implements TrcOpenCvPipeline<TrcOpenCvDe
          */
         public PipelineParams setFilterContourParams(boolean external, FilterContourParams filterParams)
         {
-            filterContourEnabled = true;
             externalContour = external;
             filterContourParams = filterParams;
+            filterParams.filterContourEnabled = true;
             return this;
         }   //setFilterContourParams
 
@@ -566,6 +629,7 @@ public class TrcOpenCvColorBlobPipeline implements TrcOpenCvPipeline<TrcOpenCvDe
         public String toString()
         {
             return "\tannotation=" + annotation +
+                   "\n\tRoi=" + roi +
                    "\n\tcolorConversion=" + colorConversion +
                    "\n\tcolorThresholds=" + Arrays.toString(colorThresholdSets) +
                    "\n\tmorphology=" + morphology +
@@ -639,10 +703,12 @@ public class TrcOpenCvColorBlobPipeline implements TrcOpenCvPipeline<TrcOpenCvDe
      * This class encapsulates info of the detected object. It extends TrcOpenCvDetector.DetectedObject that requires
      * it to provide a method to return the detected object rect and area.
      */
-    public class DetectedObject extends TrcOpenCvDetector.DetectedObject<MatOfPoint>
+    public class DetectedObject extends TrcOpenCvDetector.DetectedObject<Point[]>
     {
+        public final Rect objRect;
         public final RotatedRect rotatedRect;
         public final double rotatedRectAngle;
+        public final double objArea;
         public final Point[] vertices = new Point[4];
         public final TrcPose2D objPose;
         public final double pixelWidth, pixelHeight;
@@ -655,8 +721,11 @@ public class TrcOpenCvColorBlobPipeline implements TrcOpenCvPipeline<TrcOpenCvDe
          */
         public DetectedObject(String label, MatOfPoint contour)
         {
-            super(label, contour);
-            rotatedRect = Imgproc.minAreaRect(new MatOfPoint2f(contour.toArray()));
+            super(label, null);
+            objRect = Imgproc.boundingRect(contour);
+            MatOfPoint2f contourPoints2f = new MatOfPoint2f(contour.toArray());
+            rotatedRect = Imgproc.minAreaRect(contourPoints2f);
+            contourPoints2f.release();
             // The angle OpenCV gives us can be ambiguous, so look at the shape of the rectangle to fix that.
             if (rotatedRect.size.width < rotatedRect.size.height)
             {
@@ -671,28 +740,37 @@ public class TrcOpenCvColorBlobPipeline implements TrcOpenCvPipeline<TrcOpenCvDe
                 pixelWidth = rotatedRect.size.width;
                 pixelHeight = rotatedRect.size.height;
             }
+            objArea = Imgproc.contourArea(contour);
             // Get the 2D image points from the detected rectangle corners
             rotatedRect.points(vertices);
 
             // Solve PnP: assuming the object is a rectangle with known dimensions.
-            if (solvePnpParams != null && solvePnpParams.cameraMatrix != null && solvePnpParams.distCoeffs != null &&
-                Calib3d.solvePnP(
+            if (solvePnpParams == null || solvePnpParams.cameraMatrix == null || solvePnpParams.distCoeffs != null)
+            {
+                // Caller did not provide camera matrix nor distortion coefficients so we can't call solvePnP.
+                objPose = null;
+            }
+            else
+            {
+                MatOfPoint2f verticePoints = new MatOfPoint2f(orderPoints(vertices));
+                if (Calib3d.solvePnP(
                     // Define the 3D coordinates of the object corners in the object coordinate space
-                    solvePnpParams.objPoints,                                  // Object points in 3D
-                    new MatOfPoint2f(orderPoints(vertices)),    // Corresponding image points
+                    solvePnpParams.objPoints,   // Object points in 3D
+                    verticePoints,              // Corresponding image points
                     solvePnpParams.cameraMatrix,
                     solvePnpParams.distCoeffs,
                     rvec,
                     tvec))
-            {
-                objPose = projectPose(rvec, tvec, solvePnpParams.cameraPose);
-//                objPose = new TrcPose2D(tvec.get(0, 0)[0], tvec.get(2, 0)[0], -(Math.toDegrees(rvec.get(1, 0)[0])));
-            }
-            else
-            {
-                // Caller did not provide camera matrix nor distortion coefficients so we can't call solvePnP.
-                // return null so caller will determine object pose by Homography.
-                objPose = null;
+                {
+                    objPose = projectPose(rvec, tvec, solvePnpParams.cameraPose);
+//                    objPose = new TrcPose2D(tvec.get(0, 0)[0], tvec.get(2, 0)[0], -(Math.toDegrees(rvec.get(1, 0)[0])));
+                }
+                else
+                {
+                    // SolvePnP failed, return null so caller will determine object pose by Homography.
+                    objPose = null;
+                }
+                verticePoints.release();
             }
         }   //DetectedObject
 
@@ -859,7 +937,7 @@ public class TrcOpenCvColorBlobPipeline implements TrcOpenCvPipeline<TrcOpenCvDe
         public Rect getObjectRect()
         {
             // Get detected object bounding box.
-            return Imgproc.boundingRect(object);
+            return objRect;
         }   //getObjectRect
 
         /**
@@ -871,7 +949,7 @@ public class TrcOpenCvColorBlobPipeline implements TrcOpenCvPipeline<TrcOpenCvDe
         public double getObjectArea()
         {
             // OpenCv returns the actual area of the object, not just the bounding box.
-            return Imgproc.contourArea(object);
+            return objArea;
         }   //getObjectArea
 
         /**
@@ -958,14 +1036,14 @@ public class TrcOpenCvColorBlobPipeline implements TrcOpenCvPipeline<TrcOpenCvDe
     private static final int ANNOTATE_RECT_THICKNESS = 1;
     private static final Scalar ANNOTATE_TEXT_COLOR = new Scalar(0, 255, 255, 255);
     private static final double ANNOTATE_FONT_SCALE = 0.3;
-    private static final int NUM_INTERMEDIATE_MATS = 7;
-    private static final int DEF_BLUR_KERNEL_SIZE = 5;
+    private static final int NUM_INTERMEDIATE_MATS = 8;
 
     public final TrcDbgTrace tracer;
     private final String instanceName;
     private final PipelineParams pipelineParams;
     private final SolvePnpParams solvePnpParams;
     private final Mat[] intermediateMats;
+    private final Mat circlesMat = new Mat();
     private final Mat hierarchy = new Mat();
     private final Mat rvec = new Mat();
     private final Mat tvec = new Mat();
@@ -1093,6 +1171,26 @@ public class TrcOpenCvColorBlobPipeline implements TrcOpenCvPipeline<TrcOpenCvDe
         }
     }   //setExpectedMatType
 
+    private boolean isSubmatrix(Mat mat, Mat submat)
+    {
+        boolean isSubmat = false;
+
+        if (!mat.empty() && !submat.empty())
+        {
+            long matPointer = mat.dataAddr();
+            long submatPointer = submat.dataAddr();
+            if (mat.isContinuous() && mat.elemSize() == submat.elemSize() &&
+                mat.rows() >= submat.rows() && mat.cols() >= submat.cols() &&
+                submatPointer >= matPointer &&
+                submatPointer < matPointer + mat.total() * mat.elemSize())
+            {
+                isSubmat = true;
+            }
+        }
+
+        return isSubmat;
+    }   //isSubmatrix
+
     //
     // Implements TrcOpenCvPipeline interface.
     //
@@ -1120,7 +1218,7 @@ public class TrcOpenCvColorBlobPipeline implements TrcOpenCvPipeline<TrcOpenCvDe
     public DetectedObject[] process(Mat input)
     {
         ArrayList<DetectedObject> detectedObjectsList = new ArrayList<>();
-        DetectedObject[] detectedObjects = null;
+        DetectedObject[] detectedObjects;
         double startTime;
         Mat output;
         int matIndex = 0;
@@ -1131,6 +1229,28 @@ public class TrcOpenCvColorBlobPipeline implements TrcOpenCvPipeline<TrcOpenCvDe
             intermediateMats[matIndex] = input;
             startTime = TrcTimer.getCurrentTime();
 
+            // Do ROI.
+            if (pipelineParams.roi != null && pipelineParams.roi.enabled)
+            {
+                output = input.submat(pipelineParams.roi.rectRoi);
+                if (intermediateMats[++matIndex] != null)
+                {
+                    // Releasing the original pre-allocated intermediate Mat or the previous frame's submat.
+                    intermediateMats[matIndex].release();
+                }
+                intermediateMats[matIndex] = output;
+                tracer.traceDebug(
+                    instanceName, "[%d] Roi: type=0x%02x, roiRect=%s",
+                    matIndex, output.type(), pipelineParams.roi.rectRoi);
+                input = output;
+            }
+            else if (isSubmatrix(intermediateMats[matIndex], intermediateMats[matIndex + 1]))
+            {
+                // Next mat is a submat of the input. This means the user just disabled ROI.
+                // In this case, we need to release the submat and re-allocate a new mat for the next step.
+                intermediateMats[matIndex + 1].release();
+                intermediateMats[matIndex + 1] = new Mat();
+            }
             // Do color space conversion.
             if (pipelineParams.colorConversion != null)
             {
@@ -1169,15 +1289,18 @@ public class TrcOpenCvColorBlobPipeline implements TrcOpenCvPipeline<TrcOpenCvDe
                 {
                     // Check if Dashboard has changed Kernel Size.
                     pipelineParams.morphology.refreshKernelMat();
-                    output = intermediateMats[++matIndex];
-                    setExpectedMatType(output, input.size(), CvType.CV_8UC1);
-                    tracer.traceDebug(
-                        instanceName, "[%d] morphology: type=0x%02x, morphology=%s",
-                        matIndex, output.type(), pipelineParams.morphology);
-                    Imgproc.morphologyEx(
-                        input, output, pipelineParams.morphology.close? Imgproc.MORPH_CLOSE: Imgproc.MORPH_OPEN,
-                        pipelineParams.morphology.kernelMat);
-                    input = output;
+                    if (pipelineParams.morphology.createdKernelSize > 1)
+                    {
+                        output = intermediateMats[++matIndex];
+                        setExpectedMatType(output, input.size(), CvType.CV_8UC1);
+                        tracer.traceDebug(
+                            instanceName, "[%d] morphology: type=0x%02x, morphology=%s",
+                            matIndex, output.type(), pipelineParams.morphology);
+                        Imgproc.morphologyEx(
+                            input, output, pipelineParams.morphology.close ? Imgproc.MORPH_CLOSE : Imgproc.MORPH_OPEN,
+                            pipelineParams.morphology.kernelMat);
+                        input = output;
+                    }
                 }
 
                 if (pipelineParams.circleDetection.enabled)
@@ -1194,7 +1317,7 @@ public class TrcOpenCvColorBlobPipeline implements TrcOpenCvPipeline<TrcOpenCvDe
                     output = intermediateMats[++matIndex];
                     setExpectedMatType(output, input.size(), CvType.CV_8UC1);
                     tracer.traceDebug(instanceName, "[%d] convertToGray: type=0x%02x", matIndex, output.type());
-                    Imgproc.cvtColor(input, output, Imgproc.COLOR_RGB2GRAY);
+                    Imgproc.cvtColor(input, output, Imgproc.COLOR_RGBA2GRAY);
                     input = output;
                     // Circle Blur.
                     if (pipelineParams.circleBlur.enabled)
@@ -1217,10 +1340,9 @@ public class TrcOpenCvColorBlobPipeline implements TrcOpenCvPipeline<TrcOpenCvDe
                         input = output;
                     }
                     // Hough Circle Detection.
-                    Mat circles = new Mat();
                     Imgproc.HoughCircles(
                         input,
-                        circles,
+                        circlesMat,
                         Imgproc.CV_HOUGH_GRADIENT,
                         1.0,                // dp (accumulator resolution)
                         pipelineParams.circleDetection.minCircleDistance,   // min distance between circle centers
@@ -1229,9 +1351,9 @@ public class TrcOpenCvColorBlobPipeline implements TrcOpenCvPipeline<TrcOpenCvDe
                         (int) (pipelineParams.filterContourParams.widthRange[0]/2.0),    // min radius
                         (int) (pipelineParams.filterContourParams.widthRange[1]/2.0));   // max radius
                     // Create contours for detected circles.
-                    for (int i = 0; i < circles.cols(); i++)
+                    for (int i = 0; i < circlesMat.cols(); i++)
                     {
-                        double[] data = circles.get(0, i);
+                        double[] data = circlesMat.get(0, i);
                         if (data == null) continue;
 
                         Point center = new Point(data[0], data[1]);
@@ -1252,7 +1374,6 @@ public class TrcOpenCvColorBlobPipeline implements TrcOpenCvPipeline<TrcOpenCvDe
 //                        Imgproc.circle(intermediateMats[0], center, radius, new Scalar(255,255,255), 2);
 //                        Imgproc.circle(intermediateMats[0], center, 2, new Scalar(255,255,255), -1);
                     }
-                    circles.release();
                 }
                 // Canny Edge detection is not applicable for circle detection.
                 else if (pipelineParams.cannyEdgeDetection.enabled)
@@ -1280,7 +1401,8 @@ public class TrcOpenCvColorBlobPipeline implements TrcOpenCvPipeline<TrcOpenCvDe
                         Imgproc.CHAIN_APPROX_SIMPLE);
                 }
                 // Do contour filtering.
-                if (pipelineParams.filterContourEnabled && pipelineParams.filterContourParams != null)
+                if (pipelineParams.filterContourParams != null &&
+                    pipelineParams.filterContourParams.filterContourEnabled)
                 {
                     ArrayList<MatOfPoint> filterContoursOutput = new ArrayList<>();
                     tracer.traceDebug(
@@ -1293,6 +1415,7 @@ public class TrcOpenCvColorBlobPipeline implements TrcOpenCvPipeline<TrcOpenCvDe
                 for (MatOfPoint contour : contoursOutput)
                 {
                     detectedObjectsList.add(new DetectedObject(ct.name, contour));
+                    contour.release();
                 }
                 tracer.traceDebug(instanceName, "DetectedObj: num=%d", detectedObjectsList.size());
             }
@@ -1306,7 +1429,7 @@ public class TrcOpenCvColorBlobPipeline implements TrcOpenCvPipeline<TrcOpenCvDe
                 Mat annotateMat = getIntermediateOutput(intermediateStep);
                 Scalar rectColor, textColor;
 
-                if (annotateMat.type() != CvType.CV_8UC1)
+                if (annotateMat.channels() > 1)
                 {
                     rectColor = ANNOTATE_RECT_COLOR;
                     textColor = ANNOTATE_TEXT_COLOR;
@@ -1484,6 +1607,9 @@ public class TrcOpenCvColorBlobPipeline implements TrcOpenCvPipeline<TrcOpenCvDe
         Imgproc.line(img, imgPts[0], imgPts[1], new Scalar(0, 0, 255), 1); // X axis in red
         Imgproc.line(img, imgPts[0], imgPts[2], new Scalar(0, 255, 0), 1); // Y axis in green
         Imgproc.line(img, imgPts[0], imgPts[3], new Scalar(255, 0, 0), 1); // Z axis in blue
+
+        axisPoints.release();
+        imagePoints.release();
     }   //drawAxes
 
     /**
@@ -1510,11 +1636,13 @@ public class TrcOpenCvColorBlobPipeline implements TrcOpenCvPipeline<TrcOpenCvDe
             {
                 if (bb.width < filterContourParams.widthRange[0] || bb.width > filterContourParams.widthRange[1])
                 {
+                    contour.release();
                     continue;
                 }
                 // Check height.
                 if (bb.height < filterContourParams.heightRange[0] || bb.height > filterContourParams.heightRange[1])
                 {
+                    contour.release();
                     continue;
                 }
             }
@@ -1525,11 +1653,13 @@ public class TrcOpenCvColorBlobPipeline implements TrcOpenCvPipeline<TrcOpenCvDe
                 area = Imgproc.contourArea(contour);
                 if (area < filterContourParams.minArea)
                 {
+                    contour.release();
                     continue;
                 }
                 // Check perimeter.
                 if (Imgproc.arcLength(new MatOfPoint2f(contour.toArray()), true) < filterContourParams.minPerimeter)
                 {
+                    contour.release();
                     continue;
                 }
             }
@@ -1552,6 +1682,7 @@ public class TrcOpenCvColorBlobPipeline implements TrcOpenCvPipeline<TrcOpenCvDe
                 final double solid = 100*area/Imgproc.contourArea(mopHull);
                 if (solid < filterContourParams.solidityRange[0] || solid > filterContourParams.solidityRange[1])
                 {
+                    contour.release();
                     continue;
                 }
             }
@@ -1561,6 +1692,7 @@ public class TrcOpenCvColorBlobPipeline implements TrcOpenCvPipeline<TrcOpenCvDe
                 if (contour.rows() < filterContourParams.verticesRange[0] ||
                     contour.rows() > filterContourParams.verticesRange[1])
                 {
+                    contour.release();
                     continue;
                 }
             }
@@ -1570,6 +1702,7 @@ public class TrcOpenCvColorBlobPipeline implements TrcOpenCvPipeline<TrcOpenCvDe
                 final double ratio = bb.width/(double) bb.height;
                 if (ratio < filterContourParams.aspectRatioRange[0] || ratio > filterContourParams.aspectRatioRange[1])
                 {
+                    contour.release();
                     continue;
                 }
             }

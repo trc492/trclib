@@ -134,6 +134,7 @@ public interface TrcOpenCvPipeline<O>
             {
                 MatOfPoint points = new MatOfPoint(vertices);
                 Imgproc.drawContours(image, Collections.singletonList(points), -1, rectColor, thickness);
+                points.release();
             }
             else
             {
