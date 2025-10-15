@@ -2094,7 +2094,7 @@ public abstract class TrcMotor implements TrcMotorController, TrcExclusiveSubsys
             boolean stopIt = false;
             double currPos = getPosition();
             // Stop previous operation if there is one.
-            cancel(false);
+            cancel(false, false);
             if (completionEvent != null)
             {
                 completionEvent.clear();
