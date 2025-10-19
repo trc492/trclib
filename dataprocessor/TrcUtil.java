@@ -22,19 +22,12 @@
 
 package trclib.dataprocessor;
 
-import org.apache.commons.math3.geometry.euclidean.threed.Rotation;
-import org.apache.commons.math3.geometry.euclidean.threed.RotationConvention;
-import org.apache.commons.math3.geometry.euclidean.threed.RotationOrder;
-import org.apache.commons.math3.geometry.euclidean.threed.Vector3D;
 import org.apache.commons.math3.linear.ArrayRealVector;
 import org.apache.commons.math3.linear.MatrixUtils;
 import org.apache.commons.math3.linear.RealMatrix;
 import org.apache.commons.math3.linear.RealVector;
 
 import java.util.Arrays;
-
-import trclib.pathdrive.TrcPose2D;
-import trclib.pathdrive.TrcPose3D;
 
 /**
  * This class contains platform independent utility methods. All methods in this class are static. It is not
@@ -654,34 +647,5 @@ public class TrcUtil
     {
         return createCCWRotationMatrix(angle).transpose();
     }   //createCWRotationMatrix
-
-    /**
-     * Projects a target point in camera space onto the floor (Z=0 plane),
-     * returning coordinates in the robot's frame (robot at 0,0, heading=0).
-     *
-     * @param targetCamera Target position in camera space.
-     * @param cameraPose Camera pose relative to robot origin (TrcPose3D), includes offset (x,y,z) and orientation
-     *        (roll,pitch,yaw).
-     * @return TrcPose2D of projected floor point in robot coordinates, or null if no intersection.
-     */
-    public static TrcPose2D projectToFloorRobot(Vector3D targetCamera, TrcPose3D cameraPose)
-    {
-        // Build camera rotation relative to robot (Yaw = heading around Z, Pitch = around Y, Roll = around X)
-        Rotation camRotation = new Rotation(
-            RotationOrder.ZYX, RotationConvention.FRAME_TRANSFORM, cameraPose.yaw, cameraPose.pitch, cameraPose.roll);
-        // Apply the rotation to transform to robot's coordinate system
-        Vector3D targetRobot = camRotation.applyTo(targetCamera)
-                                          .add(new Vector3D(cameraPose.x, cameraPose.y, cameraPose.z));
-        return new TrcPose2D(
-            targetRobot.getX(), targetRobot.getY(),
-            Math.toDegrees(Math.atan2(targetRobot.getX(), targetRobot.getY())));
-//        double scale = -cameraRobot.getZ() / dz;
-//        double floorX = cameraRobot.getX() + scale * (targetRobot.getX() - cameraRobot.getX());
-//        double floorY = cameraRobot.getY() + scale * (targetRobot.getY() - cameraRobot.getY());
-//        // Heading from robot to floor point
-//        double headingToTarget = Math.atan2(floorY, floorX);
-//
-//        return new TrcPose2D(floorX, floorY, headingToTarget);
-    }   //projectToFloorRobot
 
 }   //class TrcUtil
