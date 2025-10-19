@@ -1052,22 +1052,29 @@ public abstract class TrcMotor implements TrcMotorController, TrcExclusiveSubsys
     {
         try
         {
+            // If motor supports soft limits natively, it is using sensor units
             // Convert the limits back to sensor units.
-            lowerLimit = convertPositionToSensorUnits(lowerLimit);
-            upperLimit = convertPositionToSensorUnits(upperLimit);
+            double lowerLimitSensorUnits = convertPositionToSensorUnits(lowerLimit);
+            double upperLimitSensorUnits = convertPositionToSensorUnits(upperLimit);
             if (swapped)
             {
-                setMotorRevSoftPositionLimit(upperLimit);
-                setMotorFwdSoftPositionLimit(lowerLimit);
+                setMotorRevSoftPositionLimit(upperLimitSensorUnits);
+                setMotorFwdSoftPositionLimit(lowerLimitSensorUnits);
             }
             else
             {
-                setMotorRevSoftPositionLimit(lowerLimit);
-                setMotorFwdSoftPositionLimit(upperLimit);
+                setMotorRevSoftPositionLimit(lowerLimitSensorUnits);
+                setMotorFwdSoftPositionLimit(upperLimitSensorUnits);
             }
+            tracer.traceDebug(
+                instanceName, "setMotorSoftLimits(lowerSensorUnits=%f, upperSensorUnits=%f, swapped=%s",
+                lowerLimitSensorUnits, upperLimitSensorUnits, swapped);
         }
         catch (UnsupportedOperationException e)
         {
+            // swapped is only applicable for motor native softe limits.
+            tracer.traceDebug(
+                instanceName, "setSoftLimits(lower=%f, upper=%f", lowerLimit, upperLimit);
             softLowerLimit = lowerLimit;
             softUpperLimit = upperLimit;
         }
