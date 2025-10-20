@@ -63,6 +63,7 @@ public abstract class TrcDriveBase implements TrcExclusiveSubsystem
      */
     public static class BaseParams
     {
+        public boolean driveMotorVelControlEnabled = false;
         public double driveMotorMaxVelocity = 0.0;
         public TrcPidController.PidCoefficients driveMotorVelPidCoeffs = null;
         public double driveMotorVelPidTolerance = 0.0;
@@ -101,6 +102,7 @@ public abstract class TrcDriveBase implements TrcExclusiveSubsystem
             double maxVelocity, TrcPidController.PidCoefficients velPidCoeffs, double pidTolerance,
             boolean useSoftwarePid)
         {
+            this.driveMotorVelControlEnabled = true;
             this.driveMotorMaxVelocity = maxVelocity;
             this.driveMotorVelPidCoeffs = velPidCoeffs;
             this.driveMotorVelPidTolerance = pidTolerance;
