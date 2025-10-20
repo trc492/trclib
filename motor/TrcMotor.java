@@ -2118,8 +2118,8 @@ public abstract class TrcMotor implements TrcMotorController, TrcExclusiveSubsys
             // Perform soft limit check.
             // If motor controller supports soft limits, softLowerLimit and softUpperLimit will be null and therefore
             // a no-op.
-            if (!stopIt && (softLowerLimit != null && position <= softLowerLimit ||
-                            softUpperLimit != null && position >= softUpperLimit))
+            if (!stopIt && (softLowerLimit != null && position < softLowerLimit ||
+                            softUpperLimit != null && position > softUpperLimit))
             {
                 stopIt = true;
             }
@@ -2281,8 +2281,8 @@ public abstract class TrcMotor implements TrcMotorController, TrcExclusiveSubsys
             // currTarget is undetermined if the motor is stop.
             Double currTarget = power < 0.0? (Double)minPos: power > 0.0? (Double)maxPos: null;
             tracer.traceDebug(
-                instanceName, "power=%f, minPos=%f, maxPos=%f, holdTarget=%s, currTarget=%s, prevTarget=%s",
-                power, minPos, maxPos, holdTarget, currTarget, taskParams.prevPosTarget);
+                instanceName, "power=%f, minPos=%f, maxPos=%f, holdTarget=%s, currPos=%f, currTarget=%s, prevTarget=%s",
+                power, minPos, maxPos, holdTarget, currPos, currTarget, taskParams.prevPosTarget);
             power = Math.abs(power);
             synchronized (taskParams)
             {
@@ -2300,26 +2300,26 @@ public abstract class TrcMotor implements TrcMotorController, TrcExclusiveSubsys
                         if (holdTarget)
                         {
                             // Hold target at current position.
-                            setPosition(0.0, currPos, true, 1.0, null, 0.0);
                             tracer.traceDebug(
                                 instanceName, "Holding: power=%f, currPos=%f, prevTarget=%f",
                                 power, currPos, taskParams.prevPosTarget);
+                            setPosition(0.0, currPos, true, 1.0, null, 0.0);
                         }
                         else
                         {
-                            setControllerMotorPower(0.0, true);
                             tracer.traceDebug(
                                 instanceName, "Stopping: power=%f, currPos=%f, prevTarget=%f",
                                 power, currPos, taskParams.prevPosTarget);
+                            setControllerMotorPower(0.0, true);
                         }
                     }
                     else
                     {
                         // We are starting or changing direction.
-                        setPosition(0.0, currTarget, holdTarget, power, null, 0.0);
                         tracer.traceDebug(
                             instanceName, "Start/ChangeDir: power=%f, currPos=%f, target=%f, prevTarget=%f",
                             power, currPos, currTarget, taskParams.prevPosTarget);
+                        setPosition(0.0, currTarget, holdTarget, power, null, 0.0);
                     }
                     taskParams.prevPosTarget = currTarget;
                 }
