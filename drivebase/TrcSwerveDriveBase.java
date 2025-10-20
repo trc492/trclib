@@ -27,6 +27,7 @@ import org.apache.commons.math3.linear.RealVector;
 
 import java.util.Arrays;
 
+import trclib.controller.TrcPidController;
 import trclib.robotcore.TrcEvent;
 import trclib.sensor.TrcGyro;
 import trclib.dataprocessor.TrcHashMap;
@@ -47,6 +48,29 @@ import trclib.timer.TrcTimer;
 public class TrcSwerveDriveBase extends TrcSimpleDriveBase
 {
     private final String moduleName = getClass().getSimpleName();
+
+    /**
+     * This class contains tunable parameters of the Swerve Drive.
+     */
+    public static class SwerveParams
+    {
+        public TrcPidController.PidCoefficients steerMotorPidCoeffs = null;
+        public double steerMotorPidTolerance = 0.0;
+
+        /**
+         * This method sets the parameters for Swerve Drive Steer Motor PID control.
+         *
+         * @param pidCoeffs specifies the PID Coefficients.
+         * @param pidTolerance specifies the PID tolerance.
+         * @return this object for chaining.
+         */
+        public SwerveParams setSteerPidParams(TrcPidController.PidCoefficients pidCoeffs, double pidTolerance)
+        {
+            this.steerMotorPidCoeffs = pidCoeffs;
+            this.steerMotorPidTolerance = pidTolerance;
+            return this;
+        }   //setSteerPidParams
+    }   //class SwerveParams
 
     private final TrcSwerveModule lfModule, rfModule, lbModule, rbModule;
     private final double wheelBaseWidth, wheelBaseLength, wheelBaseDiagonal;
@@ -501,7 +525,7 @@ public class TrcSwerveDriveBase extends TrcSimpleDriveBase
         RealVector velSum = new ArrayRealVector(2);
         for (int i = 0; i < numMotors; i++)
         {
-            TrcSwerveModule swerveModule = driveMotorToModuleMap.get(currOdometries[i].sensor);
+            TrcSwerveModule swerveModule = driveMotorToModuleMap.get((TrcMotor) currOdometries[i].sensor);
             // swerveModule won't be null but checking it to shut up the compiler warning.
             double angle = swerveModule != null? swerveModule.getSteerAngle(): 0.0;
             double posDelta = currOdometries[i].currPos - prevOdometries[i].currPos;

@@ -61,7 +61,7 @@ public abstract class TrcDriveBase implements TrcExclusiveSubsystem
     /**
      * This class contains tunable parameters of the DriveBase.
      */
-    public static class TuneParams
+    public static class BaseParams
     {
         public double driveMotorMaxVelocity = 0.0;
         public TrcPidController.PidCoefficients driveMotorVelPidCoeffs = null;
@@ -97,7 +97,7 @@ public abstract class TrcDriveBase implements TrcExclusiveSubsystem
          * @param useSoftwarePid specifies true to use software PID control, false to use motor native PID control.
          * @return this object for chaining.
          */
-        public TuneParams setDriveMotorVelocityControl(
+        public BaseParams setDriveMotorVelocityControl(
             double maxVelocity, TrcPidController.PidCoefficients velPidCoeffs, double pidTolerance,
             boolean useSoftwarePid)
         {
@@ -115,7 +115,7 @@ public abstract class TrcDriveBase implements TrcExclusiveSubsystem
          * @param turnTolerance specifies the turn tolerance in scaled unit.
          * @return this object for chaining.
          */
-        public TuneParams setPidTolerances(double driveTolerance, double turnTolerance)
+        public BaseParams setPidTolerances(double driveTolerance, double turnTolerance)
         {
             this.drivePidTolerance = driveTolerance;
             this.turnPidTolerance = turnTolerance;
@@ -129,7 +129,7 @@ public abstract class TrcDriveBase implements TrcExclusiveSubsystem
          * @param powerLimit specifies the PID power limit.
          * @return this object for chaining.
          */
-        public TuneParams setXPidParams(TrcPidController.PidCoefficients pidCoeffs, double powerLimit)
+        public BaseParams setXPidParams(TrcPidController.PidCoefficients pidCoeffs, double powerLimit)
         {
             this.xDrivePidCoeffs = pidCoeffs;
             this.xDrivePowerLimit = powerLimit;
@@ -143,7 +143,7 @@ public abstract class TrcDriveBase implements TrcExclusiveSubsystem
          * @param powerLimit specifies the PID power limit.
          * @return this object for chaining.
          */
-        public TuneParams setYPidParams(TrcPidController.PidCoefficients pidCoeffs, double powerLimit)
+        public BaseParams setYPidParams(TrcPidController.PidCoefficients pidCoeffs, double powerLimit)
         {
             this.yDrivePidCoeffs = pidCoeffs;
             this.yDrivePowerLimit = powerLimit;
@@ -157,7 +157,7 @@ public abstract class TrcDriveBase implements TrcExclusiveSubsystem
          * @param powerLimit specifies the PID power limit.
          * @return this object for chaining.
          */
-        public TuneParams setTurnPidParams(TrcPidController.PidCoefficients pidCoeffs, double powerLimit)
+        public BaseParams setTurnPidParams(TrcPidController.PidCoefficients pidCoeffs, double powerLimit)
         {
             this.turnPidCoeffs = pidCoeffs;
             this.turnPowerLimit = powerLimit;
@@ -170,7 +170,7 @@ public abstract class TrcDriveBase implements TrcExclusiveSubsystem
          * @param pidCoeffs specifies the PID Coefficients.
          * @return this object for chaining.
          */
-        public TuneParams setVelocityPidParams(TrcPidController.PidCoefficients pidCoeffs)
+        public BaseParams setVelocityPidParams(TrcPidController.PidCoefficients pidCoeffs)
         {
             this.velPidCoeffs = pidCoeffs;
             return this;
@@ -186,7 +186,7 @@ public abstract class TrcDriveBase implements TrcExclusiveSubsystem
          * @param maxTurnRate specifies the drive base maximum turn rate.
          * @return this object for chaining.
          */
-        public TuneParams setDriveCharacteristics(
+        public BaseParams setDriveCharacteristics(
             double maxVelocity, double maxAcceleration, double maxDeceleration, double maxTurnRate)
         {
             this.profiledMaxDriveVelocity = maxVelocity;
@@ -195,7 +195,7 @@ public abstract class TrcDriveBase implements TrcExclusiveSubsystem
             this.profiledMaxTurnRate = maxTurnRate;
             return this;
         }   //setDriveCharacteristics
-    }   //class TuneParams
+    }   //class BaseParams
 
     //
     // If true, the change in pose is a twist, and is applied to the current pose using a non-zero curvature
