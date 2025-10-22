@@ -2624,7 +2624,7 @@ public abstract class TrcMotor implements TrcMotorController, TrcExclusiveSubsys
      *
      * @return true if velocity has reached target, false otherwise.
      */
-    public boolean getVelocityOnTarget()
+    public boolean isVelocityOnTarget()
     {
         boolean onTarget;
 
@@ -2645,7 +2645,7 @@ public abstract class TrcMotor implements TrcMotorController, TrcExclusiveSubsys
         }
 
         return onTarget;
-    }   //getVelocityOnTarget
+    }   //isVelocityOnTarget
 
     /**
      * This method sets the power compensation callback of the motor's velocity PID controller.
@@ -2891,7 +2891,7 @@ public abstract class TrcMotor implements TrcMotorController, TrcExclusiveSubsys
      *
      * @return true if position has reached target, false otherwise.
      */
-    public boolean getPositionOnTarget()
+    public boolean isPositionOnTarget()
     {
         boolean onTarget;
 
@@ -2914,7 +2914,7 @@ public abstract class TrcMotor implements TrcMotorController, TrcExclusiveSubsys
         }
 
         return onTarget;
-    }   //getPositionOnTarget
+    }   //isPositionOnTarget
 
     /**
      * This method sets the power compensation callback of the motor's position PID controller.
@@ -3137,7 +3137,7 @@ public abstract class TrcMotor implements TrcMotorController, TrcExclusiveSubsys
      *
      * @return true if current has reached target, false otherwise.
      */
-    public boolean getCurrentOnTarget()
+    public boolean isCurrentOnTarget()
     {
         boolean onTarget;
 
@@ -3160,7 +3160,7 @@ public abstract class TrcMotor implements TrcMotorController, TrcExclusiveSubsys
         }
 
         return onTarget;
-    }   //getCurrentOnTarget
+    }   //isCurrentOnTarget
 
     /**
      * This method sets the power compensation callback of the motor's current PID controller.
@@ -3446,9 +3446,9 @@ public abstract class TrcMotor implements TrcMotorController, TrcExclusiveSubsys
                         {
                             // Do motor controller closed-loop control.
                             onTarget =
-                                taskParams.currControlMode == ControlMode.Velocity? getVelocityOnTarget():
-                                taskParams.currControlMode == ControlMode.Position? getPositionOnTarget():
-                                taskParams.currControlMode == ControlMode.Current && getCurrentOnTarget();
+                                taskParams.currControlMode == ControlMode.Velocity? isVelocityOnTarget():
+                                taskParams.currControlMode == ControlMode.Position? isPositionOnTarget():
+                                taskParams.currControlMode == ControlMode.Current && isCurrentOnTarget();
                             // If we have powerLimit or powerComp, we need to update closed-loop control with them.
                             if (taskParams.powerLimit != null || taskParams.powerComp != null)
                             {
