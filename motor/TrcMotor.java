@@ -2093,6 +2093,11 @@ public abstract class TrcMotor implements TrcMotorController, TrcExclusiveSubsys
         tracer.traceDebug(
             instanceName, "owner=%s, delay=%f, pos=%f, holdTarget=%s, powerLimit=%f, event=%s, timeout=%f",
             owner, delay, position, holdTarget, powerLimit, completionEvent, timeout);
+        if (completionEvent != null)
+        {
+            completionEvent.clear();
+        }
+
         releaseOwnershipEvent = acquireOwnership(owner, completionEvent, tracer);
         if (releaseOwnershipEvent != null) completionEvent = releaseOwnershipEvent;
 
@@ -2101,11 +2106,7 @@ public abstract class TrcMotor implements TrcMotorController, TrcExclusiveSubsys
             boolean stopIt = false;
             double currPos = getPosition();
             // Stop previous operation if there is one.
-            cancel(false, false);
-            if (completionEvent != null)
-            {
-                completionEvent.clear();
-            }
+            cancelTask(false);
             // Perform hardware limit switch check.
             // If motor controller supports hardware limit switches, both lowerLimitSwitch and upperLimitSwitch should
             // be null and therefore a no-op.
@@ -3737,18 +3738,21 @@ public abstract class TrcMotor implements TrcMotorController, TrcExclusiveSubsys
      */
     private void zeroCalibrate(String owner, double calPower, TrcEvent completionEvent, TrcEvent.Callback callback)
     {
+        tracer.traceDebug(
+            instanceName, "owner=%s, calPower=%f, event=%s, callback=%s",
+            owner, calPower, completionEvent, callback != null);
+        if (completionEvent != null)
+        {
+            completionEvent.clear();
+        }
+
         releaseOwnershipEvent = acquireOwnership(owner, completionEvent, tracer);
         if (releaseOwnershipEvent != null) completionEvent = releaseOwnershipEvent;
 
         if (validateOwnership(owner))
         {
             // Stop previous operation if there is one.
-            cancel(false);
-            if (completionEvent != null)
-            {
-                completionEvent.clear();
-            }
-
+            cancelTask(false);
             synchronized (taskParams)
             {
                 taskParams.calPower = calPower;

@@ -24,6 +24,7 @@ package trclib.subsystem;
 
 import java.util.ArrayList;
 
+import trclib.robotcore.TrcDbgTrace;
 import trclib.robotcore.TrcEvent;
 
 /**
@@ -32,6 +33,7 @@ import trclib.robotcore.TrcEvent;
  */
 public abstract class TrcSubsystem
 {
+    private static final String moduleName = TrcSubsystem.class.getSimpleName();
     private static final ArrayList<SubsystemInfo> subsystemList = new ArrayList<>();
     private static TrcEvent zeroCalCompletionEvent = null;
     protected final String instanceName;
@@ -160,6 +162,10 @@ public abstract class TrcSubsystem
                 {
                     event.setCallback(TrcSubsystem::zeroCalCallback, subsystemInfo);
                 }
+                TrcDbgTrace.globalTraceInfo(
+                    moduleName,
+                    "ZeroCalibrate(Subsystem=%s, owner=%s, event=%s)",
+                    subsystemInfo.subsystem.instanceName, owner, event);
                 subsystemInfo.zeroCalDone = false;
                 subsystemInfo.subsystem.zeroCalibrate(owner, event);
             }
