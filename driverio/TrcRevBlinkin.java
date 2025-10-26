@@ -26,7 +26,7 @@ package trclib.driverio;
  * This class implements a platform independent REV Blinkin device. This class is intended to be extended by a
  * platform dependent device class which provides the abstract methods required by this class.
  */
-public abstract class TrcRevBlinkin extends TrcPriorityIndicator<TrcRevBlinkin.Pattern>
+public abstract class TrcRevBlinkin extends TrcPriorityIndicator
 {
     public enum RevLedPattern
     {
@@ -163,35 +163,6 @@ public abstract class TrcRevBlinkin extends TrcPriorityIndicator<TrcRevBlinkin.P
         }   //getPattern
 
     }   //enum RevLedPattern
-
-    /**
-     * This class contains information about an LED pattern. An LED pattern contains a pattern type, an array of colors
-     * and a time interval between color changes for running patterns.
-     */
-    public static class Pattern
-    {
-        public String name;
-        public RevLedPattern ledPattern;
-
-        /**
-         * Constructor: Creates an instance of the object.
-         *
-         * @param name specifies the name of the pattern.
-         * @param ledPattern specifies the REV Blinkin LED pattern.
-         */
-        public Pattern(String name, RevLedPattern ledPattern)
-        {
-            this.name = name;
-            this.ledPattern = ledPattern;
-        }   //Pattern
-
-        @Override
-        public String toString()
-        {
-            return name;
-        }   //toString
-
-    }   //class Pattern
 
     /**
      * Constructor: Create an instance of the object.

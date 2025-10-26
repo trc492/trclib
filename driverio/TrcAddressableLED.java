@@ -23,6 +23,7 @@
 package trclib.driverio;
 
 import java.util.Arrays;
+import java.util.Locale;
 
 import trclib.dataprocessor.TrcColor;
 
@@ -30,13 +31,13 @@ import trclib.dataprocessor.TrcColor;
  * This class implements a platform independent Addressable LED device. It is intended to be extended by a platform
  * dependent Addressable LED device to provides platform dependent methods to set the color pattern of the LED strip.
  */
-public abstract class TrcAddressableLED extends TrcPriorityIndicator<TrcAddressableLED.Pattern>
+public abstract class TrcAddressableLED extends TrcPriorityIndicator
 {
     /**
      * This class contains information about an LED pattern. An LED pattern contains a pattern type, an array of colors
      * and a time interval between color changes for running patterns.
      */
-    public static class Pattern
+    public static class LedPattern
     {
         public enum Type
         {
@@ -72,10 +73,10 @@ public abstract class TrcAddressableLED extends TrcPriorityIndicator<TrcAddressa
          * @param type specifies the pattern type.
          * @param runningInterval specifies the time interval in seconds between each pattern change.
          */
-        public Pattern(String name, TrcColor[] colorPattern, Type type, double runningInterval)
+        public LedPattern(String name, TrcColor[] colorPattern, Type type, double runningInterval)
         {
             commonInit(name, type, colorPattern, runningInterval);
-        }   //Pattern
+        }   //LedPattern
 
         /**
          * Constructor: Creates an instance of the object.
@@ -83,10 +84,10 @@ public abstract class TrcAddressableLED extends TrcPriorityIndicator<TrcAddressa
          * @param name specifies the name of the pattern.
          * @param colorPattern specifies the color pattern as an array of colors, one for each pixel in the LED strip.
          */
-        public Pattern(String name, TrcColor[] colorPattern)
+        public LedPattern(String name, TrcColor[] colorPattern)
         {
             commonInit(name, Type.Fixed, colorPattern, 0.0);
-        }   //Pattern
+        }   //LedPattern
 
         /**
          * Constructor: Creates an instance of the object.
@@ -97,13 +98,13 @@ public abstract class TrcAddressableLED extends TrcPriorityIndicator<TrcAddressa
          * @param type specifies the pattern type.
          * @param runningInterval specifies the time interval in seconds between each pattern change.
          */
-        public Pattern(String name, TrcColor color, int numLEDs, Type type, double runningInterval)
+        public LedPattern(String name, TrcColor color, int numLEDs, Type type, double runningInterval)
         {
             TrcColor[] fixedColors = new TrcColor[numLEDs];
 
             Arrays.fill(fixedColors, color);
             commonInit(name, type, fixedColors, runningInterval);
-        }   //Pattern
+        }   //LedPattern
 
         /**
          * Constructor: Creates an instance of the object.
@@ -112,18 +113,18 @@ public abstract class TrcAddressableLED extends TrcPriorityIndicator<TrcAddressa
          * @param color specifies the solid color in the color pattern.
          * @param numLEDs specifies the number of LEDs in the color pattern.
          */
-        public Pattern(String name, TrcColor color, int numLEDs)
+        public LedPattern(String name, TrcColor color, int numLEDs)
         {
             this(name, color, numLEDs, Type.Fixed, 0.0);
-        }   //Pattern
+        }   //LedPattern
 
         @Override
         public String toString()
         {
-            return name;
+            return "(" + name + ":" + type + ")";
         }   //toString
 
-    }   //class Pattern
+    }   //class LedPattern
 
     public abstract void updateLED(TrcColor[] colorPattern);
 
@@ -143,6 +144,21 @@ public abstract class TrcAddressableLED extends TrcPriorityIndicator<TrcAddressa
     }   //TrcAddressableLED
 
     /**
+     * This method sets the color for the whole LED strip.
+     *
+     * @param color specifies the color.
+     */
+    public void setColor(TrcColor color)
+    {
+        String colorName = String.format(
+            Locale.US, "RGB_%x",
+            (int) color.getRed() + (((int) color.getGreen()) << 8) + (((int) color.getBlue()) << 16));
+        LedPattern ledPattern = new LedPattern(colorName, color, numLEDs);
+        currPattern = new Pattern("WholeLength:" + colorName, ledPattern);
+        updateLED(((LedPattern) currPattern.devPattern).colorPattern);
+    }   //setColor
+
+    /**
      * This method sets the RGB color for the whole LED strip.
      *
      * @param red   specifies the red value (0-255).
@@ -151,8 +167,7 @@ public abstract class TrcAddressableLED extends TrcPriorityIndicator<TrcAddressa
      */
     public void setRGB(int red, int green, int blue)
     {
-        currPattern = new Pattern("WholeLengthColor", new TrcColor(red, green, blue), numLEDs);
-        updateLED(currPattern.colorPattern);
+        setColor(new TrcColor(red, green, blue));
     }   //setRGB
 
     /**
@@ -162,22 +177,12 @@ public abstract class TrcAddressableLED extends TrcPriorityIndicator<TrcAddressa
      * @param sat   specifies the saturation (0-255).
      * @param value specifies the value (0-255).
      */
-    public void setHSV(double hue, double sat, double value)
+    public void setHSV(int hue, int sat, int value)
     {
         // TODO: Implement TrcColor.hsvToRgb
-        // updateLED(currPattern.colorPattern);
+//        double[] rgb = TrcColor.hsvTorgb(hue, sat, value);
+//        setColor(new TrcColor(rgb[0], rgb[1], rgb[2]));
     }   //setHSV
-
-    /**
-     * This method sets the color for the whole LED strip.
-     *
-     * @param color specifies the color.
-     */
-    public void setColor(TrcColor color)
-    {
-        currPattern = new Pattern("PartialLengthColor", color, numLEDs);
-        updateLED(currPattern.colorPattern);
-    }   //setColor
 
     //
     // Implements TrcPriorityIndicator abstract methods.
@@ -203,7 +208,7 @@ public abstract class TrcAddressableLED extends TrcPriorityIndicator<TrcAddressa
     public void setPattern(Pattern pattern)
     {
         this.currPattern = pattern;
-        updateLED(currPattern != null? currPattern.colorPattern: null);
+        updateLED(currPattern != null? ((LedPattern) currPattern.devPattern).colorPattern: null);
     }   //setPattern
 
 }   //class TrcAddressableLED

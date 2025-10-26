@@ -26,9 +26,9 @@ package trclib.driverio;
  * This class implements a platform independent Gobilda Indicator Light device. This class is intended to be extended
  * by a platform dependent device class which provides the abstract methods required by this class.
  */
-public abstract class TrcGobildaIndicatorLight extends TrcPriorityIndicator<TrcGobildaIndicatorLight.Pattern>
+public abstract class TrcGobildaIndicatorLight extends TrcPriorityIndicator
 {
-    public enum Color
+    public enum GobildaLedPattern
     {
         Black(0.0),
         Red(0.280),
@@ -58,17 +58,17 @@ public abstract class TrcGobildaIndicatorLight extends TrcPriorityIndicator<TrcG
          *
          * @param value specifies the value of the new member.
          */
-        Color(double value)
+        GobildaLedPattern(double value)
         {
             this.value = value;
-        }   //Color
+        }   //GobildaLedPattern
 
-//        Color(int red, int green, int blue)
+//        GobildaLedPattern(int red, int green, int blue)
 //        {
 //            float[] hsvValues = {0.0f, 0.0f, 0.0f};
 //            android.graphics.Color.RGBToHSV(red & 0xff, green & 0xff, blue & 0xff, hsvValues);
 //            this.value = hsvValues[0]/360.0;
-//        }   //Color
+//        }   //GobildaLedPattern
 
         /**
          * This method looks up the enum member that matches the given value.
@@ -76,49 +76,20 @@ public abstract class TrcGobildaIndicatorLight extends TrcPriorityIndicator<TrcG
          * @param value specifies the enum member value.
          * @return enum member with a matching value.
          */
-        public static Color getPattern(double value)
+        public static GobildaLedPattern getPattern(double value)
         {
-            for (Color c: Color.values())
+            for (GobildaLedPattern p: GobildaLedPattern.values())
             {
-                if (value == c.value)
+                if (value == p.value)
                 {
-                    return c;
+                    return p;
                 }
             }
 
             return null;
         }   //getPattern
 
-    }   //enum Color
-
-    /**
-     * This class contains information about an LED pattern. An LED pattern contains a pattern type, an array of colors
-     * and a time interval between color changes for running patterns.
-     */
-    public static class Pattern
-    {
-        public String name;
-        public Color ledColor;
-
-        /**
-         * Constructor: Creates an instance of the object.
-         *
-         * @param name specifies the name of the pattern.
-         * @param ledColor specifies the REV Blinkin LED pattern.
-         */
-        public Pattern(String name, Color ledColor)
-        {
-            this.name = name;
-            this.ledColor = ledColor;
-        }   //Pattern
-
-        @Override
-        public String toString()
-        {
-            return name;
-        }   //toString
-
-    }   //class Pattern
+    }   //enum GobildaLedPattern
 
     /**
      * Constructor: Create an instance of the object.

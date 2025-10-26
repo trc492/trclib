@@ -38,34 +38,60 @@ import trclib.timer.TrcTimer;
  * indicator to be used to display important status that will not be overwritten by unimportant status change. This
  * class is intended to be extended by a device dependent subclass that provides device dependent methods to set and
  * get indicator patterns.
- *
- * @param <T> specifies the device dependent indicator pattern type.
  */
-public abstract class TrcPriorityIndicator<T>
+public abstract class TrcPriorityIndicator
 {
+    public static class Pattern
+    {
+        public String name;
+        public Object devPattern;
+        public double onDuration;
+        public double offDuration;
+
+        public Pattern(String name, Object devPattern, double onDuration, double offDuration)
+        {
+            this.name = name;
+            this.devPattern = devPattern;
+            this.onDuration = onDuration;
+            this.offDuration = offDuration;
+        }   //Pattern
+
+        public Pattern(String name, Object devPattern)
+        {
+            this(name, devPattern, 0.0, 0.0);
+        }   //Pattern
+
+        @Override
+        public String toString()
+        {
+            return "(name=" + name +
+                   ",devPattern=" + devPattern +
+                   ",onDuration=" + onDuration +
+                   ",offDuration=" + offDuration + ")";
+        }   //toString
+    }   //class Pattern
+
     /**
      * This method gets the current set pattern.
      *
      * @return currently set pattern.
      */
-    public abstract T getPattern();
+    public abstract Pattern getPattern();
 
     /**
      * This method sets the pattern to the physical indicator device in a device dependent way.
      *
      * @param pattern specifies the indicator pattern. If null, turn off the indicator pattern.
      */
-    public abstract void setPattern(T pattern);
+    public abstract void setPattern(Pattern pattern);
 
     /**
      * This class implements the pattern state. It contains the pattern and the state if the pattern is active or not.
      */
-    private class PatternState
+    private static class PatternState
     {
-        final T pattern;
+        final Pattern pattern;
         boolean enabled;
-        double onDuration;
-        double offDuration;
         boolean on;
         double expiredTime;
 
@@ -74,16 +100,11 @@ public abstract class TrcPriorityIndicator<T>
          *
          * @param pattern specifies the pattern.
          * @param enabled specifies the initial state of the pattern.
-         * @param onDuration specifies the time in seconds the pattern remains ON, zero to turn it ON indefinitely.
-         * @param offDuration specifies the time in seconds the pattern remains OFF, then turn the LED back ON.
-         *        Zero for disabling after onDuration expires.
          */
-        public PatternState(T pattern, boolean enabled, double onDuration, double offDuration)
+        public PatternState(Pattern pattern, boolean enabled)
         {
             this.pattern = pattern;
             this.enabled = enabled;
-            this.onDuration = onDuration;
-            this.offDuration = offDuration;
             this.on = false;
             this.expiredTime = 0.0;
         }   //PatternState
@@ -93,9 +114,9 @@ public abstract class TrcPriorityIndicator<T>
          *
          * @param pattern specifies the indicator pattern.
          */
-        public PatternState(T pattern)
+        public PatternState(Pattern pattern)
         {
-            this(pattern, false, 0.0, 0.0);
+            this(pattern, false);
         }   //PatternState
 
         /**
@@ -111,7 +132,7 @@ public abstract class TrcPriorityIndicator<T>
 
     }   //class PatternState
 
-    private final HashMap<String, T> namedPatternMap = new HashMap<>();
+    private final HashMap<String, Pattern> namedPatternMap = new HashMap<>();
 
     public final TrcDbgTrace tracer;
     protected final String instanceName;
@@ -204,11 +225,8 @@ public abstract class TrcPriorityIndicator<T>
      *
      * @param pattern specifies the pattern in the priority list.
      * @param enabled specifies true to turn the pattern ON, false to turn it OFF.
-     * @param onDuration specifies the time in seconds the pattern remains ON, zero to turn it ON indefinitely.
-     * @param offDuration specifies the time in seconds the pattern remains OFF, then turn the LED back ON.
-     *        Zero for disabling after onDuration expires.
      */
-    public synchronized void setPatternState(T pattern, boolean enabled, double onDuration, double offDuration)
+    public synchronized void setPatternState(Pattern pattern, boolean enabled)
     {
         int index = getPatternPriority(pattern);
 
@@ -216,80 +234,14 @@ public abstract class TrcPriorityIndicator<T>
             instanceName,
             "[" + index +
             "] pattern=" + pattern +
-            ", enabled=" + enabled +
-            ", onDuration=" + onDuration +
-            ", offDuration=" + offDuration);
+            ", enabled=" + enabled);
         if (index != -1)
         {
             PatternState patternState = patternPriorities.get(index);
 
             patternState.enabled = enabled;
-            if (enabled)
-            {
-                patternState.on = true;
-                patternState.onDuration = onDuration;
-                patternState.offDuration = onDuration > 0.0? offDuration: 0.0;
-                patternState.expiredTime = onDuration > 0.0? TrcTimer.getCurrentTime() + onDuration: 0.0;
-            }
-            else
-            {
-                patternState.on = false;
-                patternState.onDuration = 0.0;
-                patternState.offDuration = 0.0;
-                patternState.expiredTime = 0.0;
-            }
+            patternState.on = enabled;
         }
-    }   //setPatternState
-
-    /**
-     * This method enables/disables the pattern in the priority list.
-     *
-     * @param pattern specifies the pattern in the priority list.
-     * @param enabled specifies true to turn the pattern ON, false to turn it OFF.
-     * @param onDuration specifies the time in seconds the pattern remains ON, zero to turn it ON indefinitely.
-     */
-    public void setPatternState(T pattern, boolean enabled, double onDuration)
-    {
-        setPatternState(pattern, enabled, onDuration, 0.0);
-    }   //setPatternState
-
-    /**
-     * This method enables/disables the pattern in the priority list.
-     *
-     * @param pattern specifies the pattern in the priority list.
-     * @param enabled specifies true to turn the pattern ON, false to turn it OFF.
-     */
-    public void setPatternState(T pattern, boolean enabled)
-    {
-        setPatternState(pattern, enabled, 0.0, 0.0);
-    }   //setPatternState
-
-    /**
-     * This method enables/disables the pattern in the priority list.
-     *
-     * @param patternName specifies the name of the pattern in the priority list.
-     * @param enabled specifies true to turn the pattern ON, false to turn it OFF.
-     * @param onDuration specifies the time in seconds the pattern remains ON, zero to turn it ON indefinitely.
-     * @param offDuration specifies the time in seconds the pattern remains OFF, then turn the LED back ON.
-     *        Zero for disabling after onDuration expires.
-     * @throws IllegalAccessError when patternName is not found in the map.
-     */
-    public void setPatternState(String patternName, boolean enabled, double onDuration, double offDuration)
-    {
-        setPatternState(namedPatternMap.get(patternName), enabled, onDuration, offDuration);
-    }   //setPatternState
-
-    /**
-     * This method enables/disables the pattern in the priority list.
-     *
-     * @param patternName specifies the name of the pattern in the priority list.
-     * @param enabled specifies true to turn the pattern ON, false to turn it OFF.
-     * @param onDuration specifies the time in seconds the pattern remains ON, zero to turn it ON indefinitely.
-     * @throws IllegalAccessError when patternName is not found in the map.
-     */
-    public void setPatternState(String patternName, boolean enabled, double onDuration)
-    {
-        setPatternState(namedPatternMap.get(patternName), enabled, onDuration, 0.0);
     }   //setPatternState
 
     /**
@@ -301,7 +253,7 @@ public abstract class TrcPriorityIndicator<T>
      */
     public void setPatternState(String patternName, boolean enabled)
     {
-        setPatternState(namedPatternMap.get(patternName), enabled, 0.0, 0.0);
+        setPatternState(namedPatternMap.get(patternName), enabled);
     }   //setPatternState
 
     /**
@@ -311,7 +263,7 @@ public abstract class TrcPriorityIndicator<T>
      * @param pattern specifies the pattern in the priority list.
      * @return true if the pattern is ON, false if it is OFF.
      */
-    public synchronized boolean getPatternState(T pattern)
+    public synchronized boolean getPatternState(Pattern pattern)
     {
         boolean state = false;
         int index = getPatternPriority(pattern);
@@ -365,7 +317,7 @@ public abstract class TrcPriorityIndicator<T>
      * @param pattern specifies the indicator pattern to be searched in the pattern priorities array.
      * @return the pattern priority if found, -1 if not found.
      */
-    public synchronized int getPatternPriority(T pattern)
+    public synchronized int getPatternPriority(Pattern pattern)
     {
         int priority = -1;
 
@@ -391,7 +343,7 @@ public abstract class TrcPriorityIndicator<T>
      *
      * @param priorities specifies the pattern priority list or null to disregard the previously set list.
      */
-    public synchronized void setPatternPriorities(T[] priorities)
+    public synchronized void setPatternPriorities(Pattern[] priorities)
     {
         tracer.traceDebug(
             instanceName, "priorityList=" + (priorities == null ? "null" : Arrays.toString(priorities)));
@@ -401,11 +353,11 @@ public abstract class TrcPriorityIndicator<T>
             patternPriorities = new ArrayList<>();
 
             namedPatternMap.clear();
-            for (T priority : priorities)
+            for (Pattern priority : priorities)
             {
                 PatternState patternState = new PatternState(priority);
                 patternPriorities.add(patternState);
-                namedPatternMap.put(patternState.pattern.toString(), patternState.pattern);
+                namedPatternMap.put(patternState.pattern.name, patternState.pattern);
             }
 
             // If we had a previous priority list, make sure patterns persist
@@ -416,9 +368,10 @@ public abstract class TrcPriorityIndicator<T>
                     if (patternState.enabled)
                     {
                         // This will silently fail if this pattern is not in the priority list
-                        setPatternState(patternState.pattern, true, patternState.onDuration, patternState.offDuration);
+                        setPatternState(patternState.pattern, true);
                     }
                 }
+                oldPriorities.clear();
             }
             updateIndicator();
             setTaskEnabled(true);
@@ -441,7 +394,7 @@ public abstract class TrcPriorityIndicator<T>
     {
         double currTime = TrcTimer.getCurrentTime();
         boolean gotPattern = false;
-        T pattern = null;
+        Pattern pattern = null;
 
         for (PatternState patternState: patternPriorities)
         {
@@ -456,21 +409,21 @@ public abstract class TrcPriorityIndicator<T>
                         // ON has expired.
                         tracer.traceDebug(instanceName, "Pattern " + patternState.pattern + " ON has expired.");
                         patternState.on = false;
-                        if (patternState.offDuration > 0.0)
+                        if (patternState.pattern.offDuration > 0.0)
                         {
-                            patternState.expiredTime = currTime + patternState.offDuration;
+                            patternState.expiredTime = currTime + patternState.pattern.offDuration;
                         }
                         else
                         {
                             patternState.enabled = false;
                         }
                     }
-                    else if (patternState.onDuration > 0.0)
+                    else if (patternState.pattern.onDuration > 0.0)
                     {
                         // OFF has expired.
                         tracer.traceDebug(instanceName, "Pattern " + patternState.pattern + " OFF has expired.");
                         patternState.on = true;
-                        patternState.expiredTime = currTime + patternState.onDuration;
+                        patternState.expiredTime = currTime + patternState.pattern.onDuration;
                     }
                 }
 
@@ -489,7 +442,7 @@ public abstract class TrcPriorityIndicator<T>
         //
         // Only set the pattern if it is not already active.
         //
-        if (pattern != getPattern())
+        if (pattern != null && pattern != getPattern())
         {
             setPattern(pattern);
         }
