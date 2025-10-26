@@ -116,6 +116,24 @@ public abstract class TrcSubsystem
     }   //toString
 
     /**
+     * This method returns the number of subsystems registered.
+     *
+     * @return number of subsystems.
+     */
+    public static int getNumSubsystems()
+    {
+        return subsystemList.size();
+    }   //getNumSubsystems
+
+    /**
+     * This method clears the subsystem list.
+     */
+    public static void clearSubsystemList()
+    {
+        subsystemList.clear();
+    }   //clearSubsystemList
+
+    /**
      * This method returns the subsystem matches the given name.
      *
      * @param name specifies the subsystem name to look for.
