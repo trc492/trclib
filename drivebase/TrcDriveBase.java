@@ -2197,8 +2197,7 @@ public abstract class TrcDriveBase implements TrcExclusiveSubsystem
             double currTime = TrcTimer.getCurrentTime();
             double deltaTime = currTime - odometry.timestamp;
             odometry.timestamp = currTime;
-            double prevXVel = odometry.velocity.x;
-            double prevYVel = odometry.velocity.y;
+            TrcPose2D prevVelocity = odometry.velocity.clone();
             Odometry odometryDelta;
 
             if (odometryWheels != null)
@@ -2271,8 +2270,8 @@ public abstract class TrcDriveBase implements TrcExclusiveSubsystem
                     ", odometry=" + odometry);
             }
 
-            odometry.acceleration.x = (odometry.velocity.x - prevXVel) / deltaTime;
-            odometry.acceleration.y = (odometry.velocity.y - prevYVel) / deltaTime;
+            odometry.acceleration.x = (odometry.velocity.x - prevVelocity.x) / deltaTime;
+            odometry.acceleration.y = (odometry.velocity.y - prevVelocity.y) / deltaTime;
             odometry.acceleration.angle = odometry.velocity.angle;
 
             if (TrcUtil.magnitude(odometry.velocity.x, odometry.velocity.y) > stallVelThreshold)
