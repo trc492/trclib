@@ -717,6 +717,19 @@ public abstract class TrcDriveBase implements TrcExclusiveSubsystem
     }   //getFieldVelocity
 
     /**
+     * This method returns the robot acceleration from odometry.
+     *
+     * @return a copy of the robot acceleration.
+     */
+    public TrcPose2D getFieldAcceleration()
+    {
+        synchronized (odometry)
+        {
+            return odometry.acceleration.clone();
+        }
+    }   //getFieldAcceleration
+
+    /**
      * This method sets the robot's absolute field position to the given pose. This can be used to set the robot's
      * starting position relative to the field origin.
      *
