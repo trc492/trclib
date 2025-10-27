@@ -258,8 +258,10 @@ public abstract class TrcDriveBase implements TrcExclusiveSubsystem
      */
     public static class Odometry
     {
+        public double timestamp;
         public TrcPose2D position;
         public TrcPose2D velocity;
+        public TrcPose2D acceleration;
 
         /**
          * Constructor: Create an instance of the object.
@@ -268,6 +270,7 @@ public abstract class TrcDriveBase implements TrcExclusiveSubsystem
         {
             position = new TrcPose2D();
             velocity = new TrcPose2D();
+            acceleration = new TrcPose2D();
         }   //Odometry
 
         /**
@@ -275,11 +278,13 @@ public abstract class TrcDriveBase implements TrcExclusiveSubsystem
          *
          * @param position specifies the initial position.
          * @param velocity specifies the initial velocity.
+         * @param acceleration specifies the initial acceleration.
          */
-        public Odometry(TrcPose2D position, TrcPose2D velocity)
+        public Odometry(TrcPose2D position, TrcPose2D velocity, TrcPose2D acceleration)
         {
             this.position = position;
             this.velocity = velocity;
+            this.acceleration = acceleration;
         }   //Odometry
 
         /**
@@ -290,7 +295,7 @@ public abstract class TrcDriveBase implements TrcExclusiveSubsystem
         @Override
         public String toString()
         {
-            return "(pos=" + position + ",vel=" + velocity + ")";
+            return "(pos=" + position + ",vel=" + velocity + ",accel=" + acceleration + ")";
         }   //toString
 
         /**
@@ -301,7 +306,7 @@ public abstract class TrcDriveBase implements TrcExclusiveSubsystem
         @Override
         public Odometry clone()
         {
-            return new Odometry(position.clone(), velocity.clone());
+            return new Odometry(position.clone(), velocity.clone(), acceleration.clone());
         }   //clone
 
         /**
@@ -323,6 +328,16 @@ public abstract class TrcDriveBase implements TrcExclusiveSubsystem
         {
             this.velocity.setAs(pose);
         }   //setVelocityAs
+
+        /**
+         * This method sets the acceleration info of the odometry to the given pose.
+         *
+         * @param pose specifies the pose to set the acceleration info to.
+         */
+        void setAccelerationAs(TrcPose2D pose)
+        {
+            this.acceleration.setAs(pose);
+        }   //setAccelerationAs
 
     }   //class Odometry
 
@@ -2166,6 +2181,11 @@ public abstract class TrcDriveBase implements TrcExclusiveSubsystem
     {
         synchronized (odometry)
         {
+            double currTime = TrcTimer.getCurrentTime();
+            double deltaTime = currTime - odometry.timestamp;
+            odometry.timestamp = currTime;
+            double prevXVel = odometry.velocity.x;
+            double prevYVel = odometry.velocity.y;
             Odometry odometryDelta;
 
             if (odometryWheels != null)
@@ -2238,10 +2258,14 @@ public abstract class TrcDriveBase implements TrcExclusiveSubsystem
                     ", odometry=" + odometry);
             }
 
+            odometry.acceleration.x = (odometry.velocity.x - prevXVel) / deltaTime;
+            odometry.acceleration.y = (odometry.velocity.y - prevYVel) / deltaTime;
+            odometry.acceleration.angle = odometry.velocity.angle;
+
             if (TrcUtil.magnitude(odometry.velocity.x, odometry.velocity.y) > stallVelThreshold)
             {
                 // reset stall start time to current time if drive base has movement.
-                stallStartTime = TrcTimer.getCurrentTime();
+                stallStartTime = currTime;
             }
         }
     }   //odometryTask
