@@ -319,10 +319,11 @@ public abstract class TrcMotor implements TrcMotorController, TrcExclusiveSubsys
         /**
          * This method is called to compute the power compensation to counteract the varying non-linear load.
          *
-         * @param currPower specifies the current motor power.
+         * @param motor specifies the motor object the compensation is for.
+         * @param currPower specifies the calculated motor power before compensation.
          * @return compensation value of the actuator.
          */
-        double getCompensation(double currPower);
+        double getCompensation(TrcMotor motor, double currPower);
 
     }   //interface PowerCompensation
 
@@ -1643,8 +1644,8 @@ public abstract class TrcMotor implements TrcMotorController, TrcExclusiveSubsys
                         }
                         else
                         {
-                            double feedforward =
-                                params.powerComp != null? params.powerComp.getCompensation(params.motorValue): 0.0;
+                            double feedforward = params.powerComp != null?
+                                params.powerComp.getCompensation(this, params.motorValue): 0.0;
                             setControllerMotorVelocity(params.motorValue, feedforward);
                         }
                         break;
@@ -2066,7 +2067,7 @@ public abstract class TrcMotor implements TrcMotorController, TrcExclusiveSubsys
                 else
                 {
                     double feedforward =
-                        params.powerComp != null? params.powerComp.getCompensation(params.motorValue): 0.0;
+                        params.powerComp != null? params.powerComp.getCompensation(this, params.motorValue): 0.0;
                     setControllerMotorPosition(params.motorValue, params.powerLimit, feedforward);
                 }
             }
@@ -3409,7 +3410,7 @@ public abstract class TrcMotor implements TrcMotorController, TrcExclusiveSubsys
                                     TrcUtil.clipRange(pidPower, taskParams.powerLimit): pidPower;
                                 double power = taskParams.powerComp != null?
                                     TrcUtil.clipRange(
-                                        limitedPower + taskParams.powerComp.getCompensation(limitedPower)):
+                                        limitedPower + taskParams.powerComp.getCompensation(this, limitedPower)):
                                     limitedPower;
                                 tracer.traceDebug(
                                     instanceName,
@@ -3460,7 +3461,7 @@ public abstract class TrcMotor implements TrcMotorController, TrcExclusiveSubsys
                                     // setControllerMotorPosition is a no-op.
                                     double powerLimit = taskParams.powerLimit != null? taskParams.powerLimit: 0.0;
                                     double powerComp = taskParams.powerComp != null?
-                                            taskParams.powerComp.getCompensation(currMotorPower): 0.0;
+                                            taskParams.powerComp.getCompensation(this, currMotorPower): 0.0;
                                     setControllerMotorPosition(controllerPosition, powerLimit, powerComp);
                                     tracer.traceDebug(
                                         instanceName,
@@ -3473,7 +3474,7 @@ public abstract class TrcMotor implements TrcMotorController, TrcExclusiveSubsys
                                     // If powerComp did not change from last time, setControllerMotorVelocity is a
                                     // no-op.
                                     double powerComp = taskParams.powerComp != null?
-                                            taskParams.powerComp.getCompensation(currMotorPower): 0.0;
+                                            taskParams.powerComp.getCompensation(this, currMotorPower): 0.0;
                                     setControllerMotorVelocity(controllerVelocity, powerComp);
                                     tracer.traceDebug(
                                         instanceName, "VelocityControl: vel=%f, powerComp=%f, onTarget=%s",
