@@ -100,19 +100,17 @@ public class TrcTriggerThresholdZones implements TrcTrigger
     private final TriggerState triggerState;
     private final CallbackContext callbackContext;
     private final TrcTaskMgr.TaskObject triggerTaskObj;
-    private double[] thresholds;
+    private final double[] thresholdPoints;
 
     /**
      * Constructor: Create an instance of the object.
      *
      * @param instanceName specifies the instance name.
      * @param valueSource specifies the interface that implements the value source.
-     * @param dataPoints specifies an array of trigger points or an array of thresholds if dataIsTrigger is true.
-     * @param dataIsTrigger specifies true if dataPoints specifies an array of trigger points, false if it is an
-     *                      array of thresholds. Trigger points will be converted to threshold points.
+     * @param thresholdPoints specifies an array of threshold points for the trigger.
      */
     public TrcTriggerThresholdZones(
-        String instanceName, DoubleSupplier valueSource, double[] dataPoints, boolean dataIsTrigger)
+        String instanceName, DoubleSupplier valueSource, double... thresholdPoints)
     {
         if (valueSource == null)
         {
@@ -122,15 +120,8 @@ public class TrcTriggerThresholdZones implements TrcTrigger
         this.tracer = new TrcDbgTrace();
         this.instanceName = instanceName;
         this.valueSource = valueSource;
+        this.thresholdPoints = thresholdPoints;
         timer = new TrcTimer(instanceName);
-        if (dataIsTrigger)
-        {
-            setTriggerPoints(dataPoints);
-        }
-        else
-        {
-            setThresholds(dataPoints);
-        }
 
         double value = getSensorValue();
         triggerState = new TriggerState(value, getValueZone(value), false);
@@ -374,15 +365,15 @@ public class TrcTriggerThresholdZones implements TrcTrigger
     {
         int zone = -1;
 
-        if (value < thresholds[0])
+        if (value < thresholdPoints[0])
         {
             zone = 0;
         }
         else
         {
-            for (int i = 0; i < thresholds.length - 1; i++)
+            for (int i = 0; i < thresholdPoints.length - 1; i++)
             {
-                if (value >= thresholds[i] && value < thresholds[i + 1])
+                if (value >= thresholdPoints[i] && value < thresholdPoints[i + 1])
                 {
                     zone = i + 1;
                     break;
@@ -391,53 +382,13 @@ public class TrcTriggerThresholdZones implements TrcTrigger
 
             if (zone == -1)
             {
-                zone = thresholds.length;
+                zone = thresholdPoints.length;
             }
         }
         tracer.traceDebug(instanceName, "value=%f, zone=%d", value, zone);
 
         return zone;
     }   //getValueZone
-
-    /**
-     * This method creates and threshold array and calculates all the threshold values. A threshold value is the
-     * average of two adjacent trigger points.
-     *
-     * @param triggerPoints specifies the array of trigger points.
-     */
-    public void setTriggerPoints(double[] triggerPoints)
-    {
-        if (triggerPoints == null || triggerPoints.length < 2)
-        {
-            throw new IllegalArgumentException("triggerPoints cannot be null and must have at least 2 points.");
-        }
-
-        thresholds = new double[triggerPoints.length - 1];
-        for (int i = 0; i < thresholds.length; i++)
-        {
-            thresholds[i] = (triggerPoints[i] + triggerPoints[i + 1])/2.0;
-        }
-        tracer.traceDebug(
-            instanceName,
-            "triggerPts=" + Arrays.toString(triggerPoints) +
-            ", thresholds=" + Arrays.toString(thresholds));
-    }   //setTriggerPoints
-
-    /**
-     * This method stores the threshold array.
-     *
-     * @param thresholds specifies the array of thresholds.
-     */
-    public void setThresholds(double[] thresholds)
-    {
-        if (thresholds == null || thresholds.length == 0)
-        {
-            throw new IllegalArgumentException("thresholds cannot be null nor empty.");
-        }
-
-        this.thresholds = Arrays.copyOf(thresholds, thresholds.length);
-        tracer.traceDebug(instanceName, "thresholds=" + Arrays.toString(thresholds));
-    }   //setThresholds
 
     /**
      * This method is called periodically to check the current sensor value against the threshold array to see it

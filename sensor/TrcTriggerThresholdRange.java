@@ -83,9 +83,7 @@ public class TrcTriggerThresholdRange implements TrcTrigger
      */
     private static class TriggerState
     {
-        Double lowerThreshold = null;
-        Double upperThreshold = null;
-        Double settlingPeriod = null;
+        TriggerParams triggerParams = null;
         volatile boolean triggerActive = false;
         volatile double startTime = 0.0;
         volatile boolean triggerEnabled = false;
@@ -100,8 +98,8 @@ public class TrcTriggerThresholdRange implements TrcTrigger
         {
             return String.format(
                 Locale.US,
-                "(lowerThreshold=%f,upperThreshold=%f,settling=%f,active=%s,startTime=%.6f,enabled=%s,data=%s)",
-                lowerThreshold, upperThreshold, settlingPeriod, triggerActive, startTime, triggerEnabled,
+                "(triggerParams=%s,active=%s,startTime=%.6f,enabled=%s,data=%s)",
+                triggerParams, triggerActive, startTime, triggerEnabled,
                 cachedData != null? Arrays.toString(cachedData.getBufferedData()): "null");
         }   //toString
 
@@ -160,12 +158,12 @@ public class TrcTriggerThresholdRange implements TrcTrigger
     //
 
     /**
-     * This method sets the trigger parameters.
+     * This method sets the trigger notify parameters.
      *
      * @param mode specifies the trigger mode.
      * @param event specifies the event to signal when trigger occurs.
      */
-    private void setTriggerParams(TriggerMode mode, TrcEvent event)
+    private void setTriggerNotifyParams(TriggerMode mode, TrcEvent event)
     {
         synchronized (triggerState)
         {
@@ -174,15 +172,15 @@ public class TrcTriggerThresholdRange implements TrcTrigger
             triggerState.triggerCallback = null;
             triggerState.callbackThread = null;
         }
-    }   //setTriggerParams
+    }   //setTriggerNotifyParams
 
     /**
-     * This method sets the trigger parameters.
+     * This method sets the trigger notify parameters.
      *
      * @param mode specifies the trigger mode.
      * @param callback specifies the callback method to call when trigger occurs.
      */
-    private void setTriggerParams(TriggerMode mode, TrcEvent.Callback callback)
+    private void setTriggerNotifyParams(TriggerMode mode, TrcEvent.Callback callback)
     {
         synchronized (triggerState)
         {
@@ -191,7 +189,7 @@ public class TrcTriggerThresholdRange implements TrcTrigger
             triggerState.triggerCallback = callback;
             triggerState.callbackThread = Thread.currentThread();
         }
-    }   //setTriggerParams
+    }   //setTriggerNotifyParams
 
     /**
      * This method arms/disarms the trigger. It enables/disables the task that monitors the sensor value.
@@ -206,8 +204,7 @@ public class TrcTriggerThresholdRange implements TrcTrigger
             timer.cancel();
             if (enabled)
             {
-                if (triggerState.lowerThreshold == null || triggerState.upperThreshold == null ||
-                    triggerState.settlingPeriod == null)
+                if (triggerState.triggerParams == null)
                 {
                     throw new RuntimeException("Must call setTrigger first before enabling the trigger.");
                 }
@@ -244,7 +241,7 @@ public class TrcTriggerThresholdRange implements TrcTrigger
             // Enable trigger only if it's not already enabled.
             if (!triggerState.triggerEnabled)
             {
-                setTriggerParams(triggerMode, event);
+                setTriggerNotifyParams(triggerMode, event);
                 if (triggerDelay != null)
                 {
                     timer.set(
@@ -276,7 +273,7 @@ public class TrcTriggerThresholdRange implements TrcTrigger
             // Enable trigger only if it's not already enabled.
             if (!triggerState.triggerEnabled)
             {
-                setTriggerParams(triggerMode, callback);
+                setTriggerNotifyParams(triggerMode, callback);
                 if (triggerDelay != null)
                 {
                     timer.set(
@@ -346,41 +343,41 @@ public class TrcTriggerThresholdRange implements TrcTrigger
     }   //getTriggerState
 
     /**
-     * This method sets the lower/upper threshold values within which the sensor reading must stay for at least the
+     * This method sets the low/high threshold values within which the sensor reading must stay for at least the
      * settling period for it to trigger the notification.
      *
-     * @param lowerThreshold specifies the lower threshold value for the trigger.
-     * @param upperThreshold specifies the upper threshold value for the trigger.
+     * @param lowThreshold specifies the low threshold value for the trigger.
+     * @param highThreshold specifies the high threshold value for the trigger.
      * @param settlingPeriod specifies the period in seconds the sensor value must stay within threshold range for it
      *                       to trigger.
      * @param maxCachedSize specifies the max number of of cached values.
      */
-    public void setTrigger(double lowerThreshold, double upperThreshold, double settlingPeriod, int maxCachedSize)
+    public void setTrigger(double lowThreshold, double highThreshold, double settlingPeriod, int maxCachedSize)
     {
         tracer.traceDebug(
-            instanceName, "lowerThreshold=%f, upperThreshold=%f, settingPeriod=%f, maxCachedSize=%d",
-            lowerThreshold, upperThreshold, settlingPeriod, maxCachedSize);
+            instanceName, "lowThreshold=%f, highThreshold=%f, settingPeriod=%f, maxCachedSize=%d",
+            lowThreshold, highThreshold, settlingPeriod, maxCachedSize);
         synchronized (triggerState)
         {
-            triggerState.lowerThreshold = lowerThreshold;
-            triggerState.upperThreshold = upperThreshold;
-            triggerState.settlingPeriod = settlingPeriod;
+            triggerState.triggerParams.lowThreshold = lowThreshold;
+            triggerState.triggerParams.highThreshold = highThreshold;
+            triggerState.triggerParams.settlingPeriod = settlingPeriod;
             triggerState.cachedData = new TrcDataBuffer(instanceName, maxCachedSize);
         }
     }   //setTrigger
 
     /**
-     * This method sets the lower/upper threshold values within which the sensor reading must stay for at least the
+     * This method sets the low/high threshold values within which the sensor reading must stay for at least the
      * settling period for it to trigger the notification.
      *
-     * @param lowerThreshold specifies the lower threshold value for the trigger.
-     * @param upperThreshold specifies the upper threshold value for the trigger.
+     * @param lowThreshold specifies the low threshold value for the trigger.
+     * @param highThreshold specifies the high threshold value for the trigger.
      * @param settlingPeriod specifies the period in seconds the sensor value must stay within threshold range for it
      *                       to trigger.
      */
-    public void setTrigger(double lowerThreshold, double upperThreshold, double settlingPeriod)
+    public void setTrigger(double lowThreshold, double highThreshold, double settlingPeriod)
     {
-        setTrigger(lowerThreshold, upperThreshold, settlingPeriod, DEF_CACHE_SIZE);
+        setTrigger(lowThreshold, highThreshold, settlingPeriod, DEF_CACHE_SIZE);
     }   //setTrigger
 
     /**
@@ -483,7 +480,8 @@ public class TrcTriggerThresholdRange implements TrcTrigger
 
         synchronized (triggerState)
         {
-            if (currValue < triggerState.lowerThreshold || currValue > triggerState.upperThreshold)
+            if (currValue < triggerState.triggerParams.lowThreshold ||
+                currValue > triggerState.triggerParams.highThreshold)
             {
                 // Outside of threshold range.
                 if (triggerState.triggerActive)
@@ -502,7 +500,7 @@ public class TrcTriggerThresholdRange implements TrcTrigger
                 triggerState.startTime = currTime;
                 triggerState.cachedData.clear();
             }
-            else if (currTime >= triggerState.startTime + triggerState.settlingPeriod)
+            else if (currTime >= triggerState.startTime + triggerState.triggerParams.settlingPeriod)
             {
                 // Inside of threshold range and past settling period.
                 if (!triggerState.triggerActive)
