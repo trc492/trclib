@@ -238,7 +238,6 @@ public abstract class TrcPriorityIndicator
         if (index != -1)
         {
             PatternState patternState = patternPriorities.get(index);
-
             patternState.enabled = enabled;
             patternState.on = enabled;
         }
@@ -440,9 +439,10 @@ public abstract class TrcPriorityIndicator
             }
         }
         //
-        // Only set the pattern if it is not already active.
+        // Only set the pattern if it is not already active. If pattern is null, that means no pattern is found.
+        // In that case, we will turn the Indicator OFF.
         //
-        if (pattern != null && pattern != getPattern())
+        if (pattern != getPattern())
         {
             setPattern(pattern);
         }
