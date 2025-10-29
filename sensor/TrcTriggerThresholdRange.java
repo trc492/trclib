@@ -112,6 +112,7 @@ public class TrcTriggerThresholdRange implements TrcTrigger
     private final TriggerState triggerState;
     private final AtomicBoolean callbackContext;
     private final TrcTaskMgr.TaskObject triggerTaskObj;
+    private double lastTriggeredValue;
 
     /**
      * Constructor: Create an instance of the object.
@@ -152,6 +153,16 @@ public class TrcTriggerThresholdRange implements TrcTrigger
 
         return str;
     }   //toString
+
+    /**
+     * This method returns the last triggered sensor value.
+     *
+     * @return last triggered sensor value.
+     */
+    public double getLastTriggeredValue()
+    {
+        return lastTriggeredValue;
+    }   //getLastTriggeredValue
 
     //
     // Implements TrcTrigger interface.
@@ -387,6 +398,7 @@ public class TrcTriggerThresholdRange implements TrcTrigger
             {
                 triggerState.triggerParams.lowThreshold = lowThreshold;
                 triggerState.triggerParams.highThreshold = highThreshold;
+                triggerState.triggerParams.settlingPeriod = settlingPeriod;
             }
             else
             {
@@ -527,6 +539,7 @@ public class TrcTriggerThresholdRange implements TrcTrigger
                     if (triggerState.triggerMode == TriggerMode.OnBoth ||
                         triggerState.triggerMode == TriggerMode.OnActive)
                     {
+                        lastTriggeredValue = currValue;
                         triggered = true;
                         callback = triggerState.triggerCallback;
                         triggerEvent = triggerState.triggerEvent;
