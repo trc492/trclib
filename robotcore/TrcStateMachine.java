@@ -221,6 +221,14 @@ public class TrcStateMachine<T>
     }   //isReady
 
     /**
+     * This method clears the event list preparing for adding multiple event to the list.
+     */
+    public void clearEventList()
+    {
+        eventList.clear();
+    }   //clearEventList
+
+    /**
      * This method checks if timeout has happened on waiting for event(s).
      *
      * @return true if a timeout was set and expired, false otherwise.
