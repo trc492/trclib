@@ -346,24 +346,28 @@ public class TrcTriggerThresholdRange implements TrcTrigger
      * This method sets the low/high threshold values within which the sensor reading must stay for at least the
      * settling period for it to trigger the notification.
      *
-     * @param lowThreshold specifies the low threshold value for the trigger.
-     * @param highThreshold specifies the high threshold value for the trigger.
-     * @param settlingPeriod specifies the period in seconds the sensor value must stay within threshold range for it
-     *                       to trigger.
+     * @param triggerParams specifies the trigger threshold range parameters.
      * @param maxCachedSize specifies the max number of of cached values.
      */
-    public void setTrigger(double lowThreshold, double highThreshold, double settlingPeriod, int maxCachedSize)
+    public void setTrigger(TriggerParams triggerParams, int maxCachedSize)
     {
-        tracer.traceDebug(
-            instanceName, "lowThreshold=%f, highThreshold=%f, settingPeriod=%f, maxCachedSize=%d",
-            lowThreshold, highThreshold, settlingPeriod, maxCachedSize);
+        tracer.traceDebug(instanceName, "triggerParams=%s, maxCachedSize=%d", triggerParams, maxCachedSize);
         synchronized (triggerState)
         {
-            triggerState.triggerParams.lowThreshold = lowThreshold;
-            triggerState.triggerParams.highThreshold = highThreshold;
-            triggerState.triggerParams.settlingPeriod = settlingPeriod;
+            triggerState.triggerParams = triggerParams;
             triggerState.cachedData = new TrcDataBuffer(instanceName, maxCachedSize);
         }
+    }   //setTrigger
+
+    /**
+     * This method sets the low/high threshold values within which the sensor reading must stay for at least the
+     * settling period for it to trigger the notification.
+     *
+     * @param triggerParams specifies the trigger threshold range parameters.
+     */
+    public void setTrigger(TriggerParams triggerParams)
+    {
+        setTrigger(triggerParams, DEF_CACHE_SIZE);
     }   //setTrigger
 
     /**
@@ -373,11 +377,22 @@ public class TrcTriggerThresholdRange implements TrcTrigger
      * @param lowThreshold specifies the low threshold value for the trigger.
      * @param highThreshold specifies the high threshold value for the trigger.
      * @param settlingPeriod specifies the period in seconds the sensor value must stay within threshold range for it
-     *                       to trigger.
+     *        to trigger.
      */
     public void setTrigger(double lowThreshold, double highThreshold, double settlingPeriod)
     {
-        setTrigger(lowThreshold, highThreshold, settlingPeriod, DEF_CACHE_SIZE);
+        synchronized (triggerState)
+        {
+            if (triggerState.triggerParams != null)
+            {
+                triggerState.triggerParams.lowThreshold = lowThreshold;
+                triggerState.triggerParams.highThreshold = highThreshold;
+            }
+            else
+            {
+                tracer.traceErr(instanceName, "Initial trigger params were not set up.");
+            }
+        }
     }   //setTrigger
 
     /**
