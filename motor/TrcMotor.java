@@ -62,15 +62,29 @@ public abstract class TrcMotor implements TrcMotorController, TrcExclusiveSubsys
     /**
      * This class contains tunable parameters of the motor.
      */
-    public static class TuneParams
+    public static class PidParams
     {
         public TrcPidController.PidCoefficients pidCoeffs = null;
         public TrcPidController.FFCoefficients ffCoeffs = null;
         public double pidTolerance = 1.0;
+        public double pidSettling = 0.0;
         public boolean useSoftwarePid = true;
         public boolean enableSquid = false;
         public double pidTarget = 0.0;
         public double gravityCompPower = 0.0;
+
+        /**
+         * This method sets the PID Coefficients of the motor. The PID Coefficients could be for position control,
+         * velocity control or current control.
+         *
+         * @param pidCoeffs specifies the PID Coefficients.
+         * @return this object for chaining.
+         */
+        public PidParams setPidCoefficients(TrcPidController.PidCoefficients pidCoeffs)
+        {
+            this.pidCoeffs = pidCoeffs;
+            return this;
+        }   //setPidCoefficients
 
         /**
          * This method sets the PID Coefficients of the motor. The PID Coefficients could be for position control,
@@ -83,7 +97,7 @@ public abstract class TrcMotor implements TrcMotorController, TrcExclusiveSubsys
          * @param iZone specifies iZone value.
          * @return this object for chaining.
          */
-        public TuneParams setPidCoefficients(double kP, double kI, double kD, double kF, double iZone)
+        public PidParams setPidCoefficients(double kP, double kI, double kD, double kF, double iZone)
         {
             this.pidCoeffs = new TrcPidController.PidCoefficients(kP, kI, kD, kF, iZone);
             return this;
@@ -99,7 +113,7 @@ public abstract class TrcMotor implements TrcMotorController, TrcExclusiveSubsys
          * @param kF specifies Kf value.
          * @return this object for chaining.
          */
-        public TuneParams setPidCoefficients(double kP, double kI, double kD, double kF)
+        public PidParams setPidCoefficients(double kP, double kI, double kD, double kF)
         {
             this.pidCoeffs = new TrcPidController.PidCoefficients(kP, kI, kD, kF, 0.0);
             return this;
@@ -114,11 +128,23 @@ public abstract class TrcMotor implements TrcMotorController, TrcExclusiveSubsys
          * @param kD specifies Kd value.
          * @return this object for chaining.
          */
-        public TuneParams setPidCoefficients(double kP, double kI, double kD)
+        public PidParams setPidCoefficients(double kP, double kI, double kD)
         {
             this.pidCoeffs = new TrcPidController.PidCoefficients(kP, kI, kD, 0.0, 0.0);
             return this;
         }   //setPidCoefficients
+
+        /**
+         * This method sets the FeedForward Coefficients of the motor.
+         *
+         * @param ffCoeffs specifies FeedFprward Coefficients.
+         * @return this object for chaining.
+         */
+        public PidParams setFFCoefficients(TrcPidController.FFCoefficients ffCoeffs)
+        {
+            this.ffCoeffs = ffCoeffs;
+            return this;
+        }   //setFFCoefficients
 
         /**
          * This method sets the FeedForward Coefficients of the motor.
@@ -128,7 +154,7 @@ public abstract class TrcMotor implements TrcMotorController, TrcExclusiveSubsys
          * @param kA specifies Ka value.
          * @return this object for chaining.
          */
-        public TuneParams setFFCoefficients(double kS, double kV, double kA)
+        public PidParams setFFCoefficients(double kS, double kV, double kA)
         {
             this.ffCoeffs = new TrcPidController.FFCoefficients(kS, kV ,kA);
             return this;
@@ -138,17 +164,33 @@ public abstract class TrcMotor implements TrcMotorController, TrcExclusiveSubsys
          * This method sets parameters related to PID control.
          *
          * @param pidTolerance specifies PID tolerance.
+         * @param pidSettling specifies PID settling time in seconds.
          * @param useSoftwarePid specifies true to use software PID control, false to use motor native PID control.
          * @param enableSquid specifies true to enable SQUID, false to disable.
          * @return this object for chaining.
          */
-        public TuneParams setPidParams(double pidTolerance, boolean useSoftwarePid, boolean enableSquid)
+        public PidParams setPidControlParams(
+            double pidTolerance, double pidSettling, boolean useSoftwarePid, boolean enableSquid)
         {
             this.pidTolerance = pidTolerance;
+            this.pidSettling = pidSettling;
             this.useSoftwarePid = useSoftwarePid;
             this.enableSquid = enableSquid;
             return this;
-        }   //setPidParams
+        }   //setPidControlParams
+
+        /**
+         * This method sets parameters related to PID control.
+         *
+         * @param pidTolerance specifies PID tolerance.
+         * @param pidSettling specifies PID settling time in seconds.
+         * @param useSoftwarePid specifies true to use software PID control, false to use motor native PID control.
+         * @return this object for chaining.
+         */
+        public PidParams setPidControlParams(double pidTolerance, double pidSettling, boolean useSoftwarePid)
+        {
+            return setPidControlParams(pidTolerance, pidSettling, useSoftwarePid, false);
+        }   //setPidControlParams
 
         /**
          * This method sets parameters related to PID control.
@@ -157,13 +199,10 @@ public abstract class TrcMotor implements TrcMotorController, TrcExclusiveSubsys
          * @param useSoftwarePid specifies true to use software PID control, false to use motor native PID control.
          * @return this object for chaining.
          */
-        public TuneParams setPidParams(double pidTolerance, boolean useSoftwarePid)
+        public PidParams setPidControlParams(double pidTolerance, boolean useSoftwarePid)
         {
-            this.pidTolerance = pidTolerance;
-            this.useSoftwarePid = useSoftwarePid;
-            this.enableSquid = false;
-            return this;
-        }   //setPidParams
+            return setPidControlParams(pidTolerance, 0.0, useSoftwarePid, false);
+        }   //setPidControlParams
 
         /**
          * This method sets parameters related to tuning.
@@ -172,7 +211,7 @@ public abstract class TrcMotor implements TrcMotorController, TrcExclusiveSubsys
          * @param gravityCompPower specifies gravity compensation power.
          * @return this object for chaining.
          */
-        public TuneParams setTuningParams(double pidTarget, double gravityCompPower)
+        public PidParams setTuningParams(double pidTarget, double gravityCompPower)
         {
             this.pidTarget = pidTarget;
             this.gravityCompPower = gravityCompPower;
@@ -185,11 +224,13 @@ public abstract class TrcMotor implements TrcMotorController, TrcExclusiveSubsys
             return "(pidCoeffs=" + pidCoeffs +
                    ",ffCoeffs=" + ffCoeffs +
                    ",pidTolerance=" + pidTolerance +
+                   ",pidSettling=" + pidSettling +
                    ",useSoftwarePid=" + useSoftwarePid +
                    ",enableSquid=" + enableSquid +
+                   ",pidTarget=" + pidTarget +
                    ",gravityCompPower=" + gravityCompPower + ")";
         }   //toString
-    }   //TuneParams
+    }   //PidParams
 
     public static class ExternalSensors
     {
@@ -427,13 +468,13 @@ public abstract class TrcMotor implements TrcMotorController, TrcExclusiveSubsys
     private Double controllerCurrent;
     // Software PID controllers.
     private TrcPidController velPidCtrl = null;
-    private double velTolerance = 0.0;
+    private PidParams velPidParams = null;
     private PowerCompensation velPowerComp = null;
     private TrcPidController posPidCtrl = null;
-    private double posTolerance = 0.0;
+    private PidParams posPidParams = null;
     private PowerCompensation posPowerComp = null;
     private TrcPidController currentPidCtrl = null;
-    private double currentTolerance = 0.0;
+    private PidParams currentPidParams = null;
     private PowerCompensation currentPowerComp = null;
     private Double closeLoopControlTarget = null;
     // Tracer config.
@@ -1292,9 +1333,9 @@ public abstract class TrcMotor implements TrcMotorController, TrcExclusiveSubsys
     private Double pidToleranceToUse(ControlMode controlMode, boolean useSoftwarePid)
     {
         return !useSoftwarePid? (Double) 0.0:
-               controlMode == ControlMode.Velocity? (Double) velTolerance:
-               controlMode == ControlMode.Position? (Double) posTolerance:
-               controlMode == ControlMode.Current? (Double) currentTolerance: null;
+               controlMode == ControlMode.Velocity? (Double) velPidParams.pidTolerance:
+               controlMode == ControlMode.Position? (Double) posPidParams.pidTolerance:
+               controlMode == ControlMode.Current? (Double) currentPidParams.pidTolerance: null;
     }   //pidToleranceToUse
 
     /**
@@ -1771,13 +1812,34 @@ public abstract class TrcMotor implements TrcMotorController, TrcExclusiveSubsys
      * @param maxMotorVel specifies the maximum velocity of the motor in scaled unit/sec if enabled.
      * @param velPidCoeffs specifies the velocity control PID coefficients.
      * @param velPidTolerance specifies the PID tolerance.
+     * @param velPidSettling specifies PID settling time in seconds.
+     * @param softwarePid specifies true to use software PID, false to use motor native PID.
+     */
+    public void enablePercentageVelocityControl(
+        double maxMotorVel, TrcPidController.PidCoefficients velPidCoeffs, double velPidTolerance,
+        double velPidSettling, boolean softwarePid)
+    {
+        this.maxMotorVel = maxMotorVel;
+        setVelocityPidParameters(
+            new PidParams()
+                .setPidCoefficients(velPidCoeffs)
+                .setPidControlParams(velPidTolerance, velPidSettling, softwarePid),
+            null);
+    }   //enablePercentageVelocityControl
+
+    /**
+     * This method enables velocity control on the motor. When enabled, instead of sending percentage power to the
+     * motor, we will send percentage of max motor velocity to the motor.
+     *
+     * @param maxMotorVel specifies the maximum velocity of the motor in scaled unit/sec if enabled.
+     * @param velPidCoeffs specifies the velocity control PID coefficients.
+     * @param velPidTolerance specifies the PID tolerance.
      * @param softwarePid specifies true to use software PID, false to use motor native PID.
      */
     public void enablePercentageVelocityControl(
         double maxMotorVel, TrcPidController.PidCoefficients velPidCoeffs, double velPidTolerance, boolean softwarePid)
     {
-        this.maxMotorVel = maxMotorVel;
-        setVelocityPidParameters(velPidCoeffs, velPidTolerance, softwarePid, null);
+        enablePercentageVelocityControl(maxMotorVel, velPidCoeffs, velPidTolerance, 0.0, softwarePid);
     }   //enablePercentageVelocityControl
 
     /**
@@ -2436,152 +2498,33 @@ public abstract class TrcMotor implements TrcMotorController, TrcExclusiveSubsys
      * different for software PID and controller built-in PID. If you enable/disable software PID, you need to set
      * the appropriate PID coefficients accordingly.
      *
-     * @param pidCoeff specifies the PID coefficients to set.
-     * @param tolerance specifies the PID tolerance.
-     * @param softwarePid specifies true to use software PID control, false to use native motor PID control.
-     * @param enableSquid specifies true to enable SQUID control mode, false to disable (only applicable if
-     *        softwarePid is true).
+     * @param pidParams specifies the PID parameters.
      * @param pidInput specifies the method to call to get Velocity PID input, can be null to use built-in getVelocity.
      */
-    public void setVelocityPidParameters(
-        TrcPidController.PidCoefficients pidCoeff, double tolerance, boolean softwarePid, boolean enableSquid,
-        DoubleSupplier pidInput)
+    public void setVelocityPidParameters(PidParams pidParams, DoubleSupplier pidInput)
     {
-        softwarePidEnabled = softwarePid;
+        velPidParams = pidParams;
+        softwarePidEnabled = pidParams.useSoftwarePid;
         if (softwarePidEnabled)
         {
             if (velPidCtrl != null)
             {
-                velPidCtrl.setPidCoefficients(pidCoeff);
+                velPidCtrl.setPidCoefficients(pidParams.pidCoeffs);
             }
             else
             {
                 velPidCtrl = new TrcPidController(
-                    instanceName + ".velPidCtrl", pidCoeff, pidInput != null? pidInput: this::getVelocity);
+                    instanceName + ".velPidCtrl", pidParams.pidCoeffs, pidInput != null? pidInput: this::getVelocity);
                 // Set to absolute setpoint because velocity PID control is generally absolute.
                 velPidCtrl.setAbsoluteSetPoint(true);
             }
-            velPidCtrl.setSquidModeEnabled(enableSquid);
+            velPidCtrl.setSquidModeEnabled(pidParams.enableSquid);
         }
         else
         {
-            setMotorVelocityPidCoefficients(pidCoeff);
+            setMotorVelocityPidCoefficients(pidParams.pidCoeffs);
         }
-        velTolerance = tolerance;
     }   //setVelocityPidParameters
-
-    /**
-     * This method sets the PID parameters of the motor's velocity PID controller. Note that PID coefficients are
-     * different for software PID and controller built-in PID. If you enable/disable software PID, you need to set
-     * the appropriate PID coefficients accordingly.
-     *
-     * @param pidCoeff specifies the PID coefficients to set.
-     * @param tolerance specifies the PID tolerance.
-     * @param softwarePid specifies true to use software PID control, false to use native motor PID control.
-     * @param pidInput specifies the method to call to get Velocity PID input, can be null to use built-in getVelocity.
-     */
-    public void setVelocityPidParameters(
-        TrcPidController.PidCoefficients pidCoeff, double tolerance, boolean softwarePid, DoubleSupplier pidInput)
-    {
-        setVelocityPidParameters(pidCoeff, tolerance, softwarePid, false, pidInput);
-    }   //setVelocityPidParameters
-
-    /**
-     * This method sets the PID parameters of the motor's velocity PID controller. Note that PID coefficients are
-     * different for software PID and controller built-in PID. If you enable/disable software PID, you need to set
-     * the appropriate PID coefficients accordingly.
-     *
-     * @param kP specifies the Kp coefficient.
-     * @param kI specifies the Ki coefficient.
-     * @param kD specifies the Kd coefficient.
-     * @param kF specifies the Kf coefficient.
-     * @param iZone specifies IZone, can be 0.0 if not provided.
-     * @param tolerance specifies the PID tolerance.
-     * @param softwarePid specifies true to use software PID control, false to use native motor PID control.
-     * @param enableSquid specifies true to enable SQUID control mode, false to disable (only applicable if
-     *        softwarePid is true).
-     * @param pidInput specifies the method to call to get Velocity PID input, can be null to use built-in getVelocity.
-     */
-    public void setVelocityPidParameters(
-        double kP, double kI, double kD, double kF, double iZone, double tolerance, boolean softwarePid,
-        boolean enableSquid, DoubleSupplier pidInput)
-    {
-        setVelocityPidParameters(
-            new TrcPidController.PidCoefficients(kP, kI, kD, kF, iZone), tolerance, softwarePid, enableSquid, pidInput);
-    }   //setVelocityPidParameters
-
-    /**
-     * This method sets the PID parameters of the motor's velocity PID controller. Note that PID coefficients are
-     * different for software PID and controller built-in PID. If you enable/disable software PID, you need to set
-     * the appropriate PID coefficients accordingly.
-     *
-     * @param kP specifies the Kp coefficient.
-     * @param kI specifies the Ki coefficient.
-     * @param kD specifies the Kd coefficient.
-     * @param kF specifies the Kf coefficient.
-     * @param iZone specifies IZone, can be 0.0 if not provided.
-     * @param tolerance specifies the PID tolerance.
-     * @param softwarePid specifies true to use software PID control, false to use native motor PID control.
-     * @param pidInput specifies the method to call to get Velocity PID input, can be null to use built-in getVelocity.
-     */
-    public void setVelocityPidParameters(
-        double kP, double kI, double kD, double kF, double iZone, double tolerance, boolean softwarePid,
-        DoubleSupplier pidInput)
-    {
-        setVelocityPidParameters(kP, kI, kD, kF, iZone, tolerance, softwarePid, false, pidInput);
-    }   //setVelocityPidParameters
-
-    /**
-     * This method sets the PID parameters of the motor's velocity PID controller. Note that PID coefficients are
-     * different for software PID and controller built-in PID. If you enable/disable software PID, you need to set
-     * the appropriate PID coefficients accordingly.
-     *
-     * @param kP specifies the Kp coefficient.
-     * @param kI specifies the Ki coefficient.
-     * @param kD specifies the Kd coefficient.
-     * @param kF specifies the Kf coefficient.
-     * @param tolerance specifies the PID tolerance.
-     * @param softwarePid specifies true to use software PID control, false to use native motor PID control.
-     * @param enableSquid specifies true to enable SQUID control mode, false to disable (only applicable if
-     *        softwarePid is true).
-     * @param pidInput specifies the method to call to get Velocity PID input, can be null to use built-in getVelocity.
-     */
-    public void setVelocityPidParameters(
-        double kP, double kI, double kD, double kF, double tolerance, boolean softwarePid, boolean enableSquid,
-        DoubleSupplier pidInput)
-    {
-        setVelocityPidParameters(
-            new TrcPidController.PidCoefficients(kP, kI, kD, kF, 0.0), tolerance, softwarePid, enableSquid, pidInput);
-    }   //setVelocityPidParameters
-
-    /**
-     * This method sets the PID parameters of the motor's velocity PID controller. Note that PID coefficients are
-     * different for software PID and controller built-in PID. If you enable/disable software PID, you need to set
-     * the appropriate PID coefficients accordingly.
-     *
-     * @param kP specifies the Kp coefficient.
-     * @param kI specifies the Ki coefficient.
-     * @param kD specifies the Kd coefficient.
-     * @param kF specifies the Kf coefficient.
-     * @param tolerance specifies the PID tolerance.
-     * @param softwarePid specifies true to use software PID control, false to use native motor PID control.
-     * @param pidInput specifies the method to call to get Velocity PID input, can be null to use built-in getVelocity.
-     */
-    public void setVelocityPidParameters(
-        double kP, double kI, double kD, double kF, double tolerance, boolean softwarePid, DoubleSupplier pidInput)
-    {
-        setVelocityPidParameters(kP, kI, kD, kF, 0.0, tolerance, softwarePid, false, pidInput);
-    }   //setVelocityPidParameters
-
-    /**
-     * This method sets the velocity tolerance for PID control.
-     *
-     * @param tolerance specifies the tolerance in scaled units per second.
-     */
-    public void setVelocityPidTolerance(double tolerance)
-    {
-        velTolerance = tolerance;
-    }   //setVelocityPidTolerance
 
     /**
      * This method returns the PID coefficients of the motor's velocity PID controller.
@@ -2590,13 +2533,13 @@ public abstract class TrcMotor implements TrcMotorController, TrcExclusiveSubsys
      */
     public TrcPidController.PidCoefficients getVelocityPidCoefficients()
     {
-        TrcPidController.PidCoefficients pidCoeff;
+        TrcPidController.PidCoefficients pidCoeffs;
 
         if (softwarePidEnabled)
         {
             if (velPidCtrl != null)
             {
-                pidCoeff = velPidCtrl.getPidCoefficients();
+                pidCoeffs = velPidCtrl.getPidCoefficients();
             }
             else
             {
@@ -2605,10 +2548,10 @@ public abstract class TrcMotor implements TrcMotorController, TrcExclusiveSubsys
         }
         else
         {
-            pidCoeff = getMotorVelocityPidCoefficients();
+            pidCoeffs = getMotorVelocityPidCoefficients();
         }
 
-        return pidCoeff;
+        return pidCoeffs;
     }   //getVelocityPidCoefficients
 
     /**
@@ -2634,7 +2577,7 @@ public abstract class TrcMotor implements TrcMotorController, TrcExclusiveSubsys
         {
             if (velPidCtrl != null)
             {
-                onTarget = velPidCtrl.isOnTarget(velTolerance);
+                onTarget = velPidCtrl.isOnTarget(velPidParams.pidTolerance, velPidParams.pidSettling);
             }
             else
             {
@@ -2643,7 +2586,7 @@ public abstract class TrcMotor implements TrcMotorController, TrcExclusiveSubsys
         }
         else
         {
-            onTarget = Math.abs(controllerVelocity - getVelocity()) <= velTolerance;
+            onTarget = Math.abs(controllerVelocity - getVelocity()) <= velPidParams.pidTolerance;
         }
 
         return onTarget;
@@ -2680,175 +2623,34 @@ public abstract class TrcMotor implements TrcMotorController, TrcExclusiveSubsys
      * different for software PID and controller built-in PID. If you enable/disable software PID, you need to set
      * the appropriate PID coefficients accordingly.
      *
-     * @param pidCoeff specifies the PID coefficients to set.
-     * @param ffCoeff specvifies the FF coefficients to set, can be null if not provided (only applicable if
-     *        softwarePid is true).
-     * @param tolerance specifies the PID tolerance.
-     * @param softwarePid specifies true to use software PID control, false to use native motor PID control.
-     * @param enableSquid specifies true to enable SQUID control mode, false to disable (only applicable if
-     *        softwarePid is true).
+     * @param pidParams specifies the PID parameters.
      * @param pidInput specifies the method to call to get Position PID input, can be null to use built-in getPosition.
      */
-    public void setPositionPidParameters(
-        TrcPidController.PidCoefficients pidCoeff, TrcPidController.FFCoefficients ffCoeff, double tolerance,
-        boolean softwarePid, boolean enableSquid, DoubleSupplier pidInput)
+    public void setPositionPidParameters(PidParams pidParams, DoubleSupplier pidInput)
     {
-        softwarePidEnabled = softwarePid;
+        posPidParams = pidParams;
+        softwarePidEnabled = pidParams.useSoftwarePid;
         if (softwarePidEnabled)
         {
             if (posPidCtrl != null)
             {
-                posPidCtrl.setPidCoefficients(pidCoeff);
+                posPidCtrl.setPidCoefficients(pidParams.pidCoeffs);
             }
             else
             {
                 posPidCtrl = new TrcPidController(
-                    instanceName + ".posPidCtrl", pidCoeff, ffCoeff, pidInput != null? pidInput: this::getPosition);
+                    instanceName + ".posPidCtrl", pidParams.pidCoeffs, pidParams.ffCoeffs,
+                    pidInput != null? pidInput: this::getPosition);
                 // Set to absolute setpoint because position PID control is generally absolute.
                 posPidCtrl.setAbsoluteSetPoint(true);
             }
-            posPidCtrl.setSquidModeEnabled(enableSquid);
+            posPidCtrl.setSquidModeEnabled(pidParams.enableSquid);
         }
         else
         {
-            setMotorPositionPidCoefficients(pidCoeff);
+            setMotorPositionPidCoefficients(pidParams.pidCoeffs);
         }
-        posTolerance = tolerance;
     }   //setPositionPidParameters
-
-    /**
-     * This method sets the PID parameters of the motor's position PID controller. Note that PID coefficients are
-     * different for software PID and controller built-in PID. If you enable/disable software PID, you need to set
-     * the appropriate PID coefficients accordingly.
-     *
-     * @param pidCoeff specifies the PID coefficients to set.
-     * @param tolerance specifies the PID tolerance.
-     * @param softwarePid specifies true to use software PID control, false to use native motor PID control.
-     * @param enableSquid specifies true to enable SQUID control mode, false to disable (only applicable if
-     *        softwarePid is true).
-     * @param pidInput specifies the method to call to get Position PID input, can be null to use built-in getPosition.
-     */
-    public void setPositionPidParameters(
-        TrcPidController.PidCoefficients pidCoeff, double tolerance, boolean softwarePid, boolean enableSquid,
-        DoubleSupplier pidInput)
-    {
-        setPositionPidParameters(pidCoeff, null, tolerance, softwarePid, enableSquid, pidInput);
-    }   //setPositionPidParameters
-
-    /**
-     * This method sets the PID parameters of the motor's position PID controller. Note that PID coefficients are
-     * different for software PID and controller built-in PID. If you enable/disable software PID, you need to set
-     * the appropriate PID coefficients accordingly.
-     *
-     * @param pidCoeff specifies the PID coefficients to set.
-     * @param tolerance specifies the PID tolerance.
-     * @param softwarePid specifies true to use software PID control, false to use native motor PID control.
-     * @param pidInput specifies the method to call to get Position PID input, can be null to use built-in getPosition.
-     */
-    public void setPositionPidParameters(
-        TrcPidController.PidCoefficients pidCoeff, double tolerance, boolean softwarePid, DoubleSupplier pidInput)
-    {
-        setPositionPidParameters(pidCoeff, null, tolerance, softwarePid, false, pidInput);
-    }   //setPositionPidParameters
-
-    /**
-     * This method sets the PID parameters of the motor's position PID controller. Note that PID coefficients are
-     * different for software PID and controller built-in PID. If you enable/disable software PID, you need to set
-     * the appropriate PID coefficients accordingly.
-     *
-     * @param kP specifies the Kp coefficient.
-     * @param kI specifies the Ki coefficient.
-     * @param kD specifies the Kd coefficient.
-     * @param kF specifies the Kf coefficient.
-     * @param iZone specifies IZone, can be 0.0 if not provided.
-     * @param tolerance specifies the PID tolerance.
-     * @param softwarePid specifies true to use software PID control, false to use native motor PID control.
-     * @param enableSquid specifies true to enable SQUID control mode, false to disable (only applicable if
-     *        softwarePid is true).
-     * @param pidInput specifies the method to call to get Position PID input, can be null to use built-in getPosition.
-     */
-    public void setPositionPidParameters(
-        double kP, double kI, double kD, double kF, double iZone, double tolerance, boolean softwarePid,
-        boolean enableSquid, DoubleSupplier pidInput)
-    {
-        setPositionPidParameters(
-            new TrcPidController.PidCoefficients(kP, kI, kD, kF, iZone), null, tolerance, softwarePid, enableSquid,
-            pidInput);
-    }   //setPositionPidParameters
-
-    /**
-     * This method sets the PID parameters of the motor's position PID controller. Note that PID coefficients are
-     * different for software PID and controller built-in PID. If you enable/disable software PID, you need to set
-     * the appropriate PID coefficients accordingly.
-     *
-     * @param kP specifies the Kp coefficient.
-     * @param kI specifies the Ki coefficient.
-     * @param kD specifies the Kd coefficient.
-     * @param kF specifies the Kf coefficient.
-     * @param iZone specifies IZone, can be 0.0 if not provided.
-     * @param tolerance specifies the PID tolerance.
-     * @param softwarePid specifies true to use software PID control, false to use native motor PID control.
-     * @param pidInput specifies the method to call to get Position PID input, can be null to use built-in getPosition.
-     */
-    public void setPositionPidParameters(
-        double kP, double kI, double kD, double kF, double iZone, double tolerance, boolean softwarePid,
-        DoubleSupplier pidInput)
-    {
-        setPositionPidParameters(kP, kI, kD, kF, iZone, tolerance, softwarePid, false, pidInput);
-    }   //setPositionPidParameters
-
-    /**
-     * This method sets the PID parameters of the motor's position PID controller. Note that PID coefficients are
-     * different for software PID and controller built-in PID. If you enable/disable software PID, you need to set
-     * the appropriate PID coefficients accordingly.
-     *
-     * @param kP specifies the Kp coefficient.
-     * @param kI specifies the Ki coefficient.
-     * @param kD specifies the Kd coefficient.
-     * @param kF specifies the Kf coefficient.
-     * @param tolerance specifies the PID tolerance.
-     * @param softwarePid specifies true to use software PID control, false to use native motor PID control.
-     * @param enableSquid specifies true to enable SQUID control mode, false to disable (only applicable if
-     *        softwarePid is true).
-     * @param pidInput specifies the method to call to get Position PID input, can be null to use built-in getPosition.
-     */
-    public void setPositionPidParameters(
-        double kP, double kI, double kD, double kF, double tolerance, boolean softwarePid, boolean enableSquid,
-        DoubleSupplier pidInput)
-    {
-        setPositionPidParameters(
-            new TrcPidController.PidCoefficients(kP, kI, kD, kF, 0.0), null, tolerance, softwarePid, enableSquid,
-            pidInput);
-    }   //setPositionPidParameters
-
-    /**
-     * This method sets the PID parameters of the motor's position PID controller. Note that PID coefficients are
-     * different for software PID and controller built-in PID. If you enable/disable software PID, you need to set
-     * the appropriate PID coefficients accordingly.
-     *
-     * @param kP specifies the Kp coefficient.
-     * @param kI specifies the Ki coefficient.
-     * @param kD specifies the Kd coefficient.
-     * @param kF specifies the Kf coefficient.
-     * @param tolerance specifies the PID tolerance.
-     * @param softwarePid specifies true to use software PID control, false to use native motor PID control.
-     * @param pidInput specifies the method to call to get Position PID input, can be null to use built-in getPosition.
-     */
-    public void setPositionPidParameters(
-        double kP, double kI, double kD, double kF, double tolerance, boolean softwarePid, DoubleSupplier pidInput)
-    {
-        setPositionPidParameters(kP, kI, kD, kF, 0.0, tolerance, softwarePid, false, pidInput);
-    }   //setPositionPidParameters
-
-    /**
-     * This method sets the position tolerance for PID control.
-     *
-     * @param tolerance specifies the tolerance in scaled units.
-     */
-    public void setPositionPidTolerance(double tolerance)
-    {
-        posTolerance = tolerance;
-    }   //setPositionPidTolerance
 
     /**
      * This method returns the PID coefficients of the motor's position PID controller.
@@ -2857,13 +2659,13 @@ public abstract class TrcMotor implements TrcMotorController, TrcExclusiveSubsys
      */
     public TrcPidController.PidCoefficients getPositionPidCoefficients()
     {
-        TrcPidController.PidCoefficients pidCoeff;
+        TrcPidController.PidCoefficients pidCoeffs;
 
         if (softwarePidEnabled)
         {
             if (posPidCtrl != null)
             {
-                pidCoeff = posPidCtrl.getPidCoefficients();
+                pidCoeffs = posPidCtrl.getPidCoefficients();
             }
             else
             {
@@ -2872,10 +2674,10 @@ public abstract class TrcMotor implements TrcMotorController, TrcExclusiveSubsys
         }
         else
         {
-            pidCoeff = getMotorPositionPidCoefficients();
+            pidCoeffs = getMotorPositionPidCoefficients();
         }
 
-        return pidCoeff;
+        return pidCoeffs;
     }   //getPositionPidCoefficients
 
     /**
@@ -2901,7 +2703,7 @@ public abstract class TrcMotor implements TrcMotorController, TrcExclusiveSubsys
         {
             if (posPidCtrl != null)
             {
-                onTarget = posPidCtrl.isOnTarget(posTolerance);
+                onTarget = posPidCtrl.isOnTarget(posPidParams.pidTolerance, posPidParams.pidSettling);
                 // posTolerance = tolerance;
             }
             else
@@ -2911,7 +2713,7 @@ public abstract class TrcMotor implements TrcMotorController, TrcExclusiveSubsys
         }
         else
         {
-            onTarget = Math.abs(controllerPosition - getPosition()) <= posTolerance;
+            onTarget = Math.abs(controllerPosition - getPosition()) <= posPidParams.pidTolerance;
             // posTolerance = tolerance;
         }
 
@@ -2949,152 +2751,34 @@ public abstract class TrcMotor implements TrcMotorController, TrcExclusiveSubsys
      * different for software PID and controller built-in PID. If you enable/disable software PID, you need to set
      * the appropriate PID coefficients accordingly.
      *
-     * @param pidCoeff specifies the PID coefficients to set.
-     * @param tolerance specifies the PID tolerance.
-     * @param softwarePid specifies true to use software PID control, false to use native motor PID control.
-     * @param enableSquid specifies true to enable SQUID control mode, false to disable (only applicable if
-     *        softwarePid is true).
+     * @param pidParams specifies the PID parameters.
      * @param pidInput specifies the method to call to get Curret PID input, can be null to use built-in getCurrent.
      */
-    public void setCurrentPidParameters(
-        TrcPidController.PidCoefficients pidCoeff, double tolerance, boolean softwarePid, boolean enableSquid,
-        DoubleSupplier pidInput)
+    public void setCurrentPidParameters(PidParams pidParams, DoubleSupplier pidInput)
     {
-        softwarePidEnabled = softwarePid;
+        currentPidParams = pidParams;
+        softwarePidEnabled = pidParams.useSoftwarePid;
         if (softwarePidEnabled)
         {
             if (currentPidCtrl != null)
             {
-                currentPidCtrl.setPidCoefficients(pidCoeff);
+                currentPidCtrl.setPidCoefficients(pidParams.pidCoeffs);
             }
             else
             {
                 currentPidCtrl = new TrcPidController(
-                    instanceName + ".currentPidCtrl", pidCoeff, pidInput != null? pidInput: this::getCurrent);
+                    instanceName + ".currentPidCtrl", pidParams.pidCoeffs,
+                    pidInput != null? pidInput: this::getCurrent);
                 // Set to absolute setpoint because current PID control is generally absolute.
                 currentPidCtrl.setAbsoluteSetPoint(true);
             }
-            currentPidCtrl.setSquidModeEnabled(enableSquid);
+            currentPidCtrl.setSquidModeEnabled(pidParams.enableSquid);
         }
         else
         {
-            setMotorCurrentPidCoefficients(pidCoeff);
+            setMotorCurrentPidCoefficients(pidParams.pidCoeffs);
         }
-        currentTolerance = tolerance;
     }   //setCurrentPidParameters
-
-    /**
-     * This method sets the PID parameters of the motor's current PID controller. Note that PID coefficients are
-     * different for software PID and controller built-in PID. If you enable/disable software PID, you need to set
-     * the appropriate PID coefficients accordingly.
-     *
-     * @param pidCoeff specifies the PID coefficients to set.
-     * @param tolerance specifies the PID tolerance.
-     * @param softwarePid specifies true to use software PID control, false to use native motor PID control.
-     * @param pidInput specifies the method to call to get Curret PID input, can be null to use built-in getCurrent.
-     */
-    public void setCurrentPidParameters(
-        TrcPidController.PidCoefficients pidCoeff, double tolerance, boolean softwarePid, DoubleSupplier pidInput)
-    {
-        setCurrentPidParameters(pidCoeff, tolerance, softwarePid, false, pidInput);
-    }   //setCurrentPidParameters
-
-    /**
-     * This method sets the PID parameters of the motor's current PID controller. Note that PID coefficients are
-     * different for software PID and controller built-in PID. If you enable/disable software PID, you need to set
-     * the appropriate PID coefficients accordingly.
-     *
-     * @param kP specifies the Kp coefficient.
-     * @param kI specifies the Ki coefficient.
-     * @param kD specifies the Kd coefficient.
-     * @param kF specifies the Kf coefficient.
-     * @param iZone specifies IZone, can be 0.0 if not provided.
-     * @param tolerance specifies the PID tolerance.
-     * @param softwarePid specifies true to use software PID control, false to use native motor PID control.
-     * @param enableSquid specifies true to enable SQUID control mode, false to disable (only applicable if
-     *        softwarePid is true).
-     * @param pidInput specifies the method to call to get Curret PID input, can be null to use built-in getCurrent.
-     */
-    public void setCurrentPidParameters(
-        double kP, double kI, double kD, double kF, double iZone, double tolerance, boolean softwarePid,
-        boolean enableSquid, DoubleSupplier pidInput)
-    {
-        setCurrentPidParameters(
-            new TrcPidController.PidCoefficients(kP, kI, kD, kF, iZone), tolerance, softwarePid, enableSquid, pidInput);
-    }   //setCurrentPidParameters
-
-    /**
-     * This method sets the PID parameters of the motor's current PID controller. Note that PID coefficients are
-     * different for software PID and controller built-in PID. If you enable/disable software PID, you need to set
-     * the appropriate PID coefficients accordingly.
-     *
-     * @param kP specifies the Kp coefficient.
-     * @param kI specifies the Ki coefficient.
-     * @param kD specifies the Kd coefficient.
-     * @param kF specifies the Kf coefficient.
-     * @param iZone specifies IZone, can be 0.0 if not provided.
-     * @param tolerance specifies the PID tolerance.
-     * @param softwarePid specifies true to use software PID control, false to use native motor PID control.
-     * @param pidInput specifies the method to call to get Curret PID input, can be null to use built-in getCurrent.
-     */
-    public void setCurrentPidParameters(
-        double kP, double kI, double kD, double kF, double iZone, double tolerance, boolean softwarePid,
-        DoubleSupplier pidInput)
-    {
-        setCurrentPidParameters(kP, kI, kD, kF, iZone, tolerance, softwarePid, false, pidInput);
-    }   //setCurrentPidParameters
-
-    /**
-     * This method sets the PID parameters of the motor's current PID controller. Note that PID coefficients are
-     * different for software PID and controller built-in PID. If you enable/disable software PID, you need to set
-     * the appropriate PID coefficients accordingly.
-     *
-     * @param kP specifies the Kp coefficient.
-     * @param kI specifies the Ki coefficient.
-     * @param kD specifies the Kd coefficient.
-     * @param kF specifies the Kf coefficient.
-     * @param tolerance specifies the PID tolerance.
-     * @param softwarePid specifies true to use software PID control, false to use native motor PID control.
-     * @param enableSquid specifies true to enable SQUID control mode, false to disable (only applicable if
-     *        softwarePid is true).
-     * @param pidInput specifies the method to call to get Curret PID input, can be null to use built-in getCurrent.
-     */
-    public void setCurrentPidParameters(
-        double kP, double kI, double kD, double kF, double tolerance, boolean softwarePid, boolean enableSquid,
-        DoubleSupplier pidInput)
-    {
-        setCurrentPidParameters(
-            new TrcPidController.PidCoefficients(kP, kI, kD, kF, 0.0), tolerance, softwarePid, enableSquid, pidInput);
-    }   //setCurrentPidParameters
-
-    /**
-     * This method sets the PID parameters of the motor's current PID controller. Note that PID coefficients are
-     * different for software PID and controller built-in PID. If you enable/disable software PID, you need to set
-     * the appropriate PID coefficients accordingly.
-     *
-     * @param kP specifies the Kp coefficient.
-     * @param kI specifies the Ki coefficient.
-     * @param kD specifies the Kd coefficient.
-     * @param kF specifies the Kf coefficient.
-     * @param tolerance specifies the PID tolerance.
-     * @param softwarePid specifies true to use software PID control, false to use native motor PID control.
-     * @param pidInput specifies the method to call to get Curret PID input, can be null to use built-in getCurrent.
-     */
-    public void setCurrentPidParameters(
-        double kP, double kI, double kD, double kF, double tolerance, boolean softwarePid, DoubleSupplier pidInput)
-    {
-        setCurrentPidParameters(kP, kI, kD, kF, 0.0, tolerance, softwarePid, false, pidInput);
-    }   //setCurrentPidParameters
-
-    /**
-     * This method sets the current tolerance for PID control.
-     *
-     * @param tolerance specifies the tolerance in amperes.
-     */
-    public void setCurrentPidTolerance(double tolerance)
-    {
-        currentTolerance = tolerance;
-    }   //setCurrentPidTolerance
 
     /**
      * This method returns the PID coefficients of the motor's current PID controller.
@@ -3147,7 +2831,7 @@ public abstract class TrcMotor implements TrcMotorController, TrcExclusiveSubsys
         {
             if (currentPidCtrl != null)
             {
-                onTarget = currentPidCtrl.isOnTarget(currentTolerance);
+                onTarget = currentPidCtrl.isOnTarget(currentPidParams.pidTolerance, currentPidParams.pidSettling);
                 // currentTolerance = tolerance;
             }
             else
@@ -3157,7 +2841,7 @@ public abstract class TrcMotor implements TrcMotorController, TrcExclusiveSubsys
         }
         else
         {
-            onTarget = Math.abs(controllerCurrent - getCurrent()) <= currentTolerance;
+            onTarget = Math.abs(controllerCurrent - getCurrent()) <= currentPidParams.pidTolerance;
             // currentTolerance = tolerance;
         }
 

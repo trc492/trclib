@@ -27,7 +27,6 @@ import org.apache.commons.math3.linear.RealVector;
 
 import java.util.Arrays;
 
-import trclib.controller.TrcPidController;
 import trclib.robotcore.TrcEvent;
 import trclib.sensor.TrcGyro;
 import trclib.dataprocessor.TrcHashMap;
@@ -54,22 +53,19 @@ public class TrcSwerveDriveBase extends TrcSimpleDriveBase
      */
     public static class SwerveParams
     {
-        public TrcPidController.PidCoefficients steerMotorPidCoeffs = null;
-        public double steerMotorPidTolerance = 0.0;
+        public TrcMotor.PidParams steerMotorPidParams = null;
 
         /**
-         * This method sets the parameters for Swerve Drive Steer Motor PID control.
+         * This method sets the steer motor PID parameters.
          *
-         * @param pidCoeffs specifies the PID Coefficients.
-         * @param pidTolerance specifies the PID tolerance.
+         * @param pidParams specifies the steer motor PID parameters.
          * @return this object for chaining.
          */
-        public SwerveParams setSteerPidParams(TrcPidController.PidCoefficients pidCoeffs, double pidTolerance)
+        public SwerveParams setSteerMotorPidParams(TrcMotor.PidParams pidParams)
         {
-            this.steerMotorPidCoeffs = pidCoeffs;
-            this.steerMotorPidTolerance = pidTolerance;
+            this.steerMotorPidParams = pidParams;
             return this;
-        }   //setSteerPidParams
+        }   //setSteerMotorPidParams
     }   //class SwerveParams
 
     private final TrcSwerveModule lfModule, rfModule, lbModule, rbModule;
