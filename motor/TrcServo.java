@@ -51,6 +51,7 @@ public abstract class TrcServo implements TrcExclusiveSubsystem
         public double restPos = 0.0;
         public double activatePos = 0.0;
         public double activateDuration = 0.0;
+        public double retractTime = 0.0;
 
         /**
          * Constructor: Create an instance of the object.
@@ -59,14 +60,17 @@ public abstract class TrcServo implements TrcExclusiveSubsystem
          * @param restPos specifies the physical rest position of the servo.
          * @param activatePos specifies the physical activate position of the servo.
          * @param activateDuration specifies the duration in seconds the servo will remain in activatePos before
+         * @param retractTime specifies the time it takes to retract the mechanism.
          *        returning to restPos.
          */
-        public TuneParams(boolean inverted, double restPos, double activatePos, double activateDuration)
+        public TuneParams(
+            boolean inverted, double restPos, double activatePos, double activateDuration, double retractTime)
         {
             this.inverted = inverted;
             this.restPos = restPos;
             this.activatePos = activatePos;
             this.activateDuration = activateDuration;
+            this.retractTime = retractTime;
         }   //TuneParams
 
         @Override
@@ -75,7 +79,8 @@ public abstract class TrcServo implements TrcExclusiveSubsystem
             return "(inverted=" + inverted +
                    ",restPos=" + restPos +
                    ",activatePos=" + activatePos +
-                   ",activateDuration=" + activateDuration + ")";
+                   ",activateDuration=" + activateDuration +
+                   ",retractTime=" + retractTime + ")";
         }   //toString
     }   //TuneParams
 
