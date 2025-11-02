@@ -240,6 +240,15 @@ public abstract class TrcPriorityIndicator
             PatternState patternState = patternPriorities.get(index);
             patternState.enabled = enabled;
             patternState.on = enabled;
+            if (enabled)
+            {
+                patternState.expiredTime = patternState.pattern.onDuration > 0.0?
+                    TrcTimer.getCurrentTime() + patternState.pattern.onDuration: 0.0;
+            }
+            else
+            {
+                patternState.expiredTime = 0.0;
+            }
         }
     }   //setPatternState
 
