@@ -160,6 +160,19 @@ public class TrcDataBuffer
     }   //getBufferedData
 
     /**
+     * This method returns the data count in the buffer.
+     *
+     * @return data count.
+     */
+    public int getDataCount()
+    {
+        synchronized (bufferedData)
+        {
+            return bufferedData.size();
+        }
+    }   //getDataCount
+
+    /**
      * This method returns the minimum value in the buffer.
      *
      * @return minimum value in the buffer, null if buffer is empty.
