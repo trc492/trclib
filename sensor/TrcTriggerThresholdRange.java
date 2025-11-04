@@ -112,7 +112,6 @@ public class TrcTriggerThresholdRange implements TrcTrigger
     private final TriggerState triggerState;
     private final AtomicBoolean callbackContext;
     private final TrcTaskMgr.TaskObject triggerTaskObj;
-    private double lastTriggeredValue;
 
     /**
      * Constructor: Create an instance of the object.
@@ -155,16 +154,11 @@ public class TrcTriggerThresholdRange implements TrcTrigger
     }   //toString
 
     /**
-     * This method returns the average sensor value at the time of the trigger.
+     * This method returns the number of data in the cached buffer.
      *
-     * @return last triggered average sensor value.
+     * @return cached data count.
      */
-    public double getLastTriggeredValue()
-    {
-        return lastTriggeredValue;
-    }   //getLastTriggeredValue
-
-    public int getCachedDataCount()
+    public int getTriggeredDataCount()
     {
         synchronized (triggerState)
         {
@@ -173,43 +167,84 @@ public class TrcTriggerThresholdRange implements TrcTrigger
     }   //getCachedDataCount
 
     /**
-     * This method returns the average sensor value in the trigger settling period.
+     * This method returns an array of the data recorded during the trigger settling period.
      *
-     * @return triggered average sensor value.
+     * @return array of trigger settling data, null if no data recorded.
      */
-    public double getTriggeredAverageValue()
+    public Double[] getTriggeredData()
     {
+        Double[] data = null;
+
         synchronized (triggerState)
         {
-            return triggerState.cachedData != null ? triggerState.cachedData.getAverageValue() : 0.0;
+            if (triggerState.cachedData != null)
+            {
+                data = triggerState.cachedData.getBufferedData();
+            }
         }
-    }   //getTriggeredAverageValue
+
+        return data;
+    }   //getTriggeredData
 
     /**
-     * This method returns the minimum sensor value in the trigger settling period.
+     * This method returns the minimum sensor value recorded in the cache. Cache only records values within thresholds.
      *
-     * @return triggered minimum sensor value.
+     * @return minimum value in the cache, null if cache was empty.
      */
-    public double getTriggeredMinimumValue()
+    public Double getTriggeredMinimumValue()
     {
+        Double minValue = null;
+
         synchronized (triggerState)
         {
-            return triggerState.cachedData != null ? triggerState.cachedData.getMinimumValue() : 0.0;
+            if (triggerState.cachedData != null)
+            {
+                minValue = triggerState.cachedData.getMinimumValue();
+            }
         }
+
+        return minValue;
     }   //getTriggeredMinimumValue
 
     /**
-     * This method returns the maximum sensor value in the trigger settling period.
+     * This method returns the maximum sensor value recorded in the cache. Cache only records values within thresholds.
      *
-     * @return triggered maximum sensor value.
+     * @return maximum value in the cache, null if cache was empty.
      */
-    public double getTriggeredMaximumValue()
+    public Double getTriggeredMaximumValue()
     {
+        Double maxValue = null;
+
         synchronized (triggerState)
         {
-            return triggerState.cachedData != null ? triggerState.cachedData.getMaximumValue() : 0.0;
+            if (triggerState.cachedData != null)
+            {
+                maxValue = triggerState.cachedData.getMaximumValue();
+            }
         }
+
+        return maxValue;
     }   //getTriggeredMaximumValue
+
+    /**
+     * This method returns the average sensor value recorded in the cache. Cache only records values within thresholds.
+     *
+     * @return average value in the cache, null if cache was empty.
+     */
+    public Double getTriggeredAverageValue()
+    {
+        Double avgValue = null;
+
+        synchronized (triggerState)
+        {
+            if (triggerState.cachedData != null)
+            {
+                avgValue = triggerState.cachedData.getAverageValue();
+            }
+        }
+
+        return avgValue;
+    }   //getTriggeredAverageValue
 
     //
     // Implements TrcTrigger interface.
@@ -455,86 +490,6 @@ public class TrcTriggerThresholdRange implements TrcTrigger
     }   //setTrigger
 
     /**
-     * This method returns an array of the data recorded during the trigger settling period.
-     *
-     * @return array of trigger settling data, null if no data recorded.
-     */
-    public Double[] getTriggerSettlingData()
-    {
-        Double[] data = null;
-
-        synchronized (triggerState)
-        {
-            if (triggerState.cachedData != null)
-            {
-                data = triggerState.cachedData.getBufferedData();
-            }
-        }
-
-        return data;
-    }   //getTriggerSettlingData
-
-    /**
-     * This method returns the minimum sensor value recorded in the cache. Cache only records values within thresholds.
-     *
-     * @return minimum value in the cache, null if cache was empty.
-     */
-    public Double getMinimumValue()
-    {
-        Double minValue = null;
-
-        synchronized (triggerState)
-        {
-            if (triggerState.cachedData != null)
-            {
-                minValue = triggerState.cachedData.getMinimumValue();
-            }
-        }
-
-        return minValue;
-    }   //getMinimumValue
-
-    /**
-     * This method returns the maximum sensor value recorded in the cache. Cache only records values within thresholds.
-     *
-     * @return maximum value in the cache, null if cache was empty.
-     */
-    public Double getMaximumValue()
-    {
-        Double maxValue = null;
-
-        synchronized (triggerState)
-        {
-            if (triggerState.cachedData != null)
-            {
-                maxValue = triggerState.cachedData.getMaximumValue();
-            }
-        }
-
-        return maxValue;
-    }   //getMaximumValue
-
-    /**
-     * This method calculates the average sensor value recorded in the cache.
-     *
-     * @return average value calculated.
-     */
-    public Double getAverageValue()
-    {
-        Double avgValue = null;
-
-        synchronized (triggerState)
-        {
-            if (triggerState.cachedData != null)
-            {
-                avgValue = triggerState.cachedData.getAverageValue();
-            }
-        }
-
-        return avgValue;
-    }   //getAverageValue
-
-    /**
      * This method is called periodically to check if the sensor value is within the lower and upper threshold range.
      *
      * @param taskType specifies the type of task being run.
@@ -586,7 +541,6 @@ public class TrcTriggerThresholdRange implements TrcTrigger
                     if (triggerState.triggerMode == TriggerMode.OnBoth ||
                         triggerState.triggerMode == TriggerMode.OnActive)
                     {
-                        lastTriggeredValue = getTriggeredAverageValue();
                         triggered = true;
                         callback = triggerState.triggerCallback;
                         triggerEvent = triggerState.triggerEvent;
