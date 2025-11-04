@@ -91,7 +91,7 @@ public abstract class TrcPriorityIndicator
     private static class PatternState
     {
         final Pattern pattern;
-        boolean enabled;
+        boolean active;
         boolean on;
         double expiredTime;
 
@@ -104,7 +104,7 @@ public abstract class TrcPriorityIndicator
         public PatternState(Pattern pattern, boolean enabled)
         {
             this.pattern = pattern;
-            this.enabled = enabled;
+            this.active = enabled;
             this.on = false;
             this.expiredTime = 0.0;
         }   //PatternState
@@ -127,7 +127,7 @@ public abstract class TrcPriorityIndicator
         @Override
         public String toString()
         {
-            return pattern + ": enabled=" + enabled + ", on=" + on + ", expiredTime=" + expiredTime;
+            return pattern + ": active=" + active + ", on=" + on + ", expiredTime=" + expiredTime;
         }   //toString
 
     }   //class PatternState
@@ -238,7 +238,7 @@ public abstract class TrcPriorityIndicator
         if (index != -1)
         {
             PatternState patternState = patternPriorities.get(index);
-            patternState.enabled = enabled;
+            patternState.active = enabled;
             patternState.on = enabled;
             if (enabled)
             {
@@ -278,7 +278,7 @@ public abstract class TrcPriorityIndicator
 
         if (index != -1)
         {
-            state = patternPriorities.get(index).enabled;
+            state = patternPriorities.get(index).active;
         }
         tracer.traceDebug(instanceName, "pattern=" + pattern + ",index=" + index + ",state=" + state);
 
@@ -308,7 +308,7 @@ public abstract class TrcPriorityIndicator
         {
             for (PatternState state : patternPriorities)
             {
-                state.enabled = false;
+                state.active = false;
                 state.on = false;
                 state.expiredTime = 0.0;
             }
@@ -373,7 +373,7 @@ public abstract class TrcPriorityIndicator
             {
                 for (PatternState patternState : oldPriorities)
                 {
-                    if (patternState.enabled)
+                    if (patternState.active)
                     {
                         // This will silently fail if this pattern is not in the priority list
                         setPatternState(patternState.pattern, true);
@@ -402,12 +402,12 @@ public abstract class TrcPriorityIndicator
     {
         double currTime = TrcTimer.getCurrentTime();
         boolean gotPattern = false;
-        Pattern pattern = null;
+        PatternState activePatternState = null;
 
         for (PatternState patternState: patternPriorities)
         {
             // Going from highest priority and down to low.
-            if (patternState.enabled)
+            if (patternState.active)
             {
                 if (patternState.expiredTime > 0.0 && currTime >= patternState.expiredTime)
                 {
@@ -423,7 +423,7 @@ public abstract class TrcPriorityIndicator
                         }
                         else
                         {
-                            patternState.enabled = false;
+                            patternState.active = false;
                         }
                     }
                     else if (patternState.pattern.onDuration > 0.0)
@@ -435,14 +435,12 @@ public abstract class TrcPriorityIndicator
                     }
                 }
 
-                if (!gotPattern && patternState.enabled)
+                if (!gotPattern && patternState.active)
                 {
-                    if (patternState.on)
-                    {
-                        // Highest priority pattern that's enabled, not expired and is in ON-state.
-                        gotPattern = true;
-                        pattern = patternState.pattern;
-                    }
+                    // Highest priority pattern that's active.
+                    gotPattern = true;
+                    activePatternState = patternState;
+                    tracer.traceDebug(instanceName, "Highest priority active pattern: " + patternState.pattern);
                     // Else if there is no next priority pattern that is in ON-state, then we will turn it OFF.
                 }
             }
@@ -451,11 +449,17 @@ public abstract class TrcPriorityIndicator
         // Only set the pattern if it is not already active. If pattern is null, that means no pattern is found.
         // In that case, we will turn the Indicator OFF.
         //
-        if (pattern != getPattern())
+        if (activePatternState == null || !activePatternState.on)
         {
-            setPattern(pattern);
+            // No active pattern found or active pattern is OFF.
+            setPattern(null);
+            tracer.traceDebug(instanceName, "Set hardware to OFF.");
         }
-        tracer.traceDebug(instanceName, "pattern=" + pattern);
+        else if (activePatternState.pattern != getPattern())
+        {
+            setPattern(activePatternState.pattern);
+            tracer.traceDebug(instanceName, "Set hardware to pattern: " + activePatternState.pattern);
+        }
     }   //updateIndicator
 
     /**

@@ -76,7 +76,7 @@ public class TrcTriggerThresholdRange implements TrcTrigger
         }   //toString
     }   //TriggerParams
 
-    private static final int DEF_CACHE_SIZE = 10;
+    private static final int DEF_CACHE_SIZE = 20;
     /**
      * This class encapsulates the trigger state. Access to this object must be thread safe (i.e. needs to be
      * synchronized).
@@ -155,14 +155,61 @@ public class TrcTriggerThresholdRange implements TrcTrigger
     }   //toString
 
     /**
-     * This method returns the last triggered sensor value.
+     * This method returns the average sensor value at the time of the trigger.
      *
-     * @return last triggered sensor value.
+     * @return last triggered average sensor value.
      */
     public double getLastTriggeredValue()
     {
         return lastTriggeredValue;
     }   //getLastTriggeredValue
+
+    public int getCachedDataCount()
+    {
+        synchronized (triggerState)
+        {
+            return triggerState.cachedData != null? triggerState.cachedData.getDataCount(): 0;
+        }
+    }   //getCachedDataCount
+
+    /**
+     * This method returns the average sensor value in the trigger settling period.
+     *
+     * @return triggered average sensor value.
+     */
+    public double getTriggeredAverageValue()
+    {
+        synchronized (triggerState)
+        {
+            return triggerState.cachedData != null ? triggerState.cachedData.getAverageValue() : 0.0;
+        }
+    }   //getTriggeredAverageValue
+
+    /**
+     * This method returns the minimum sensor value in the trigger settling period.
+     *
+     * @return triggered minimum sensor value.
+     */
+    public double getTriggeredMinimumValue()
+    {
+        synchronized (triggerState)
+        {
+            return triggerState.cachedData != null ? triggerState.cachedData.getMinimumValue() : 0.0;
+        }
+    }   //getTriggeredMinimumValue
+
+    /**
+     * This method returns the maximum sensor value in the trigger settling period.
+     *
+     * @return triggered maximum sensor value.
+     */
+    public double getTriggeredMaximumValue()
+    {
+        synchronized (triggerState)
+        {
+            return triggerState.cachedData != null ? triggerState.cachedData.getMaximumValue() : 0.0;
+        }
+    }   //getTriggeredMaximumValue
 
     //
     // Implements TrcTrigger interface.
@@ -539,7 +586,7 @@ public class TrcTriggerThresholdRange implements TrcTrigger
                     if (triggerState.triggerMode == TriggerMode.OnBoth ||
                         triggerState.triggerMode == TriggerMode.OnActive)
                     {
-                        lastTriggeredValue = currValue;
+                        lastTriggeredValue = getTriggeredAverageValue();
                         triggered = true;
                         callback = triggerState.triggerCallback;
                         triggerEvent = triggerState.triggerEvent;
