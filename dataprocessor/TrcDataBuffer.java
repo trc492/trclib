@@ -31,6 +31,22 @@ import java.util.Arrays;
  */
 public class TrcDataBuffer
 {
+    public static class DataSummary
+    {
+        public final int dataCount;
+        public final double averageValue;
+        public final double minimumValue;
+        public final double maximumValue;
+
+        public DataSummary(int count, double average, double min, double max)
+        {
+            this.dataCount = count;
+            this.averageValue = average;
+            this.minimumValue = min;
+            this.maximumValue = max;
+        }   //DataSummary
+    }   //class DataSummary
+
     private final String instanceName;
     private final int bufferSize;
     private final ArrayList<Double> bufferedData = new ArrayList<>();
@@ -247,5 +263,18 @@ public class TrcDataBuffer
 
         return numValues == 0? 0.0: sum/numValues;
     }   //getAverageValue
+
+    /**
+     * This method returns the data summary of the data buffer.
+     *
+     * @return data summmary.
+     */
+    public DataSummary getDataSummary()
+    {
+        synchronized (bufferedData)
+        {
+            return new DataSummary(getDataCount(), getAverageValue(), getMinimumValue(), getMaximumValue());
+        }
+    }   //getDataSummary
 
 }   //class TrcDataBuffer

@@ -112,6 +112,7 @@ public class TrcTriggerThresholdRange implements TrcTrigger
     private final TriggerState triggerState;
     private final AtomicBoolean callbackContext;
     private final TrcTaskMgr.TaskObject triggerTaskObj;
+    private TrcDataBuffer.DataSummary lastTriggeredData = null;
 
     /**
      * Constructor: Create an instance of the object.
@@ -154,37 +155,30 @@ public class TrcTriggerThresholdRange implements TrcTrigger
     }   //toString
 
     /**
-     * This method returns the number of data in the cached buffer.
+     * This method returns the summary of the last triggered data recorded during the trigger settling period..
      *
-     * @return cached data count.
+     * @return summary of the triggered data.
      */
-    public int getTriggeredDataCount()
+    public TrcDataBuffer.DataSummary getLastTriggeredData()
     {
         synchronized (triggerState)
         {
-            return triggerState.cachedData != null? triggerState.cachedData.getDataCount(): 0;
+            return lastTriggeredData;
         }
-    }   //getCachedDataCount
+    }   //getLastTriggeredData
 
     /**
-     * This method returns an array of the data recorded during the trigger settling period.
+     * This method returns the average sensor value recorded in the cache. Cache only records values within thresholds.
      *
-     * @return array of trigger settling data, null if no data recorded.
+     * @return average value in the cache, null if cache was empty.
      */
-    public Double[] getTriggeredData()
+    public Double getTriggeredAverageValue()
     {
-        Double[] data = null;
-
         synchronized (triggerState)
         {
-            if (triggerState.cachedData != null)
-            {
-                data = triggerState.cachedData.getBufferedData();
-            }
+            return lastTriggeredData != null? lastTriggeredData.averageValue: null;
         }
-
-        return data;
-    }   //getTriggeredData
+    }   //getTriggeredAverageValue
 
     /**
      * This method returns the minimum sensor value recorded in the cache. Cache only records values within thresholds.
@@ -193,17 +187,10 @@ public class TrcTriggerThresholdRange implements TrcTrigger
      */
     public Double getTriggeredMinimumValue()
     {
-        Double minValue = null;
-
         synchronized (triggerState)
         {
-            if (triggerState.cachedData != null)
-            {
-                minValue = triggerState.cachedData.getMinimumValue();
-            }
+            return lastTriggeredData != null? lastTriggeredData.minimumValue: null;
         }
-
-        return minValue;
     }   //getTriggeredMinimumValue
 
     /**
@@ -213,38 +200,11 @@ public class TrcTriggerThresholdRange implements TrcTrigger
      */
     public Double getTriggeredMaximumValue()
     {
-        Double maxValue = null;
-
         synchronized (triggerState)
         {
-            if (triggerState.cachedData != null)
-            {
-                maxValue = triggerState.cachedData.getMaximumValue();
-            }
+            return lastTriggeredData != null? lastTriggeredData.maximumValue: null;
         }
-
-        return maxValue;
     }   //getTriggeredMaximumValue
-
-    /**
-     * This method returns the average sensor value recorded in the cache. Cache only records values within thresholds.
-     *
-     * @return average value in the cache, null if cache was empty.
-     */
-    public Double getTriggeredAverageValue()
-    {
-        Double avgValue = null;
-
-        synchronized (triggerState)
-        {
-            if (triggerState.cachedData != null)
-            {
-                avgValue = triggerState.cachedData.getAverageValue();
-            }
-        }
-
-        return avgValue;
-    }   //getTriggeredAverageValue
 
     //
     // Implements TrcTrigger interface.
@@ -521,6 +481,7 @@ public class TrcTriggerThresholdRange implements TrcTrigger
                         triggerState.triggerMode == TriggerMode.OnInactive)
                     {
                         triggered = true;
+                        lastTriggeredData = triggerState.cachedData.getDataSummary();
                         callback = triggerState.triggerCallback;
                         triggerEvent = triggerState.triggerEvent;
                         callbackThread = triggerState.callbackThread;
@@ -542,6 +503,7 @@ public class TrcTriggerThresholdRange implements TrcTrigger
                         triggerState.triggerMode == TriggerMode.OnActive)
                     {
                         triggered = true;
+                        lastTriggeredData = triggerState.cachedData.getDataSummary();
                         callback = triggerState.triggerCallback;
                         triggerEvent = triggerState.triggerEvent;
                         callbackThread = triggerState.callbackThread;
