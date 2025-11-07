@@ -266,6 +266,20 @@ public class TrcPose2D
     }   //relativeTo
 
     /**
+     * This method computes the relative pose from {@code base} to this pose.
+     *
+     * @param pose the reference pose
+     * @return relative pose such that base.addRelativePose(result) == this
+     */
+    public TrcPose2D relativeFrom(TrcPose2D pose)
+    {
+        RealVector delta = TrcUtil.createVector(this.x - pose.x, this.y - pose.y);
+        RealVector relPos = TrcUtil.rotateCW(delta, -pose.angle);
+        double relAngle = this.angle - pose.angle;
+        return new TrcPose2D(relPos.getEntry(0), relPos.getEntry(1), relAngle);
+    }   //relativeFrom
+
+    /**
      * This method translates this pose with the x and y offset in reference to the angle of the pose.
      *
      * @param xOffset specifies the x offset in reference to the angle of the pose.
@@ -312,18 +326,15 @@ public class TrcPose2D
     }   //addRelativePose
 
     /**
-     * This method subtracts a relative pose from this pose and return the resulting pose. The relative pose has a
-     * relative vector and relative angle from the resulting pose to this pose. In other words, adding the relative
-     * pose to the resulting pose would yield this pose.
+     * This method inverts this relative 2D pose.
      *
-     * @param relativePose specifies the relative pose from the resulting pose.
-     * @return resulting pose.
+     * @return inverted pose.
      */
-    public TrcPose2D subtractRelativePose(TrcPose2D relativePose)
+    public TrcPose2D invert()
     {
-        RealVector vec =
-            TrcUtil.createVector(this.x, this.y).subtract(TrcUtil.rotateCW(relativePose.toPosVector(), this.angle));
-        return new TrcPose2D(vec.getEntry(0), vec.getEntry(1), this.angle - relativePose.angle);
-    }   //subtractRelativePose
+        double invAngle = -this.angle;
+        RealVector invPos = TrcUtil.rotateCW(this.toPosVector(), invAngle).mapMultiply(-1.0);
+        return new TrcPose2D(invPos.getEntry(0), invPos.getEntry(1), invAngle);
+    }   //invert
 
 }   //class TrcPose2D
