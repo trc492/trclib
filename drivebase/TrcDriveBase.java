@@ -1645,17 +1645,18 @@ public abstract class TrcDriveBase implements TrcExclusiveSubsystem
      *
      * @param owner     specifies the ID string of the caller for checking ownership, can be null if caller is not
      *                  ownership aware.
-     * @param x         specifies the x power.
-     * @param y         specifies the y power.
-     * @param rotation  specifies the rotating power.
+     * @param xPower    specifies the x power.
+     * @param yPower    specifies the y power.
+     * @param turnPower specifies the rotating power.
      * @param inverted  specifies true to invert control (i.e. robot front becomes robot back).
-     * @param gyroAngle specifies the current gyro heading. Use this to drive by the field reference frame.
+     * @param gyroAngle specifies the gyro angle to maintain for field relative drive. DO NOT use this with inverted,
+     *                  Set to null if not field relative driving.
      * @param driveTime specifies the amount of time in seconds after which the drive base will stop.
      * @param event     specifies the event to signal when driveTime has expired, can be null if not provided.
      */
     public void holonomicDrive(
-        String owner, double x, double y, double rotation, boolean inverted, double gyroAngle, double driveTime,
-        TrcEvent event)
+        String owner, double xPower, double yPower, double turnPower, boolean inverted, Double gyroAngle,
+        double driveTime, TrcEvent event)
     {
         throw new UnsupportedOperationException("Holonomic drive is not supported by this drive base!");
     }   //holonomicDrive
@@ -1663,40 +1664,21 @@ public abstract class TrcDriveBase implements TrcExclusiveSubsystem
     /**
      * This method implements holonomic drive where x controls how fast the robot will go in the x direction, and y
      * controls how fast the robot will go in the y direction. Rotation controls how fast the robot rotates and
-     * gyroAngle specifies the heading the robot should maintain. Subclasses that supports holonomic drive should
-     * override this method.
-     *
-     * @param owner     specifies the ID string of the caller for checking ownership, can be null if caller is not
-     *                  ownership aware.
-     * @param x         specifies the x power.
-     * @param y         specifies the y power.
-     * @param rotation  specifies the rotating power.
-     * @param inverted  specifies true to invert control (i.e. robot front becomes robot back).
-     * @param gyroAngle specifies the current gyro heading. Use this to drive by the field reference frame.
-     */
-    public void holonomicDrive(String owner, double x, double y, double rotation, boolean inverted, double gyroAngle)
-    {
-        holonomicDrive(owner, x, y, rotation, inverted, gyroAngle, 0.0, null);
-    }   //holonomicDrive
-
-    /**
-     * This method implements holonomic drive where x controls how fast the robot will go in the x direction, and y
-     * controls how fast the robot will go in the y direction. Rotation controls how fast the robot rotates and
      * gyroAngle specifies the heading the robot should maintain.
      *
      * @param owner     specifies the ID string of the caller for checking ownership, can be null if caller is not
      *                  ownership aware.
-     * @param x         specifies the x power.
-     * @param y         specifies the y power.
-     * @param rotation  specifies the rotating power.
+     * @param xPower    specifies the x power.
+     * @param yPower    specifies the y power.
+     * @param turnPower specifies the rotating power.
      * @param inverted  specifies true to invert control (i.e. robot front becomes robot back).
-     * @param driveTime specifies the amount of time in seconds after which the drive base will stop.
-     * @param event     specifies the event to signal when driveTime has expired, can be null if not provided.
+     * @param gyroAngle specifies the gyro angle to maintain for field relative drive. DO NOT use this with inverted,
+     *                  Set to null if not field relative driving.
      */
     public void holonomicDrive(
-        String owner, double x, double y, double rotation, boolean inverted, double driveTime, TrcEvent event)
+        String owner, double xPower, double yPower, double turnPower, boolean inverted, double gyroAngle)
     {
-        holonomicDrive(owner, x, y, rotation, inverted, 0.0, driveTime, event);
+        holonomicDrive(owner, xPower, yPower, turnPower, inverted, gyroAngle, 0.0, null);
     }   //holonomicDrive
 
     /**
@@ -1704,65 +1686,20 @@ public abstract class TrcDriveBase implements TrcExclusiveSubsystem
      * controls how fast the robot will go in the y direction. Rotation controls how fast the robot rotates and
      * gyroAngle specifies the heading the robot should maintain.
      *
-     * @param owner    specifies the ID string of the caller for checking ownership, can be null if caller is not
-     *                 ownership aware.
-     * @param x        specifies the x power.
-     * @param y        specifies the y power.
-     * @param rotation specifies the rotating power.
-     * @param inverted specifies true to invert control (i.e. robot front becomes robot back).
-     */
-    public void holonomicDrive(String owner, double x, double y, double rotation, boolean inverted)
-    {
-        holonomicDrive(owner, x, y, rotation, inverted, 0.0, 0.0, null);
-    }   //holonomicDrive
-
-    /**
-     * This method implements holonomic drive where x controls how fast the robot will go in the x direction, and y
-     * controls how fast the robot will go in the y direction. Rotation controls how fast the robot rotates and
-     * gyroAngle specifies the heading the robot should maintain.
-     *
-     * @param owner    specifies the ID string of the caller for checking ownership, can be null if caller is not
-     *                 ownership aware.
-     * @param x        specifies the x power.
-     * @param y        specifies the y power.
-     * @param rotation specifies the rotating power.
-     */
-    public void holonomicDrive(String owner, double x, double y, double rotation)
-    {
-        holonomicDrive(owner, x, y, rotation, false, 0.0, 0.0, null);
-    }   //holonomicDrive
-
-    /**
-     * This method implements holonomic drive where x controls how fast the robot will go in the x direction, and y
-     * controls how fast the robot will go in the y direction. Rotation controls how fast the robot rotates and
-     * gyroAngle specifies the heading the robot should maintain.
-     *
-     * @param x         specifies the x power.
-     * @param y         specifies the y power.
-     * @param rotation  specifies the rotating power.
+     * @param owner     specifies the ID string of the caller for checking ownership, can be null if caller is not
+     *                  ownership aware.
+     * @param xPower    specifies the x power.
+     * @param yPower    specifies the y power.
+     * @param turnPower specifies the rotating power.
      * @param inverted  specifies true to invert control (i.e. robot front becomes robot back).
      * @param driveTime specifies the amount of time in seconds after which the drive base will stop.
      * @param event     specifies the event to signal when driveTime has expired, can be null if not provided.
      */
     public void holonomicDrive(
-        double x, double y, double rotation, boolean inverted, double driveTime, TrcEvent event)
+        String owner, double xPower, double yPower, double turnPower, boolean inverted, double driveTime,
+        TrcEvent event)
     {
-        holonomicDrive(null, x, y, rotation, inverted, 0.0, driveTime, event);
-    }   //holonomicDrive
-
-    /**
-     * This method implements holonomic drive where x controls how fast the robot will go in the x direction, and y
-     * controls how fast the robot will go in the y direction. Rotation controls how fast the robot rotates and
-     * gyroAngle specifies the heading the robot should maintain.
-     *
-     * @param x        specifies the x power.
-     * @param y        specifies the y power.
-     * @param rotation specifies the rotating power.
-     * @param inverted specifies true to invert control (i.e. robot front becomes robot back).
-     */
-    public void holonomicDrive(double x, double y, double rotation, boolean inverted)
-    {
-        holonomicDrive(null, x, y, rotation, inverted, 0.0, 0.0, null);
+        holonomicDrive(owner, xPower, yPower, turnPower, inverted, null, driveTime, event);
     }   //holonomicDrive
 
     /**
@@ -1772,17 +1709,63 @@ public abstract class TrcDriveBase implements TrcExclusiveSubsystem
      *
      * @param owner     specifies the ID string of the caller for checking ownership, can be null if caller is not
      *                  ownership aware.
-     * @param x         specifies the x power.
-     * @param y         specifies the y power.
-     * @param rotation  specifies the rotating power.
-     * @param gyroAngle specifies the current gyro heading. Use this to drive by the field reference frame.
+     * @param xPower    specifies the x power.
+     * @param yPower    specifies the y power.
+     * @param turnPower specifies the rotating power.
+     * @param inverted  specifies true to invert control (i.e. robot front becomes robot back).
+     */
+    public void holonomicDrive(String owner, double xPower, double yPower, double turnPower, boolean inverted)
+    {
+        holonomicDrive(owner, xPower, yPower, turnPower, inverted, null, 0.0, null);
+    }   //holonomicDrive
+
+    /**
+     * This method implements holonomic drive where x controls how fast the robot will go in the x direction, and y
+     * controls how fast the robot will go in the y direction. Rotation controls how fast the robot rotates and
+     * gyroAngle specifies the heading the robot should maintain.
+     *
+     * @param owner     specifies the ID string of the caller for checking ownership, can be null if caller is not
+     *                  ownership aware.
+     * @param xPower    specifies the x power.
+     * @param yPower    specifies the y power.
+     * @param turnPower specifies the rotating power.
+     */
+    public void holonomicDrive(String owner, double xPower, double yPower, double turnPower)
+    {
+        holonomicDrive(owner, xPower, yPower, turnPower, false, null, 0.0, null);
+    }   //holonomicDrive
+
+    /**
+     * This method implements holonomic drive where x controls how fast the robot will go in the x direction, and y
+     * controls how fast the robot will go in the y direction. Rotation controls how fast the robot rotates and
+     * gyroAngle specifies the heading the robot should maintain.
+     *
+     * @param xPower    specifies the x power.
+     * @param yPower    specifies the y power.
+     * @param turnPower specifies the rotating power.
+     * @param inverted  specifies true to invert control (i.e. robot front becomes robot back).
      * @param driveTime specifies the amount of time in seconds after which the drive base will stop.
      * @param event     specifies the event to signal when driveTime has expired, can be null if not provided.
      */
     public void holonomicDrive(
-        String owner, double x, double y, double rotation, double gyroAngle, double driveTime, TrcEvent event)
+        double xPower, double yPower, double turnPower, boolean inverted, double driveTime, TrcEvent event)
     {
-        holonomicDrive(owner, x, y, rotation, false, gyroAngle, driveTime, event);
+        holonomicDrive(null, xPower, yPower, turnPower, inverted, null, driveTime, event);
+    }   //holonomicDrive
+
+    /**
+     * This method implements holonomic drive where x controls how fast the robot will go in the x direction, and y
+     * controls how fast the robot will go in the y direction. Rotation controls how fast the robot rotates and
+     * gyroAngle specifies the heading the robot should maintain.
+     *
+     * @param xPower    specifies the x power.
+     * @param yPower    specifies the y power.
+     * @param turnPower specifies the rotating power.
+     * @param inverted  specifies true to invert control (i.e. robot front becomes robot back).
+     */
+    public void holonomicDrive(double xPower, double yPower, double turnPower, boolean inverted)
+    {
+        holonomicDrive(null, xPower, yPower, turnPower, inverted, null, 0.0, null);
     }   //holonomicDrive
 
     /**
@@ -1792,32 +1775,19 @@ public abstract class TrcDriveBase implements TrcExclusiveSubsystem
      *
      * @param owner     specifies the ID string of the caller for checking ownership, can be null if caller is not
      *                  ownership aware.
-     * @param x         specifies the x power.
-     * @param y         specifies the y power.
-     * @param rotation  specifies the rotating power.
-     * @param gyroAngle specifies the current gyro heading. Use this to drive by the field reference frame.
-     */
-    public void holonomicDrive(String owner, double x, double y, double rotation, double gyroAngle)
-    {
-        holonomicDrive(owner, x, y, rotation, false, gyroAngle, 0.0, null);
-    }   //holonomicDrive
-
-    /**
-     * This method implements holonomic drive where x controls how fast the robot will go in the x direction, and y
-     * controls how fast the robot will go in the y direction. Rotation controls how fast the robot rotates and
-     * gyroAngle specifies the heading the robot should maintain.
-     *
-     * @param x         specifies the x power.
-     * @param y         specifies the y power.
-     * @param rotation  specifies the rotating power.
-     * @param gyroAngle specifies the current gyro heading. Use this to drive by the field reference frame.
+     * @param xPower    specifies the x power.
+     * @param yPower    specifies the y power.
+     * @param turnPower specifies the rotating power.
+     * @param gyroAngle specifies the gyro angle to maintain for field relative drive. DO NOT use this with inverted,
+     *                  Set to null if not field relative driving.
      * @param driveTime specifies the amount of time in seconds after which the drive base will stop.
      * @param event     specifies the event to signal when driveTime has expired, can be null if not provided.
      */
     public void holonomicDrive(
-        double x, double y, double rotation, double gyroAngle, double driveTime, TrcEvent event)
+        String owner, double xPower, double yPower, double turnPower, double gyroAngle, double driveTime,
+         TrcEvent event)
     {
-        holonomicDrive(null, x, y, rotation, false, gyroAngle, driveTime, event);
+        holonomicDrive(owner, xPower, yPower, turnPower, false, gyroAngle, driveTime, event);
     }   //holonomicDrive
 
     /**
@@ -1827,15 +1797,15 @@ public abstract class TrcDriveBase implements TrcExclusiveSubsystem
      *
      * @param owner     specifies the ID string of the caller for checking ownership, can be null if caller is not
      *                  ownership aware.
-     * @param x         specifies the x power.
-     * @param y         specifies the y power.
-     * @param rotation  specifies the rotating power.
-     * @param driveTime specifies the amount of time in seconds after which the drive base will stop.
-     * @param event     specifies the event to signal when driveTime has expired, can be null if not provided.
+     * @param xPower    specifies the x power.
+     * @param yPower    specifies the y power.
+     * @param turnPower specifies the rotating power.
+     * @param gyroAngle specifies the gyro angle to maintain for field relative drive. DO NOT use this with inverted,
+     *                  Set to null if not field relative driving.
      */
-    public void holonomicDrive(String owner, double x, double y, double rotation, double driveTime, TrcEvent event)
+    public void holonomicDrive(String owner, double xPower, double yPower, double turnPower, double gyroAngle)
     {
-        holonomicDrive(owner, x, y, rotation, false, 0.0, driveTime, event);
+        holonomicDrive(owner, xPower, yPower, turnPower, false, gyroAngle, 0.0, null);
     }   //holonomicDrive
 
     /**
@@ -1843,15 +1813,18 @@ public abstract class TrcDriveBase implements TrcExclusiveSubsystem
      * controls how fast the robot will go in the y direction. Rotation controls how fast the robot rotates and
      * gyroAngle specifies the heading the robot should maintain.
      *
-     * @param x         specifies the x power.
-     * @param y         specifies the y power.
-     * @param rotation  specifies the rotating power.
+     * @param xPower    specifies the x power.
+     * @param yPower    specifies the y power.
+     * @param turnPower specifies the rotating power.
+     * @param gyroAngle specifies the gyro angle to maintain for field relative drive. DO NOT use this with inverted,
+     *                  Set to null if not field relative driving.
      * @param driveTime specifies the amount of time in seconds after which the drive base will stop.
      * @param event     specifies the event to signal when driveTime has expired, can be null if not provided.
      */
-    public void holonomicDrive(double x, double y, double rotation, double driveTime, TrcEvent event)
+    public void holonomicDrive(
+        double xPower, double yPower, double turnPower, double gyroAngle, double driveTime, TrcEvent event)
     {
-        holonomicDrive(null, x, y, rotation, false, 0.0, driveTime, event);
+        holonomicDrive(null, xPower, yPower, turnPower, false, gyroAngle, driveTime, event);
     }   //holonomicDrive
 
     /**
@@ -1859,13 +1832,50 @@ public abstract class TrcDriveBase implements TrcExclusiveSubsystem
      * controls how fast the robot will go in the y direction. Rotation controls how fast the robot rotates and
      * gyroAngle specifies the heading the robot should maintain.
      *
-     * @param x        specifies the x power.
-     * @param y        specifies the y power.
-     * @param rotation specifies the rotating power.
+     * @param owner     specifies the ID string of the caller for checking ownership, can be null if caller is not
+     *                  ownership aware.
+     * @param xPower    specifies the x power.
+     * @param yPower    specifies the y power.
+     * @param turnPower specifies the rotating power.
+     * @param driveTime specifies the amount of time in seconds after which the drive base will stop.
+     * @param event     specifies the event to signal when driveTime has expired, can be null if not provided.
      */
-    public void holonomicDrive(double x, double y, double rotation)
+    public void holonomicDrive(
+        String owner, double xPower, double yPower, double turnPower, double driveTime, TrcEvent event)
     {
-        holonomicDrive(null, x, y, rotation, false, 0.0, 0.0, null);
+        holonomicDrive(owner, xPower, yPower, turnPower, false, null, driveTime, event);
+    }   //holonomicDrive
+
+    /**
+     * This method implements holonomic drive where x controls how fast the robot will go in the x direction, and y
+     * controls how fast the robot will go in the y direction. Rotation controls how fast the robot rotates and
+     * gyroAngle specifies the heading the robot should maintain.
+     *
+     * @param xPower    specifies the x power.
+     * @param yPower    specifies the y power.
+     * @param turnPower specifies the rotating power.
+     * @param driveTime specifies the amount of time in seconds after which the drive base will stop.
+     * @param event     specifies the event to signal when driveTime has expired, can be null if not provided.
+     */
+    public void holonomicDrive(double xPower, double yPower, double turnPower, double driveTime, TrcEvent event)
+    {
+        holonomicDrive(null, xPower, yPower, turnPower, false, null, driveTime, event);
+    }   //holonomicDrive
+
+    /**
+     * This method implements holonomic drive where x controls how fast the robot will go in the x direction, and y
+     * controls how fast the robot will go in the y direction. Rotation controls how fast the robot rotates and
+     * gyroAngle specifies the heading the robot should maintain.
+     *
+     * @param owner     specifies the ID string of the caller for checking ownership, can be null if caller is not
+     *                  ownership aware.
+     * @param xPower    specifies the x power.
+     * @param yPower    specifies the y power.
+     * @param turnPower specifies the rotating power.
+     */
+    public void holonomicDrive(double xPower, double yPower, double turnPower)
+    {
+        holonomicDrive(null, xPower, yPower, turnPower, false, null, 0.0, null);
     }   //holonomicDrive
 
     /**
@@ -1886,7 +1896,7 @@ public abstract class TrcDriveBase implements TrcExclusiveSubsystem
     {
         double dirInRads = Math.toRadians(direction);
         holonomicDrive(
-            owner, magnitude * Math.sin(dirInRads), magnitude * Math.cos(dirInRads), rotation, inverted, 0.0,
+            owner, magnitude * Math.sin(dirInRads), magnitude * Math.cos(dirInRads), rotation, inverted, null,
             driveTime, event);
     }   //holonomicDrive_Polar
 
@@ -1978,7 +1988,7 @@ public abstract class TrcDriveBase implements TrcExclusiveSubsystem
     {
         double dirInRads = Math.toRadians(direction);
         holonomicDrive(
-            owner, magnitude * Math.sin(dirInRads), magnitude * Math.cos(dirInRads), rotation, false, 0.0, driveTime,
+            owner, magnitude * Math.sin(dirInRads), magnitude * Math.cos(dirInRads), rotation, false, null, driveTime,
             event);
     }   //holonomicDrive_Polar
 
