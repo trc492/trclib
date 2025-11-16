@@ -43,48 +43,6 @@ import trclib.timer.TrcTimer;
 public abstract class TrcServo implements TrcExclusiveSubsystem
 {
     /**
-     * This class contains tunable parameters of the servo.
-     */
-    public static class TuneParams
-    {
-        public boolean inverted = false;
-        public double restPos = 0.0;
-        public double activatePos = 0.0;
-        public double activateDuration = 0.0;
-        public double retractTime = 0.0;
-
-        /**
-         * Constructor: Create an instance of the object.
-         *
-         * @param inverted specifies true to invert the servo direction, false otherwise.
-         * @param restPos specifies the physical rest position of the servo.
-         * @param activatePos specifies the physical activate position of the servo.
-         * @param activateDuration specifies the duration in seconds the servo will remain in activatePos before
-         * @param retractTime specifies the time it takes to retract the mechanism.
-         *        returning to restPos.
-         */
-        public TuneParams(
-            boolean inverted, double restPos, double activatePos, double activateDuration, double retractTime)
-        {
-            this.inverted = inverted;
-            this.restPos = restPos;
-            this.activatePos = activatePos;
-            this.activateDuration = activateDuration;
-            this.retractTime = retractTime;
-        }   //TuneParams
-
-        @Override
-        public String toString()
-        {
-            return "(inverted=" + inverted +
-                   ",restPos=" + restPos +
-                   ",activatePos=" + activatePos +
-                   ",activateDuration=" + activateDuration +
-                   ",retractTime=" + retractTime + ")";
-        }   //toString
-    }   //TuneParams
-
-    /**
      * This method inverts the servo direction.
      *
      * @param inverted specifies true to invert the servo direction, false otherwise.
