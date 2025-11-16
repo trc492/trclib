@@ -248,7 +248,7 @@ public abstract class TrcDriveBase implements TrcExclusiveSubsystem
 
     public final TrcDbgTrace tracer;
     private final TrcMotor[] motors;
-    private final TrcGyro gyro;
+    protected final TrcGyro gyro;
     protected final Odometry odometry;
     private final MotorsState motorsState;
     private final TrcTimer driveTimer;
