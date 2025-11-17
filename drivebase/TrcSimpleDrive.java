@@ -34,7 +34,7 @@ import trclib.dataprocessor.TrcUtil;
  * that may consist of 2 to 6 motors. It supports tank drive, curve drive and arcade drive with motor stalled detection
  * and inverted drive mode. It also supports gyro assisted drive to keep robot driving straight.
  */
-public class TrcSimpleDriveBase extends TrcDriveBase
+public class TrcSimpleDrive extends TrcDriveBase
 {
     private final String moduleName = getClass().getSimpleName();
 
@@ -73,7 +73,7 @@ public class TrcSimpleDriveBase extends TrcDriveBase
      * @param rbMotor specifies the right back motor of the drive base.
      * @param gyro specifies the gyro. If none, it can be set to null.
      */
-    public TrcSimpleDriveBase(
+    public TrcSimpleDrive(
         TrcMotor lfMotor, TrcMotor lcMotor, TrcMotor lbMotor, TrcMotor rfMotor, TrcMotor rcMotor, TrcMotor rbMotor,
         TrcGyro gyro)
     {
@@ -92,7 +92,7 @@ public class TrcSimpleDriveBase extends TrcDriveBase
         this.rbMotor = rbMotor;
         this.lcMotor = lcMotor;
         this.rcMotor = rcMotor;
-    }   //TrcSimpleDriveBase
+    }   //TrcSimpleDrive
 
     /**
      * Constructor: Create an instance of a 6-wheel drive base.
@@ -104,11 +104,11 @@ public class TrcSimpleDriveBase extends TrcDriveBase
      * @param rcMotor specifies the right center motor of a 6-wheel drive base.
      * @param rbMotor specifies the right back motor of the drive base.
      */
-    public TrcSimpleDriveBase(
+    public TrcSimpleDrive(
         TrcMotor lfMotor, TrcMotor lcMotor, TrcMotor lbMotor, TrcMotor rfMotor, TrcMotor rcMotor, TrcMotor rbMotor)
     {
         this(lfMotor, lcMotor, lbMotor, rfMotor, rcMotor, rbMotor, null);
-    }   //TrcSimpleDriveBase
+    }   //TrcSimpleDrive
 
     /**
      * Constructor: Create an instance of a 4-wheel drive base.
@@ -119,7 +119,7 @@ public class TrcSimpleDriveBase extends TrcDriveBase
      * @param rbMotor specifies the right back motor of the drive base.
      * @param gyro specifies the gyro. If none, it can be set to null.
      */
-    public TrcSimpleDriveBase(
+    public TrcSimpleDrive(
         TrcMotor lfMotor, TrcMotor lbMotor, TrcMotor rfMotor, TrcMotor rbMotor, TrcGyro gyro)
     {
         super(new TrcMotor[] {lfMotor, rfMotor, lbMotor, rbMotor}, gyro);
@@ -135,7 +135,7 @@ public class TrcSimpleDriveBase extends TrcDriveBase
         this.rbMotor = rbMotor;
         this.lcMotor = null;
         this.rcMotor = null;
-    }   //TrcSimpleDriveBase
+    }   //TrcSimpleDrive
 
     /**
      * Constructor: Create an instance of a 4-wheel drive base.
@@ -145,11 +145,11 @@ public class TrcSimpleDriveBase extends TrcDriveBase
      * @param rfMotor specifies the right front motor of the drive base.
      * @param rbMotor specifies the right back motor of the drive base.
      */
-    public TrcSimpleDriveBase(
+    public TrcSimpleDrive(
         TrcMotor lfMotor, TrcMotor lbMotor, TrcMotor rfMotor, TrcMotor rbMotor)
     {
         this(lfMotor, lbMotor, rfMotor, rbMotor, null);
-    }   //TrcSimpleDriveBase
+    }   //TrcSimpleDrive
 
     /**
      * Constructor: Create an instance of a 2-wheel drive base.
@@ -158,7 +158,7 @@ public class TrcSimpleDriveBase extends TrcDriveBase
      * @param rightMotor specifies the right motor of the drive base.
      * @param gyro specifies the gyro. If none, it can be set to null.
      */
-    public TrcSimpleDriveBase(TrcMotor leftMotor, TrcMotor rightMotor, TrcGyro gyro)
+    public TrcSimpleDrive(TrcMotor leftMotor, TrcMotor rightMotor, TrcGyro gyro)
     {
         super(new TrcMotor[] {leftMotor, rightMotor}, gyro);
 
@@ -173,7 +173,7 @@ public class TrcSimpleDriveBase extends TrcDriveBase
         this.rbMotor = null;
         this.lcMotor = null;
         this.rcMotor = null;
-    }   //TrcSimpleDriveBase
+    }   //TrcSimpleDrive
 
     /**
      * Constructor: Create an instance of a 2-wheel drive base.
@@ -181,10 +181,10 @@ public class TrcSimpleDriveBase extends TrcDriveBase
      * @param leftMotor specifies the left motor of the drive base.
      * @param rightMotor specifies the right motor of the drive base.
      */
-    public TrcSimpleDriveBase(TrcMotor leftMotor, TrcMotor rightMotor)
+    public TrcSimpleDrive(TrcMotor leftMotor, TrcMotor rightMotor)
     {
         this(leftMotor, rightMotor, null);
-    }   //TrcSimpleDriveBase
+    }   //TrcSimpleDrive
 
     // CodeReview: Please explain what is this method for? Nobody is calling it. Why divide yScale by wheel base width?
     /**
@@ -397,4 +397,4 @@ public class TrcSimpleDriveBase extends TrcDriveBase
         return delta;
     }   //getOdometryDelta
 
-}   //class TrcSimpleDriveBase
+}   //class TrcSimpleDrive

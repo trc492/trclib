@@ -25,7 +25,7 @@ package trclib.command;
 import java.util.Locale;
 
 import trclib.drivebase.TrcDriveBase;
-import trclib.drivebase.TrcSwerveDriveBase;
+import trclib.drivebase.TrcSwerveDrive;
 import trclib.driverio.TrcDashboard;
 import trclib.robotcore.TrcDbgTrace;
 import trclib.robotcore.TrcEvent;
@@ -135,10 +135,10 @@ public class CmdDriveMotorsTest implements TrcRobot.RobotCommand
             switch (state)
             {
                 case START:
-                    if (driveBase instanceof TrcSwerveDriveBase)
+                    if (driveBase instanceof TrcSwerveDrive)
                     {
                         // Point all wheels absolute forward.
-                        ((TrcSwerveDriveBase) driveBase).setSteerAngle(0.0, false);
+                        ((TrcSwerveDrive) driveBase).setSteerAngle(0.0, false);
                     }
                     //
                     // Spin a wheel at drivePower for driveTime seconds.

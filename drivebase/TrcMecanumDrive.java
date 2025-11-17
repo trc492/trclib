@@ -31,9 +31,9 @@ import trclib.timer.TrcTimer;
 
 /**
  * This class implements a platform independent mecanum drive base. A mecanum drive base consists of 4 motor driven
- * wheels. It extends the TrcSimpleDriveBase class so it inherits all the SimpleDriveBase methods and features.
+ * wheels. It extends the TrcSimpleDrive class so it inherits all the SimpleDriveBase methods and features.
  */
-public class TrcMecanumDriveBase extends TrcSimpleDriveBase
+public class TrcMecanumDrive extends TrcSimpleDrive
 {
     private final String moduleName = getClass().getSimpleName();
 
@@ -46,10 +46,10 @@ public class TrcMecanumDriveBase extends TrcSimpleDriveBase
      * @param rbMotor specifies the right back motor of the drive base.
      * @param gyro specifies the gyro. If none, it can be set to null.
      */
-    public TrcMecanumDriveBase(TrcMotor lfMotor, TrcMotor lbMotor, TrcMotor rfMotor, TrcMotor rbMotor, TrcGyro gyro)
+    public TrcMecanumDrive(TrcMotor lfMotor, TrcMotor lbMotor, TrcMotor rfMotor, TrcMotor rbMotor, TrcGyro gyro)
     {
         super(lfMotor, lbMotor, rfMotor, rbMotor, gyro);
-    }   //TrcMecanumDriveBase
+    }   //TrcMecanumDrive
 
     /**
      * Constructor: Create an instance of the 4-wheel mecanum drive base.
@@ -59,10 +59,10 @@ public class TrcMecanumDriveBase extends TrcSimpleDriveBase
      * @param rfMotor specifies the right front motor of the drive base.
      * @param rbMotor specifies the right back motor of the drive base.
      */
-    public TrcMecanumDriveBase(TrcMotor lfMotor, TrcMotor lbMotor, TrcMotor rfMotor, TrcMotor rbMotor)
+    public TrcMecanumDrive(TrcMotor lfMotor, TrcMotor lbMotor, TrcMotor rfMotor, TrcMotor rbMotor)
     {
         super(lfMotor, lbMotor, rfMotor, rbMotor, null);
-    }   //TrcMecanumDriveBase
+    }   //TrcMecanumDrive
 
     /**
      * This method checks if it supports holonomic drive.
@@ -227,11 +227,11 @@ public class TrcMecanumDriveBase extends TrcSimpleDriveBase
         if (Math.abs(delta.velocity.x) > stallVelThreshold)
         {
             // reset stall start time to current time if drive base has movement.
-            // Note: y movement is taken care of by the superclass TrcSimpleDriveBase.
+            // Note: y movement is taken care of by the superclass TrcSimpleDrive.
             stallStartTime = TrcTimer.getCurrentTime();
         }
 
         return delta;
     }   //getOdometryDelta
 
-}   //class TrcMecanumDriveBase
+}   //class TrcMecanumDrive

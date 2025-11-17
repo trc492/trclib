@@ -37,14 +37,14 @@ import trclib.timer.TrcTimer;
 
 /**
  * This class implements a platform independent swerve drive base. A swerve drive base consists of 4 swerve modules
- * each of which consists of a driving motor and a PID controlled steering motor. It extends the TrcSimpleDriveBase
+ * each of which consists of a driving motor and a PID controlled steering motor. It extends the TrcSimpleDrive
  * class so it inherits all the SimpleDriveBase methods and features
  * <p>
  * The implementation of swerve algorithm is based on
  * <a href="https://www.chiefdelphi.com/t/paper-4-wheel-independent-drive-independent-steering-swerve/107383">
  * Ether's white paper</a>
  */
-public class TrcSwerveDriveBase extends TrcSimpleDriveBase
+public class TrcSwerveDrive extends TrcSimpleDrive
 {
     private final String moduleName = getClass().getSimpleName();
 
@@ -83,7 +83,7 @@ public class TrcSwerveDriveBase extends TrcSimpleDriveBase
      * @param wheelBaseWidth specifies the width of the wheel base in inches.
      * @param wheelBaseLength specifies the length of the wheel base in inches.
      */
-    public TrcSwerveDriveBase(
+    public TrcSwerveDrive(
         TrcSwerveModule lfModule, TrcSwerveModule lbModule, TrcSwerveModule rfModule, TrcSwerveModule rbModule,
         TrcGyro gyro, double wheelBaseWidth, double wheelBaseLength)
     {
@@ -100,7 +100,7 @@ public class TrcSwerveDriveBase extends TrcSimpleDriveBase
         driveMotorToModuleMap.add(rfModule.driveMotor, rfModule);
         driveMotorToModuleMap.add(lbModule.driveMotor, lbModule);
         driveMotorToModuleMap.add(rbModule.driveMotor, rbModule);
-    }   //TrcSwerveDriveBase
+    }   //TrcSwerveDrive
 
     /**
      * Constructor: Create an instance of the 4-wheel swerve drive base.
@@ -112,12 +112,12 @@ public class TrcSwerveDriveBase extends TrcSimpleDriveBase
      * @param wheelBaseWidth  specifies the width of the wheel base in inches.
      * @param wheelBaseLength specifies the length of the wheel base in inches.
      */
-    public TrcSwerveDriveBase(
+    public TrcSwerveDrive(
         TrcSwerveModule lfModule, TrcSwerveModule lbModule, TrcSwerveModule rfModule, TrcSwerveModule rbModule,
         double wheelBaseWidth, double wheelBaseLength)
     {
         this(lfModule, lbModule, rfModule, rbModule, null, wheelBaseWidth, wheelBaseLength);
-    }   //TrcSwerveDriveBase
+    }   //TrcSwerveDrive
 
     /**
      * This method does zero calibration on the steer angle encoders.
@@ -573,4 +573,4 @@ public class TrcSwerveDriveBase extends TrcSimpleDriveBase
         return delta;
     }   //getOdometryDelta
 
-}   //class TrcSwerveDriveBase
+}   //class TrcSwerveDrive
