@@ -1588,12 +1588,12 @@ public class TrcPurePursuitDrive
             }
             else if (stalled)
             {
-                tracer.traceInfo(instanceName, "Segment " + i + " is stalled, moving to the next segment.");
+                tracer.traceDebug(instanceName, "Segment " + i + " is stalled, moving to the next segment.");
                 pathIndex = i;
             }
         }
         // Found no intersection. The robot must be off-path. Just proceed to the immediate next waypoint.
-        tracer.traceInfo(instanceName, "No intersection found, proceed to the immediate next waypoint " + pathIndex);
+        tracer.traceDebug(instanceName, "No intersection found, proceed to the immediate next waypoint " + pathIndex);
         return path.getWaypoint(pathIndex);
     }   //getFollowingPoint
 
