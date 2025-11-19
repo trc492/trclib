@@ -500,8 +500,10 @@ public abstract class TrcMotor implements TrcMotorController, TrcExclusiveSubsys
      *
      * @param instanceName specifies the instance name.
      * @param sensors specifies external sensors, can be null if none.
+     * @param pidCtrlInterval specifies how fast to run the PID control loop in msec, null if running at default rate
+     *        of the OUTPUT_TASK.
      */
-    public TrcMotor(String instanceName, ExternalSensors sensors)
+    public TrcMotor(String instanceName, ExternalSensors sensors, Long pidCtrlInterval)
     {
         this.tracer = new TrcDbgTrace();
         this.instanceName = instanceName;
@@ -535,7 +537,14 @@ public abstract class TrcMotor implements TrcMotorController, TrcExclusiveSubsys
         odometry = new TrcOdometrySensor.Odometry(this);
         timer = new TrcTimer(instanceName);
         TrcTaskMgr.TaskObject pidCtrlTaskObj = TrcTaskMgr.createTask(instanceName + ".pidCtrlTask", this::pidCtrlTask);
-        pidCtrlTaskObj.registerTask(TaskType.OUTPUT_TASK);
+        if (pidCtrlInterval != null)
+        {
+            pidCtrlTaskObj.registerTask(TaskType.STANDALONE_TASK, pidCtrlInterval);
+        }
+        else
+        {
+            pidCtrlTaskObj.registerTask(TaskType.OUTPUT_TASK);
+        }
 
         if (odometryTaskObj == null)
         {
@@ -549,6 +558,17 @@ public abstract class TrcMotor implements TrcMotorController, TrcExclusiveSubsys
                 instanceName + ".odometryCleanupTask", this::odometryCleanupTask);
             odometryCleanupTaskObj.registerTask(TaskType.STOP_TASK);
         }
+    }   //TrcMotor
+
+    /**
+     * Constructor: Create an instance of the object.
+     *
+     * @param instanceName specifies the instance name.
+     * @param sensors specifies external sensors, can be null if none.
+     */
+    public TrcMotor(String instanceName, ExternalSensors sensors)
+    {
+        this(instanceName, sensors, null);
     }   //TrcMotor
 
     /**
