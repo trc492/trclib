@@ -84,10 +84,10 @@ public abstract class TrcDriveBase implements TrcExclusiveSubsystem
         public TrcPidController.PidCoefficients velPidCoeffs = null;
 //        public boolean enableSquid = false;
 
-        public double profiledMaxDriveVelocity = 0.0;
-        public double profiledMaxDriveAcceleration = 0.0;
-        public double profiledMaxDriveDeceleration = 0.0;
-        public double profiledMaxTurnRate = 0.0;
+        public Double profiledMaxDriveVelocity = null;
+        public Double profiledMaxDriveAcceleration = null;
+        public Double profiledMaxDriveDeceleration = null;
+        public Double profiledMaxTurnRate = null;
 
         /**
          * This method sets parameters for drive motor velocity control.
