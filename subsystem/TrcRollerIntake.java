@@ -600,13 +600,14 @@ public class TrcRollerIntake implements TrcExclusiveSubsystem
      *
      * @param owner specifies the owner ID to check if the caller has ownership of the subsystem.
      * @param delay specifies the time in seconds to delay before setting the power, 0.0 if no delay.
+     * @param power specifies the intake power, null if use default power.
      * @param duration specifies the duration in seconds to run the motor and turns it off afterwards, 0.0 if not
      *        turning off.
      * @param event specifies the event to signal when the motor operation is completed.
      */
-    public void eject(String owner, double delay, double duration, TrcEvent event)
+    public void eject(String owner, double delay, Double power, double duration, TrcEvent event)
     {
-        setPower(owner, delay, intakeParams.ejectPower, duration, event);
+        setPower(owner, delay, power != null? power: intakeParams.ejectPower, duration, event);
     }   //eject
 
     /**
@@ -614,26 +615,38 @@ public class TrcRollerIntake implements TrcExclusiveSubsystem
      * the motor automatically and signal an event if provided.
      *
      * @param owner specifies the owner ID to check if the caller has ownership of the subsystem.
+     * @param power specifies the intake power, null if use default power.
      * @param duration specifies the duration in seconds to run the motor and turns it off afterwards, 0.0 if not
      *        turning off.
      * @param event specifies the event to signal when the motor operation is completed.
      */
-    public void eject(String owner, double duration, TrcEvent event)
+    public void eject(String owner, Double power, double duration, TrcEvent event)
     {
-        setPower(owner, 0.0, intakeParams.ejectPower, duration, event);
+        eject(owner, 0.0, power, duration, event);
     }   //eject
 
     /**
      * This method starts the motor with eject power and optionally specifies the duration after which to turn off
      * the motor automatically and signal an event if provided.
      *
+     * @param power specifies the intake power, null if use default power.
      * @param duration specifies the duration in seconds to run the motor and turns it off afterwards, 0.0 if not
      *        turning off.
      * @param event specifies the event to signal when the motor operation is completed.
      */
-    public void eject(double duration, TrcEvent event)
+    public void eject(Double power, double duration, TrcEvent event)
     {
-        setPower(null, 0.0, intakeParams.ejectPower, duration, event);
+        eject(null, 0.0, power, duration, event);
+    }   //eject
+
+    /**
+     * This method starts the motor with eject power.
+     *
+     * @param power specifies the intake power, null if use default power.
+     */
+    public void eject(Double power)
+    {
+        eject(null, 0.0, power, 0.0, null);
     }   //eject
 
     /**
@@ -641,7 +654,7 @@ public class TrcRollerIntake implements TrcExclusiveSubsystem
      */
     public void eject()
     {
-        setPower(null, 0.0, intakeParams.ejectPower, 0.0, null);
+        eject(null, 0.0, intakeParams.intakePower, 0.0, null);
     }   //eject
 
     //
