@@ -33,6 +33,7 @@ import java.util.HashMap;
  */
 public class TrcOwnershipMgr
 {
+    private static final String moduleName = TrcOwnershipMgr.class.getSimpleName();
     private final static TrcOwnershipMgr instance = new TrcOwnershipMgr();
     private final HashMap<TrcExclusiveSubsystem, String> ownershipMap;
 
@@ -85,16 +86,15 @@ public class TrcOwnershipMgr
     }   //hasOwnership
 
     /**
-     * This method checks if the caller has exclusive ownership of the subsystem. If not, it throws an exception.
-     * It throws an exception only if the caller is aware of exclusive ownership and the it doesn't currently own
-     * the subsystem. If the caller is unaware of exclusive ownership and the subsystem is owned by somebody else,
-     * it will just return false and not throw an exception. This is to ensure older code that's unaware of exclusive
-     * ownership will not hit an unexpected exception and will just fail quietly.
+     * This method checks if the caller has exclusive ownership of the subsystem. If not, it logs an error in the
+     * trace log and dump the call stack. It logs an error only if the caller is aware of exclusive ownership and
+     * and the it doesn't currently own the subsystem. If the caller is unaware of exclusive ownership and the
+     * subsystem is owned by somebody else, it will just return false and not log an error. This is to ensure
+     * older code that's unaware of exclusive ownership will not hit an unexpected error and will just fail quietly.
      *
      * @param owner specifies the ID string of the caller, can be null if caller is unaware of exclusive ownership.
      * @param subsystem specifies the subsystem to be checked of its ownership.`
      * @return true if the caller currently owns the subsystem, false otherwise.
-     * @throws IllegalStateException if caller is not the owner of the subsystem.
      */
     public synchronized boolean validateOwnership(String owner, TrcExclusiveSubsystem subsystem)
     {
@@ -102,9 +102,11 @@ public class TrcOwnershipMgr
 
         if (!success && owner != null)
         {
-            throw new IllegalStateException(
+            TrcDbgTrace.globalTraceErr(
+                moduleName,
                 owner + " does not have exclusive ownership of the subsystem " + subsystem +
                 " (owner=" + getOwner(subsystem) + ").");
+            TrcDbgTrace.printThreadStack();
         }
 
         return success;
