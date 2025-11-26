@@ -116,7 +116,7 @@ public class TrcWrapValueConverter
     {
         prevReading = valueSupplier.getAsDouble();
         numRotations = 0;
-        tracer.traceDebug(instanceName, "resetConverter(numRot=%d)", numRotations);
+        tracer.traceDebug(instanceName, "resetConverter(numRot=%d, prevReading=%f)", numRotations, prevReading);
     }   //resetConverter
 
     /**
@@ -137,6 +137,7 @@ public class TrcWrapValueConverter
      */
     private double getContinuousValue(double reading)
     {
+        tracer.traceDebug(instanceName, "numRev=%d, range=%f, reading=%f", numRotations, range, reading);
         return reading + range*numRotations;
     }   //getContinuousValue
 
