@@ -1213,6 +1213,16 @@ public abstract class TrcMotor implements TrcMotorController, TrcExclusiveSubsys
     }   //setPositionSensorScaleAndOffset
 
     /**
+     * This method returns the external encoder used by the motor.
+     *
+     * @return external encoder, null if there is none.
+     */
+    public TrcEncoder getEncoder()
+    {
+        return encoder;
+    }   //geetEncoder
+
+    /**
      * This method returns the normalized raw position of the external encoder if one is provided.
      *
      * @return external encoder normalized raw position.
