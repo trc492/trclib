@@ -145,7 +145,7 @@ public class TrcShootParamTable
      * @param distance specifies the distance to lookup in the table.
      * @param interpolateTiltAngle specifies true to interpolate Tilt Angle, false to interpolate Shooter Velocity.
      * @return shoot param entry that matches the distance. If no exact match, an interpolated entry is returned.
-     *         Returns null if the distance is out of range of the table entries.
+     *         If the distance is out of range of the table entries, an extrapolated entry is returned.
      */
     public Params get(double distance, boolean interpolateTiltAngle)
     {
@@ -269,8 +269,7 @@ public class TrcShootParamTable
     {
         // TODO: interpolation should NOT be linear. It should have a tangent relationship with distance.
         double w = (distance - distance1) / (distance2 - distance1);
-        double value = (1 - w) * value1 + w * value2;
-        return value;
+        return (1 - w) * value1 + w * value2;
     }   //interpolateValue
 
     /**
