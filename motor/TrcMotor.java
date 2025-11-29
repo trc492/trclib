@@ -2524,6 +2524,16 @@ public abstract class TrcMotor implements TrcMotorController, TrcExclusiveSubsys
     }   //getCurrent
 
     /**
+     * This method returns the PidParams object for the velocity PID controller.
+     *
+     * @return velocity PID parameters.
+     */
+    public PidParams getVelocityPidParameters()
+    {
+        return velPidParams;
+    }   //getVelocityPidParameters
+
+    /**
      * This method sets the PID parameters of the motor's velocity PID controller. Note that PID coefficients are
      * different for software PID and controller built-in PID. If you enable/disable software PID, you need to set
      * the appropriate PID coefficients accordingly.
@@ -2647,6 +2657,16 @@ public abstract class TrcMotor implements TrcMotorController, TrcExclusiveSubsys
     {
         return velPidCtrl;
     }   //getVelocityPidController
+
+    /**
+     * This method returns the PidParams object for the position PID controller.
+     *
+     * @return position PID parameters.
+     */
+    public PidParams getPositionPidParameters()
+    {
+        return posPidParams;
+    }   //getPositionPidParameters
 
     /**
      * This method sets the PID parameters of the motor's position PID controller. Note that PID coefficients are
@@ -2775,6 +2795,16 @@ public abstract class TrcMotor implements TrcMotorController, TrcExclusiveSubsys
     {
         return posPidCtrl;
     }   //getPositionPidController
+
+    /**
+     * This method returns the PidParams object for the current PID controller.
+     *
+     * @return current PID parameters.
+     */
+    public PidParams getCurrentPidParameters()
+    {
+        return currentPidParams;
+    }   //getCurrentPidParameters
 
     /**
      * This method sets the PID parameters of the motor's current PID controller. Note that PID coefficients are
