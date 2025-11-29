@@ -167,14 +167,14 @@ public class TrcShootParams
         Entry lastEntry = shootParamsTable.get(shootParamsTable.size() - 1);
         if (distance <= firstEntry.distance)
         {
-            shootParams = useRegression?
+            shootParams = useRegression && firstEntry.region.polynomialCoeffs != null?
                 calculateRegressionEntry(distance, firstEntry):
                 // The provided distance is below the table range, extrapolate.
                 calculateExtrapolatedEntry(distance, firstEntry, shootParamsTable.get(1));
         }
         else if (distance > lastEntry.distance)
         {
-            shootParams = useRegression?
+            shootParams = useRegression && lastEntry.region.polynomialCoeffs != null?
                 calculateRegressionEntry(distance, lastEntry):
                 // The provided distance is above the table range, extropolate.
                 calculateExtrapolatedEntry(distance, shootParamsTable.get(shootParamsTable.size() - 2), lastEntry);
@@ -186,8 +186,9 @@ public class TrcShootParams
                 Entry entry = shootParamsTable.get(i);
                 if (distance <= entry.distance)
                 {
-                    Entry prevEntry = shootParamsTable.get(i - 1);
-                    shootParams = calculateInterpolatedEntry(distance, prevEntry, entry);
+                    shootParams = useRegression && entry.region.polynomialCoeffs != null?
+                        calculateRegressionEntry(distance, entry):
+                        calculateInterpolatedEntry(distance, shootParamsTable.get(i - 1), entry);
                     break;
                 }
             }
@@ -260,7 +261,6 @@ public class TrcShootParams
             double deltaOutput = upperEntry.outputs[i] - lowerEntry.outputs[i];
             double m = deltaOutput / deltaDistance;
             double b = lowerEntry.outputs[i] - m*lowerEntry.distance;
-            double value = m*distance + b;
             outputs[i] = m * distance + b;
             if (outputs[i] < 0.0)
             {
@@ -268,7 +268,7 @@ public class TrcShootParams
                 // closer to the given distance.
                 double d1 = Math.abs(distance - lowerEntry.distance);
                 double d2 = Math.abs(distance - upperEntry.distance);
-                value = d1 < d2? lowerEntry.outputs[i]: upperEntry.outputs[i];
+                outputs[i] = d1 < d2? lowerEntry.outputs[i]: upperEntry.outputs[i];
             }
         }
 
