@@ -214,7 +214,7 @@ public class TrcShootParams
             outputs[i] = entry.region.polynomialCoeffs[i][0];
             for (int j = 1; j < entry.region.polynomialCoeffs[i].length; j++)
             {
-                outputs[i] += Math.pow(distance, j);
+                outputs[i] += Math.pow(distance, j) * entry.region.polynomialCoeffs[i][j];
             }
         }
 
