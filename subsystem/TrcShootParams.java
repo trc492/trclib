@@ -176,7 +176,7 @@ public class TrcShootParams
         {
             shootParams = useRegression && lastEntry.region.polynomialCoeffs != null?
                 calculateRegressionEntry(distance, lastEntry):
-                // The provided distance is above the table range, extropolate.
+                // The provided distance is above the table range, extrapolate.
                 calculateExtrapolatedEntry(distance, shootParamsTable.get(shootParamsTable.size() - 2), lastEntry);
         }
         else
