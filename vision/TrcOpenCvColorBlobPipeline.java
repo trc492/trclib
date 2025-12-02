@@ -89,19 +89,40 @@ public class TrcOpenCvColorBlobPipeline implements TrcOpenCvPipeline<TrcOpenCvDe
     public static class Roi
     {
         public boolean enabled = false;
-        public Rect rectRoi = null;
+        public Rect rect = new Rect();
+        private final Rect roiRect = new Rect();
 
-        public Roi(int left, int top, int right, int bottom)
+        public void setRoi(boolean enabled, int left, int top, int width, int height)
         {
-            enabled = true;
-            rectRoi = new Rect(left, top, right - left, bottom - top);
-        }   //Roi
+            this.enabled = enabled;
+            if (enabled)
+            {
+                this.rect.x = this.roiRect.x = left;
+                this.rect.y = this.roiRect.y = top;
+                this.rect.width = this.roiRect.width = width;
+                this.rect.height = this.roiRect.height = height;
+            }
+        }   //setRoi
+
+        public boolean refreshRoiRect()
+        {
+            boolean changed = enabled && !rect.equals(roiRect);
+            if (changed)
+            {
+                // Dashboard has changed ROI rect.
+                TrcDbgTrace.globalTraceInfo("ROI", "Dashboard has changed ROI rect " + roiRect + "->" + rect);
+                setRoi(true, rect.x, rect.y, rect.width, rect.height);
+            }
+
+            return changed;
+        }   //refreshRoiRect
 
         @Override
         public String toString()
         {
             return "(enabled=" + enabled +
-                   ",rect=" + rectRoi + ")";
+                   ",rect=" + rect +
+                   ",roiRect=" + roiRect + ")";
         }   //toString
     }   //class Roi
 
@@ -438,7 +459,7 @@ public class TrcOpenCvColorBlobPipeline implements TrcOpenCvPipeline<TrcOpenCvDe
     public static class PipelineParams
     {
         public Annotation annotation = new Annotation();
-        public Roi roi = null;
+        public Roi roi = new Roi();
         public ColorConversion colorConversion = null;
         private final ArrayList<ColorThresholds> colorThresholdsList = new ArrayList<>();
         public ColorThresholds[] colorThresholdSets = null;
@@ -465,42 +486,15 @@ public class TrcOpenCvColorBlobPipeline implements TrcOpenCvPipeline<TrcOpenCvDe
         /**
          * This method sets the Region Of Interest in Unity Center Coordinates.
          *
-         * @param left specifies the left coordinate in the range between -1 and 1 from image center.
-         * @param top specifies the top coordinate in the range between -1 and 1 from image center.
-         * @param right specifies the right coordinate in the range between -1 and 1 from image center.
-         * @param bottom specifies the bottom coordinate in the range between -1 and 1 from image center.
-         * @param imageWidth specifies the image width.
-         * @param imageHeight specifies the image height.
+         * @param left specifies the ROI left pixel coordinate.
+         * @param top specifies the ROI top pixel coordinate.
+         * @param width specifies the ROI pixel width.
+         * @param height specifies the ROI pixel height.
          * @return this object for chaining.
          */
-        public PipelineParams setRoi(
-            double left, double top, double right, double bottom, int imageWidth, int imageHeight)
+        public PipelineParams setRoi(int left, int top, int width, int height)
         {
-            if (left >= right || top >= bottom || left < -1.0 || top < -1.0 || right > 1.0 || bottom > 1.0)
-            {
-                throw new IllegalArgumentException("Invalid Roi values.");
-            }
-
-            left = TrcUtil.scaleRange(left, -1.0, 1.0, 0.0, (double) imageWidth);
-            top = TrcUtil.scaleRange(top, -1.0, 1.0, 0.0, (double) imageHeight);
-            right = TrcUtil.scaleRange(right, -1.0, 1.0, 0.0, (double) imageWidth);
-            bottom = TrcUtil.scaleRange(bottom, -1.0, 1.0, 0.0, (double) imageHeight);
-            roi = new Roi((int) left, (int) top, (int) right, (int) bottom);
-            return this;
-        }   //setRoi
-
-        /**
-         * This method sets the Region Of Interest in Image Coordinates.
-         *
-         * @param left specifies the left Roi in image coordinate
-         * @param top specifies the top Roi in image coordinate.
-         * @param right specifies the right Roi in image coordinate.
-         * @param bottom specifies the bottom Roi in image coordinate.
-         * @return this object for chaining.
-         */
-        public PipelineParams setRoi(int left, int top, int right, int bottom)
-        {
-            roi = new Roi(left, top, right, bottom);
+            roi.setRoi(true, left, top, width, height);
             return this;
         }   //setRoi
 
@@ -812,8 +806,8 @@ public class TrcOpenCvColorBlobPipeline implements TrcOpenCvPipeline<TrcOpenCvDe
          */
         private Mat cameraRVec(TrcPose3D cameraPose)
         {
-//            trc conventions = yaw is CW around up, pitch is CCW around right, roll is CCW around forward
-//            standard conventions = yaw is CCW around up, pitch is CCW around left, roll is CCW around forward
+            // trc conventions = yaw is CW around up, pitch is CCW around right, roll is CCW around forward
+            // standard conventions = yaw is CCW around up, pitch is CCW around left, roll is CCW around forward
             double yaw = -Math.toRadians(cameraPose.yaw);
             double pitch = -Math.toRadians(cameraPose.pitch);
             double roll = Math.toRadians(cameraPose.roll);
@@ -1051,6 +1045,7 @@ public class TrcOpenCvColorBlobPipeline implements TrcOpenCvPipeline<TrcOpenCvDe
     private final Annotation rawAnnotation = new Annotation();
     private final AtomicReference<DetectedObject[]> detectedObjectsUpdate = new AtomicReference<>();
     private int intermediateStep = 0;
+    private Mat roiMask = null;
     private TrcVisionPerformanceMetrics performanceMetrics = null;
 
     /**
@@ -1171,26 +1166,6 @@ public class TrcOpenCvColorBlobPipeline implements TrcOpenCvPipeline<TrcOpenCvDe
         }
     }   //setExpectedMatType
 
-    private boolean isSubmatrix(Mat mat, Mat submat)
-    {
-        boolean isSubmat = false;
-
-        if (!mat.empty() && !submat.empty())
-        {
-            long matPointer = mat.dataAddr();
-            long submatPointer = submat.dataAddr();
-            if (mat.isContinuous() && mat.elemSize() == submat.elemSize() &&
-                mat.rows() >= submat.rows() && mat.cols() >= submat.cols() &&
-                submatPointer >= matPointer &&
-                submatPointer < matPointer + mat.total() * mat.elemSize())
-            {
-                isSubmat = true;
-            }
-        }
-
-        return isSubmat;
-    }   //isSubmatrix
-
     //
     // Implements TrcOpenCvPipeline interface.
     //
@@ -1232,40 +1207,19 @@ public class TrcOpenCvColorBlobPipeline implements TrcOpenCvPipeline<TrcOpenCvDe
             // Do ROI.
             if (pipelineParams.roi != null && pipelineParams.roi.enabled)
             {
-                Mat mask = Mat.zeros(input.size(), CvType.CV_8UC1);
-                Imgproc.rectangle(mask, pipelineParams.roi.rectRoi, new Scalar(255), -1);
+                if (pipelineParams.roi.refreshRoiRect() || roiMask == null)
+                {
+                    if (roiMask != null) roiMask.release();
+                    roiMask = Mat.zeros(input.size(), CvType.CV_8UC1);
+                    Imgproc.rectangle(roiMask, pipelineParams.roi.roiRect, new Scalar(255), -1);
+                }
                 output = intermediateMats[++matIndex];
                 setExpectedMatType(output, input.size(), CvType.CV_8UC3);
-                input.copyTo(output, mask);
-                mask.release();
+                input.copyTo(output, roiMask);
                 tracer.traceDebug(
                     instanceName, "[%d] Roi: type=0x%02x, roiRect=%s",
-                    matIndex, output.type(), pipelineParams.roi.rectRoi);
+                    matIndex, output.type(), pipelineParams.roi.roiRect);
                 input = output;
-//                // Check if Dashboard has changed ROI rect.
-//                pipelineParams.roi.refreshRoi();
-//                output = intermediateMats[++matIndex];
-//                setExpectedMatType(output, input.size(), CvType.CV_8UC3);
-//                input.copyTo(output, pipelineParams.roi.roiMask);
-
-//                output = input.submat(pipelineParams.roi.rectRoi);
-//                if (intermediateMats[++matIndex] != null)
-//                {
-//                    // Releasing the original pre-allocated intermediate Mat or the previous frame's submat.
-//                    intermediateMats[matIndex].release();
-//                }
-//                intermediateMats[matIndex] = output;
-//                tracer.traceDebug(
-//                    instanceName, "[%d] Roi: type=0x%02x, roiRect=%s",
-//                    matIndex, output.type(), pipelineParams.roi.rectRoi);
-//                input = output;
-            }
-            else if (isSubmatrix(intermediateMats[matIndex], intermediateMats[matIndex + 1]))
-            {
-                // Next mat is a submat of the input. This means the user just disabled ROI.
-                // In this case, we need to release the submat and re-allocate a new mat for the next step.
-                intermediateMats[matIndex + 1].release();
-                intermediateMats[matIndex + 1] = new Mat();
             }
             // Do color space conversion.
             if (pipelineParams.colorConversion != null)
