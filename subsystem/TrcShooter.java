@@ -142,20 +142,19 @@ public class TrcShooter implements TrcExclusiveSubsystem
         {
             // The operation was canceled, stop the shooter motor.
             stopShooter();
+            if (tiltMotor != null)
+            {
+                tiltMotor.cancel();
+            }
+
+            if (panMotor != null)
+            {
+                panMotor.cancel();
+            }
         }
         shootOp = null;
         shootOpOwner = null;
         shootOffDelay = null;
-
-        if (tiltMotor != null)
-        {
-            tiltMotor.cancel();
-        }
-
-        if (panMotor != null)
-        {
-            panMotor.cancel();
-        }
 
         if (currOwner != null)
         {

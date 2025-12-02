@@ -207,7 +207,7 @@ public class TrcOpenCvColorBlobPipeline implements TrcOpenCvPipeline<TrcOpenCvDe
                     "Morphology", "Dashboard has changed kernelSize " + createdKernelSize + "->" + kernelSize);
                 setMorphology(true, close, kernelSize);
             }
-        }   //refreshParams
+        }   //refreshKernelMat
 
         @Override
         public String toString()
@@ -282,7 +282,7 @@ public class TrcOpenCvColorBlobPipeline implements TrcOpenCvPipeline<TrcOpenCvDe
                     "CircleBlur", "Dashboard has changed kSize " + kernelSize.width + "->" + kSize);
                 setCircleBlur(true, useGaussian, kSize);
             }
-        }   //setCircleBlurEnabled
+        }   //refreshKernelSize
 
         @Override
         public String toString()
@@ -1232,17 +1232,33 @@ public class TrcOpenCvColorBlobPipeline implements TrcOpenCvPipeline<TrcOpenCvDe
             // Do ROI.
             if (pipelineParams.roi != null && pipelineParams.roi.enabled)
             {
-                output = input.submat(pipelineParams.roi.rectRoi);
-                if (intermediateMats[++matIndex] != null)
-                {
-                    // Releasing the original pre-allocated intermediate Mat or the previous frame's submat.
-                    intermediateMats[matIndex].release();
-                }
-                intermediateMats[matIndex] = output;
+                Mat mask = Mat.zeros(input.size(), CvType.CV_8UC1);
+                Imgproc.rectangle(mask, pipelineParams.roi.rectRoi, new Scalar(255), -1);
+                output = intermediateMats[++matIndex];
+                setExpectedMatType(output, input.size(), CvType.CV_8UC3);
+                input.copyTo(output, mask);
+                mask.release();
                 tracer.traceDebug(
                     instanceName, "[%d] Roi: type=0x%02x, roiRect=%s",
                     matIndex, output.type(), pipelineParams.roi.rectRoi);
                 input = output;
+//                // Check if Dashboard has changed ROI rect.
+//                pipelineParams.roi.refreshRoi();
+//                output = intermediateMats[++matIndex];
+//                setExpectedMatType(output, input.size(), CvType.CV_8UC3);
+//                input.copyTo(output, pipelineParams.roi.roiMask);
+
+//                output = input.submat(pipelineParams.roi.rectRoi);
+//                if (intermediateMats[++matIndex] != null)
+//                {
+//                    // Releasing the original pre-allocated intermediate Mat or the previous frame's submat.
+//                    intermediateMats[matIndex].release();
+//                }
+//                intermediateMats[matIndex] = output;
+//                tracer.traceDebug(
+//                    instanceName, "[%d] Roi: type=0x%02x, roiRect=%s",
+//                    matIndex, output.type(), pipelineParams.roi.rectRoi);
+//                input = output;
             }
             else if (isSubmatrix(intermediateMats[matIndex], intermediateMats[matIndex + 1]))
             {
