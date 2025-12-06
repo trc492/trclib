@@ -539,15 +539,24 @@ public abstract class TrcDriveBase implements TrcExclusiveSubsystem
     }   //driveTimerHandler
 
     /**
+     * This method sets the field forward heading to the specified heading. This is only applicable if the robot is in
+     * FIELD mode.
+     */
+    public void setFieldForwardHeading(double heading)
+    {
+        if (driveOrientation == DriveOrientation.FIELD)
+        {
+            fieldForwardHeading = heading;
+        }
+    }   //setFieldForwardHeading
+
+    /**
      * This method resets the field forward heading to the robot's current heading. This is only applicable if the
      * robot is in FIELD mode.
      */
     public void resetFieldForwardHeading()
     {
-        if (driveOrientation == DriveOrientation.FIELD)
-        {
-            fieldForwardHeading = getHeading();
-        }
+        setFieldForwardHeading(getHeading());
     }   //resetFieldForwardHeading
 
     /**
