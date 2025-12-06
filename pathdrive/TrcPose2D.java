@@ -326,6 +326,29 @@ public class TrcPose2D
     }   //addRelativePose
 
     /**
+     * This method subtracts a relative pose from this pose.
+     * Equivalent to: thisPose = basePose + relativePose  →  relativePose = thisPose - basePose
+     *
+     * @param basePose the pose to subtract (the "reference" pose)
+     * @return the relative pose from basePose to this pose
+     */
+    public TrcPose2D subtractRelativePose(TrcPose2D basePose)
+    {
+        // Delta position in global frame
+        double deltaX = this.x - basePose.x;
+        double deltaY = this.y - basePose.y;
+
+        // Rotate the delta back into the base pose's local frame (clockwise rotation by -baseAngle)
+        RealVector deltaVec = TrcUtil.createVector(deltaX, deltaY);
+        RealVector relPos = TrcUtil.rotateCW(deltaVec, -basePose.angle);
+
+        // Relative angle
+        double relAngle = this.angle - basePose.angle;
+
+        return new TrcPose2D(relPos.getEntry(0), relPos.getEntry(1), relAngle);
+    }   //subtractRelativePose
+
+    /**
      * This method inverts this relative 2D pose.
      *
      * @return inverted pose.
@@ -333,7 +356,7 @@ public class TrcPose2D
     public TrcPose2D invert()
     {
         double invAngle = -this.angle;
-        RealVector invPos = TrcUtil.rotateCW(this.toPosVector(), invAngle).mapMultiply(-1.0);
+        RealVector invPos = TrcUtil.rotateCCW(this.toPosVector(), invAngle).mapMultiply(-1.0);
         return new TrcPose2D(invPos.getEntry(0), invPos.getEntry(1), invAngle);
     }   //invert
 
