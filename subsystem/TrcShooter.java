@@ -208,8 +208,11 @@ public class TrcShooter implements TrcExclusiveSubsystem
      *
      * @param owner specifies the ID string of the caller for checking ownership, can be null if caller is not
      *        ownership aware.
-     * @param velocity1 specifies the shooter motor 1 velocity in revolutions per second.
-     * @param velocity2 specifies the shooter motor 2 velocity in revolutions per second, ignored if none.
+     * @param powerMode specifies true to use Power mode, false to use Velocity mode.
+     * @param velocity1 specifies the shooter motor 1 velocity in revolutions per second if in velocity mode,
+     *        otherwise specifies percentage power in the range of 0.0 to 1.0.
+     * @param velocity2 specifies the shooter motor 2 velocity in revolutions per second if in velocity mode,
+     *        otherwise specifies percentage power in the range of 0.0 to 1.0. Ignored if there is no motor2.
      * @param tiltAngle specifies the absolute tilt angle in degrees, null if no tilting.
      * @param panAngle specifies the absolute pan angle in degrees, null if no panning.
      * @param event specifies an event to signal when both reached target, can be null if not provided.
@@ -220,13 +223,14 @@ public class TrcShooter implements TrcExclusiveSubsystem
      *        on.
      */
     public void aimShooter(
-        String owner, double velocity1, double velocity2, Double tiltAngle, Double panAngle, TrcEvent event,
-        double timeout, ShootOperation shootOp, Double shootOffDelay)
+        String owner, boolean powerMode, double velocity1, double velocity2, Double tiltAngle, Double panAngle,
+        TrcEvent event, double timeout, ShootOperation shootOp, Double shootOffDelay)
     {
         tracer.traceDebug(
             instanceName,
             "owner=" + owner +
             ", currOwner=" + getCurrentOwner() +
+            ", powerMode=" + powerMode +
             ", vel=" + velocity1 + "/" + velocity2 +
             ", tiltAngle=" + tiltAngle +
             ", panAngle=" + panAngle +
@@ -247,14 +251,31 @@ public class TrcShooter implements TrcExclusiveSubsystem
             this.shootOpOwner = shootOp != null? owner: null;
             this.shootOffDelay = shootOffDelay;
 
-            shooter1OnTargetEvent = new TrcEvent(instanceName + ".shooter1OnTarget");
-            shooter1OnTargetEvent.setCallback(this::onTarget, null);
-            shooterMotor1.setVelocity(0.0, velocity1, 0.0, shooter1OnTargetEvent);
+            if (powerMode)
+            {
+                shooter1OnTargetEvent = null;
+                shooterMotor1.setPower(velocity1);
+            }
+            else
+            {
+                shooter1OnTargetEvent = new TrcEvent(instanceName + ".shooter1OnTarget");
+                shooter1OnTargetEvent.setCallback(this::onTarget, null);
+                shooterMotor1.setVelocity(0.0, velocity1, 0.0, shooter1OnTargetEvent);
+            }
+
             if (shooterMotor2 != null)
             {
-                shooter2OnTargetEvent = new TrcEvent(instanceName + ".shooter2OnTarget");
-                shooter2OnTargetEvent.setCallback(this::onTarget, null);
-                shooterMotor2.setVelocity(0.0, velocity2, 0.0, shooter2OnTargetEvent);
+                if (powerMode)
+                {
+                    shooter2OnTargetEvent = null;
+                    shooterMotor2.setPower(velocity2);
+                }
+                else
+                {
+                    shooter2OnTargetEvent = new TrcEvent(instanceName + ".shooter2OnTarget");
+                    shooter2OnTargetEvent.setCallback(this::onTarget, null);
+                    shooterMotor2.setVelocity(0.0, velocity2, 0.0, shooter2OnTargetEvent);
+                }
             }
             else
             {
@@ -299,18 +320,21 @@ public class TrcShooter implements TrcExclusiveSubsystem
      *
      * @param owner specifies the ID string of the caller for checking ownership, can be null if caller is not
      *        ownership aware.
-     * @param velocity1 specifies the shooter motor 1 velocity in revolutions per second.
-     * @param velocity2 specifies the shooter motor 2 velocity in revolutions per second, ignored if none.
+     * @param powerMode specifies true to use Power mode, false to use Velocity mode.
+     * @param velocity1 specifies the shooter motor 1 velocity in revolutions per second if in velocity mode,
+     *        otherwise specifies percentage power in the range of 0.0 to 1.0.
+     * @param velocity2 specifies the shooter motor 2 velocity in revolutions per second if in velocity mode,
+     *        otherwise specifies percentage power in the range of 0.0 to 1.0. Ignored if there is no motor2.
      * @param tiltAngle specifies the absolute tilt angle in degrees, null if no tilting.
      * @param panAngle specifies the absolute pan angle in degrees, null if no panning.
      * @param event specifies an event to signal when both reached target, can be null if not provided.
      * @param timeout specifies maximum timeout period, can be zero if no timeout.
      */
     public void aimShooter(
-        String owner, double velocity1, double velocity2, Double tiltAngle, Double panAngle, TrcEvent event,
-        double timeout)
+        String owner, boolean powerMode, double velocity1, double velocity2, Double tiltAngle, Double panAngle,
+        TrcEvent event, double timeout)
     {
-        aimShooter(owner, velocity1, velocity2, tiltAngle, panAngle, event, timeout, null, null);
+        aimShooter(owner, powerMode, velocity1, velocity2, tiltAngle, panAngle, event, timeout, null, null);
     }   //aimShooter
 
     /**
@@ -320,14 +344,18 @@ public class TrcShooter implements TrcExclusiveSubsystem
      *
      * @param owner specifies the ID string of the caller for checking ownership, can be null if caller is not
      *        ownership aware.
-     * @param velocity1 specifies the shooter motor 1 velocity in revolutions per second.
-     * @param velocity2 specifies the shooter motor 2 velocity in revolutions per second, ignored if none.
+     * @param powerMode specifies true to use Power mode, false to use Velocity mode.
+     * @param velocity1 specifies the shooter motor 1 velocity in revolutions per second if in velocity mode,
+     *        otherwise specifies percentage power in the range of 0.0 to 1.0.
+     * @param velocity2 specifies the shooter motor 2 velocity in revolutions per second if in velocity mode,
+     *        otherwise specifies percentage power in the range of 0.0 to 1.0. Ignored if there is no motor2.
      * @param tiltAngle specifies the absolute tilt angle in degrees, null if no tilting.
      * @param panAngle specifies the absolute pan angle in degrees, null if no panning.
      */
-    public void aimShooter(String owner, double velocity1, double velocity2, Double tiltAngle, Double panAngle)
+    public void aimShooter(
+        String owner, boolean powerMode, double velocity1, double velocity2, Double tiltAngle, Double panAngle)
     {
-        aimShooter(owner, velocity1, velocity2, tiltAngle, panAngle, null, 0.0, null, null);
+        aimShooter(owner, powerMode, velocity1, velocity2, tiltAngle, panAngle, null, 0.0, null, null);
     }   //aimShooter
 
     /**
@@ -335,14 +363,17 @@ public class TrcShooter implements TrcExclusiveSubsystem
      * When both shooter velocity and tilt/pan positions have reached target and if shoot method is provided, it will
      * shoot and signal an event if provided.
      *
-     * @param velocity1 specifies the shooter motor 1 velocity in revolutions per second.
-     * @param velocity2 specifies the shooter motor 2 velocity in revolutions per second, ignored if none.
+     * @param powerMode specifies true to use Power mode, false to use Velocity mode.
+     * @param velocity1 specifies the shooter motor 1 velocity in revolutions per second if in velocity mode,
+     *        otherwise specifies percentage power in the range of 0.0 to 1.0.
+     * @param velocity2 specifies the shooter motor 2 velocity in revolutions per second if in velocity mode,
+     *        otherwise specifies percentage power in the range of 0.0 to 1.0. Ignored if there is no motor2.
      * @param tiltAngle specifies the absolute tilt angle in degrees, null if no tilting.
      * @param panAngle specifies the absolute pan angle in degrees, null if no panning.
      */
-    public void aimShooter(double velocity1, double velocity2, Double tiltAngle, Double panAngle)
+    public void aimShooter(boolean powerMode, double velocity1, double velocity2, Double tiltAngle, Double panAngle)
     {
-        aimShooter(null, velocity1, velocity2, tiltAngle, panAngle, null, 0.0, null, null);
+        aimShooter(null, powerMode, velocity1, velocity2, tiltAngle, panAngle, null, 0.0, null, null);
     }   //aimShooter
 
     /**
@@ -363,7 +394,7 @@ public class TrcShooter implements TrcExclusiveSubsystem
             ", aimOnly=" + (shootOp == null));
         if (!canceled)
         {
-            if (shooter1OnTargetEvent.isSignaled() &&
+            if ((shooter1OnTargetEvent == null || shooter1OnTargetEvent.isSignaled()) &&
                 (shooter2OnTargetEvent == null || shooter2OnTargetEvent.isSignaled()) &&
                 (tiltOnTargetEvent == null || tiltOnTargetEvent.isSignaled()) &&
                 (panOnTargetEvent == null || panOnTargetEvent.isSignaled()))
@@ -568,7 +599,7 @@ public class TrcShooter implements TrcExclusiveSubsystem
     /**
      * This method returns the shooter motor 2 current target velocity if any.
      *
-     * @return shooter motor 2 current target velocity in revolutions per second, null if none.
+     * @return shooter motor 2 current target velocity in revolutions per second, 0.0 if none.
      */
     public double getShooterMotor2TargetVelocity()
     {
@@ -579,7 +610,7 @@ public class TrcShooter implements TrcExclusiveSubsystem
     /**
      * This method returns the shooter motor 2 current target RPM if any.
      *
-     * @return shooter motor 2 current target velocity in RPM, null if none.
+     * @return shooter motor 2 current target velocity in RPM, 0.0 if none.
      */
     public double getShooterMotor2TargetRPM()
     {
