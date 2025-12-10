@@ -651,10 +651,25 @@ public class TrcShooter implements TrcExclusiveSubsystem
      */
     public void setShooterMotorVelocity(double velocity1, double velocity2)
     {
-        shooterMotor1.setVelocity(null, 0.0, velocity1, 0.0, null);
+        if (maxShooter2MaxVel != null)
+        {
+            shooterMotor1.setPower(TrcUtil.clipRange(velocity1/maxShooter1MaxVel));
+        }
+        else
+        {
+            shooterMotor1.setVelocity(null, 0.0, velocity1, 0.0, null);
+        }
+
         if (shooterMotor2 != null)
         {
-            shooterMotor2.setVelocity(null, 0.0, velocity2, 0.0, null);
+            if (maxShooter2MaxVel != null)
+            {
+                shooterMotor2.setPower(TrcUtil.clipRange(velocity2/maxShooter2MaxVel));
+            }
+            else
+            {
+                shooterMotor2.setVelocity(null, 0.0, velocity2, 0.0, null);
+            }
         }
     }   //setShooterMotorVelocity
 
