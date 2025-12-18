@@ -333,9 +333,9 @@ public class TrcSwerveDrive extends TrcSimpleDrive
      *
      * @param owner     specifies the ID string of the caller for checking ownership, can be null if caller is not
      *                  ownership aware.
-     * @param x         specifies the x power.
-     * @param y         specifies the y power.
-     * @param rotation  specifies the rotating power.
+     * @param xPower    specifies the x power.
+     * @param yPower    specifies the y power.
+     * @param turnPower specifies the rotating power.
      * @param inverted  specifies true to invert control (i.e. robot front becomes robot back).
      * @param gyroAngle specifies the gyro angle to maintain for field relative drive. DO NOT use this with inverted.
      * @param driveTime specifies the amount of time in seconds after which the drive base will stop.
@@ -343,22 +343,22 @@ public class TrcSwerveDrive extends TrcSimpleDrive
      */
     @Override
     public void holonomicDrive(
-        String owner, double x, double y, double rotation, boolean inverted, double gyroAngle, double driveTime,
-        TrcEvent event)
+        String owner, double xPower, double yPower, double turnPower, boolean inverted, Double gyroAngle,
+        double driveTime, TrcEvent event)
     {
         tracer.traceDebug(
             moduleName,
             "owner=" + owner +
-            ", x=" + x +
-            ", y=" + y +
-            ", rot=" + rotation +
+            ", x=" + xPower +
+            ", y=" + yPower +
+            ", turn=" + turnPower +
             ", inverted=" + inverted +
             ", gyroAngle=" + gyroAngle +
             ", driveTime=" + driveTime +
             ", event=" + event);
         if (validateOwnership(owner))
         {
-            if (x == 0.0 && y == 0.0 && rotation == 0.0)
+            if (xPower == 0.0 && yPower == 0.0 && turnPower == 0.0)
             {
                 lfModule.driveMotor.setPower(0.0);
                 rfModule.driveMotor.setPower(0.0);
@@ -372,17 +372,17 @@ public class TrcSwerveDrive extends TrcSimpleDrive
             }
             else
             {
-                x = TrcUtil.clipRange(x);
-                y = TrcUtil.clipRange(y);
-                rotation = TrcUtil.clipRange(rotation);
+                xPower = TrcUtil.clipRange(xPower);
+                yPower = TrcUtil.clipRange(yPower);
+                turnPower = TrcUtil.clipRange(turnPower);
 
                 if (inverted)
                 {
-                    x = -x;
-                    y = -y;
+                    xPower = -xPower;
+                    yPower = -yPower;
                 }
 
-                if (gyroAngle != 0)
+                if (gyroAngle != null)
                 {
                     if (inverted)
                     {
@@ -391,27 +391,27 @@ public class TrcSwerveDrive extends TrcSimpleDrive
                     }
 
                     double gyroRadians = Math.toRadians(gyroAngle);
-                    double temp = y * Math.cos(gyroRadians) + x * Math.sin(gyroRadians);
-                    x = -y * Math.sin(gyroRadians) + x * Math.cos(gyroRadians);
-                    y = temp;
+                    double temp = yPower * Math.cos(gyroRadians) + xPower * Math.sin(gyroRadians);
+                    xPower = -yPower * Math.sin(gyroRadians) + xPower * Math.cos(gyroRadians);
+                    yPower = temp;
                 }
                 else if (isGyroAssistEnabled())
                 {
-                    rotation += getGyroAssistPower(rotation);
+                    turnPower += getGyroAssistPower(turnPower);
                 }
 
                 if (isAntiTippingEnabled())
                 {
-                    x += getAntiTippingPower(true);
-                    y += getAntiTippingPower(false);
+                    xPower += getAntiTippingPower(true);
+                    yPower += getAntiTippingPower(false);
                 }
 
-                double rotLr = rotation * wheelBaseLength / wheelBaseDiagonal;
-                double rotWr = rotation * wheelBaseWidth/ wheelBaseDiagonal;
-                double a = x - rotLr;
-                double b = x + rotLr;
-                double c = y - rotWr;
-                double d = y + rotWr;
+                double rotLr = turnPower * wheelBaseLength / wheelBaseDiagonal;
+                double rotWr = turnPower * wheelBaseWidth/ wheelBaseDiagonal;
+                double a = xPower - rotLr;
+                double b = xPower + rotLr;
+                double c = yPower - rotWr;
+                double d = yPower + rotWr;
 
                 // The white paper goes in order rf, lf, lb, rb. We like to do lf, rf, lb, rb.
                 // Note: atan2(y, x) in java will take care of x being zero.

@@ -205,6 +205,17 @@ public abstract class TrcMotor implements TrcMotorController, TrcExclusiveSubsys
         }   //setPidControlParams
 
         /**
+         * This method sets parameters related to PID control.
+         *
+         * @param useSoftwarePid specifies true to use software PID control, false to use motor native PID control.
+         * @return this object for chaining.
+         */
+        public PidParams setPidControlParams(boolean useSoftwarePid)
+        {
+            return setPidControlParams(0.0, 0.0, useSoftwarePid, false);
+        }   //setPidControlParams
+
+        /**
          * This method sets parameters related to tuning.
          *
          * @param pidTarget specifies PID control target value.
@@ -2699,6 +2710,10 @@ public abstract class TrcMotor implements TrcMotorController, TrcExclusiveSubsys
         else
         {
             setMotorPositionPidCoefficients(pidParams.pidCoeffs);
+            if (pidParams.ffCoeffs != null)
+            {
+                setMotorPositionFFCoefficients(pidParams.ffCoeffs);
+            }
         }
     }   //setPositionPidParameters
 
@@ -2729,6 +2744,34 @@ public abstract class TrcMotor implements TrcMotorController, TrcExclusiveSubsys
 
         return pidCoeffs;
     }   //getPositionPidCoefficients
+
+    /**
+     * This method returns the FeedForward coefficients of the motor's position PID controller.
+     *
+     * @return FeedForward coefficients of the motor's position PID controller.
+     */
+    public TrcPidController.FFCoefficients getPositionFFCoefficients()
+    {
+        TrcPidController.FFCoefficients ffCoeffs;
+
+        if (softwarePidEnabled)
+        {
+            if (posPidCtrl != null)
+            {
+                ffCoeffs = posPidCtrl.getFFCoefficients();
+            }
+            else
+            {
+                throw new IllegalStateException("Software Position FeedForward coefficients have not been set.");
+            }
+        }
+        else
+        {
+            ffCoeffs = getMotorPositionFFCoefficients();
+        }
+
+        return ffCoeffs;
+    }   //getPositionFFCoefficients
 
     /**
      * This method returns the software position PID controller.
@@ -2847,13 +2890,13 @@ public abstract class TrcMotor implements TrcMotorController, TrcExclusiveSubsys
      */
     public TrcPidController.PidCoefficients getCurrentPidCoefficients()
     {
-        TrcPidController.PidCoefficients pidCoeff;
+        TrcPidController.PidCoefficients pidCoeffs;
 
         if (softwarePidEnabled)
         {
             if (currentPidCtrl != null)
             {
-                pidCoeff = currentPidCtrl.getPidCoefficients();
+                pidCoeffs = currentPidCtrl.getPidCoefficients();
             }
             else
             {
@@ -2862,10 +2905,10 @@ public abstract class TrcMotor implements TrcMotorController, TrcExclusiveSubsys
         }
         else
         {
-            pidCoeff = getMotorCurrentPidCoefficients();
+            pidCoeffs = getMotorCurrentPidCoefficients();
         }
 
-        return pidCoeff;
+        return pidCoeffs;
     }   //getCurrentPidCoefficients
 
     /**

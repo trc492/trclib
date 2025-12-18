@@ -75,56 +75,56 @@ public class TrcMecanumDrive extends TrcSimpleDrive
         return true;
     }   //supportsHolonomicDrive
 
-    /**
+  /**
      * This method implements holonomic drive where x controls how fast the robot will go in the x direction, and y
      * controls how fast the robot will go in the y direction. Rotation controls how fast the robot rotates and
      * gyroAngle specifies the heading the robot should maintain.
      *
-     * @param owner specifies the ID string of the caller for checking ownership, can be null if caller is not
-     *              ownership aware.
-     * @param x specifies the x power.
-     * @param y specifies the y power.
-     * @param rotation specifies the rotating power.
-     * @param inverted specifies true to invert control (i.e. robot front becomes robot back).
-     * @param gyroAngle specifies the gyro angle to maintain.
+     * @param owner     specifies the ID string of the caller for checking ownership, can be null if caller is not
+     *                  ownership aware.
+     * @param xPower    specifies the x power.
+     * @param yPower    specifies the y power.
+     * @param turnPower specifies the rotating power.
+     * @param inverted  specifies true to invert control (i.e. robot front becomes robot back).
+     * @param gyroAngle specifies the gyro angle to maintain for field relative drive. DO NOT use this with inverted.
      * @param driveTime specifies the amount of time in seconds after which the drive base will stop.
-     * @param event specifies the event to signal when driveTime has expired, can be null if not provided.
+     * @param event     specifies the event to signal when driveTime has expired, can be null if not provided.
      */
     @Override
     public void holonomicDrive(
-        String owner, double x, double y, double rotation, boolean inverted, double gyroAngle, double driveTime,
-        TrcEvent event)
+        String owner, double xPower, double yPower, double turnPower, boolean inverted, Double gyroAngle,
+        double driveTime, TrcEvent event)
     {
         tracer.traceDebug(
             moduleName,
             "owner=" + owner +
-            ",x=" + x +
-            ",y=" + y +
-            ",rot=" + rotation +
+            ",x=" + xPower +
+            ",y=" + yPower +
+            ",turn=" + turnPower +
             ",inverted=" + inverted +
             ",angle=" + gyroAngle +
             ",driveTime=" + driveTime +
             ",event=" + event);
         if (validateOwnership(owner))
         {
-            x = TrcUtil.clipRange(x);
-            y = TrcUtil.clipRange(y);
-            rotation = TrcUtil.clipRange(rotation);
+            xPower = TrcUtil.clipRange(xPower);
+            yPower = TrcUtil.clipRange(yPower);
+            turnPower = TrcUtil.clipRange(turnPower);
 
             if (inverted)
             {
-                x = -x;
-                y = -y;
+                xPower = -xPower;
+                yPower = -yPower;
             }
 
-            double cosA = Math.cos(Math.toRadians(gyroAngle));
-            double sinA = Math.sin(Math.toRadians(gyroAngle));
-            double x1 = x*cosA - y*sinA;
-            double y1 = x*sinA + y*cosA;
+            double cosA = Math.cos(Math.toRadians(gyroAngle != null? gyroAngle: 0.0));
+            double sinA = Math.sin(Math.toRadians(gyroAngle != null? gyroAngle: 0.0));
+            double x1 = xPower*cosA - yPower*sinA;
+            double y1 = xPower*sinA + yPower*cosA;
 
-            if (gyroAngle == 0.0 && isGyroAssistEnabled())
+            if (gyroAngle == null && isGyroAssistEnabled())
             {
-                rotation += getGyroAssistPower(rotation);
+                turnPower += getGyroAssistPower(turnPower);
             }
 
             if (isAntiTippingEnabled())
@@ -141,10 +141,10 @@ public class TrcMecanumDrive extends TrcSimpleDrive
             }
 
             double[] wheelPowers = new double[4];
-            wheelPowers[MotorType.LEFT_FRONT.value] = x1 + y1 + rotation;
-            wheelPowers[MotorType.RIGHT_FRONT.value] = -x1 + y1 - rotation;
-            wheelPowers[MotorType.LEFT_BACK.value] = -x1 + y1 + rotation;
-            wheelPowers[MotorType.RIGHT_BACK.value] = x1 + y1 - rotation;
+            wheelPowers[MotorType.LEFT_FRONT.value] = x1 + y1 + turnPower;
+            wheelPowers[MotorType.RIGHT_FRONT.value] = -x1 + y1 - turnPower;
+            wheelPowers[MotorType.LEFT_BACK.value] = -x1 + y1 + turnPower;
+            wheelPowers[MotorType.RIGHT_BACK.value] = x1 + y1 - turnPower;
             TrcUtil.normalizeInPlace(wheelPowers);
 
             double wheelPower;

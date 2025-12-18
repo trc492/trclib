@@ -274,9 +274,9 @@ public interface TrcMotorController
     /**
      * This method sets the PID coefficients of the motor controller's velocity PID controller.
      *
-     * @param pidCoeff specifies the PID coefficients to set.
+     * @param pidCoeffs specifies the PID coefficients to set.
      */
-    void setMotorVelocityPidCoefficients(TrcPidController.PidCoefficients pidCoeff);
+    void setMotorVelocityPidCoefficients(TrcPidController.PidCoefficients pidCoeffs);
 
     /**
      * This method returns the PID coefficients of the motor controller's velocity PID controller.
@@ -288,9 +288,9 @@ public interface TrcMotorController
     /**
      * This method sets the PID coefficients of the motor controller's position PID controller.
      *
-     * @param pidCoeff specifies the PID coefficients to set.
+     * @param pidCoeffs specifies the PID coefficients to set.
      */
-    void setMotorPositionPidCoefficients(TrcPidController.PidCoefficients pidCoeff);
+    void setMotorPositionPidCoefficients(TrcPidController.PidCoefficients pidCoeffs);
 
     /**
      * This method returns the PID coefficients of the motor controller's position PID controller.
@@ -302,9 +302,9 @@ public interface TrcMotorController
     /**
      * This method sets the PID coefficients of the motor controller's current PID controller.
      *
-     * @param pidCoeff specifies the PID coefficients to set.
+     * @param pidCoeffs specifies the PID coefficients to set.
      */
-    void setMotorCurrentPidCoefficients(TrcPidController.PidCoefficients pidCoeff);
+    void setMotorCurrentPidCoefficients(TrcPidController.PidCoefficients pidCoeffs);
 
     /**
      * This method returns the PID coefficients of the motor controller's current PID controller.
@@ -312,6 +312,48 @@ public interface TrcMotorController
      * @return PID coefficients of the motor's current PID controller.
      */
     TrcPidController.PidCoefficients getMotorCurrentPidCoefficients();
+
+    /**
+     * This method sets the FeedForward coefficients of the motor controller's velocity PID controller.
+     *
+     * @param ffCoeffs specifies the FeedForward coefficients to set.
+     */
+    void setMotorVelocityFFCoefficients(TrcPidController.FFCoefficients ffCoeffs);
+
+    /**
+     * This method returns the FeedForward coefficients of the motor controller's velocity PID controller.
+     *
+     * @return FeedForward coefficients of the motor's veloicty PID controller.
+     */
+    TrcPidController.FFCoefficients getMotorVelocityFFCoefficients();
+
+    /**
+     * This method sets the FeedForward coefficients of the motor controller's position PID controller.
+     *
+     * @param ffCoeffs specifies the FeedForward coefficients to set.
+     */
+    void setMotorPositionFFCoefficients(TrcPidController.FFCoefficients ffCoeffs);
+
+    /**
+     * This method returns the FeedForward coefficients of the motor controller's position PID controller.
+     *
+     * @return FeedForward coefficients of the motor's position PID controller.
+     */
+    TrcPidController.FFCoefficients getMotorPositionFFCoefficients();
+
+    /**
+     * This method sets the FeedForward coefficients of the motor controller's current PID controller.
+     *
+     * @param ffCoeffs specifies the FeedForward coefficients to set.
+     */
+    void setMotorCurrentFFCoefficients(TrcPidController.FFCoefficients ffCoeffs);
+
+    /**
+     * This method returns the FeedForward coefficients of the motor controller's current PID controller.
+     *
+     * @return FeedForward coefficients of the motor's current PID controller.
+     */
+    TrcPidController.FFCoefficients getMotorCurrentFFCoefficients();
 
     //
     // The following methods simulate features that the motor controller does not have support for. If the motor
