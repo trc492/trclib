@@ -205,18 +205,36 @@ public class TrcShooter implements TrcExclusiveSubsystem
     }   //cancel
 
     /**
-     * This methods enables/disables power mode on the shooter motors.
+     * This methods enables power mode on the shooter motors. In power mode, it will do open-loop control of the
+     * flywheel using percentage power of targetVelocity/maxVelocity. This is a failsafe mode in case the flywheel
+     * encoder is failing.
      *
      * @param maxShooter1MaxVel specifies maximum shooter motor velocity in scaled units/sec for enabling power mode,
      *        null for disabling power mode.
      * @param maxShooter2MaxVel specifies maximum shooter motor velocity in scaled units/sec, null if motor 2 does
      *        not exist.
      */
-    public void setShooterPowerMode(Double maxShooter1MaxVel, Double maxShooter2MaxVel)
+    public void enableShooterPowerMode(Double maxShooter1MaxVel, Double maxShooter2MaxVel)
     {
         this.maxShooter1MaxVel = maxShooter1MaxVel;
         this.maxShooter2MaxVel = maxShooter2MaxVel;
-    }   //setShooterPowerMode
+    }   //enableShooterPowerMode
+
+    /**
+     * This methods enables power mode on the shooter motors. In power mode, it will do open-loop control of the
+     * flywheel using percentage power of targetVelocity/maxVelocity. This is a failsafe mode in case the flywheel
+     * encoder is failing.
+     *
+     * @param maxShooter1MaxVel specifies maximum shooter motor velocity in scaled units/sec for enabling power mode,
+     *        null for disabling power mode.
+     * @param maxShooter2MaxVel specifies maximum shooter motor velocity in scaled units/sec, null if motor 2 does
+     *        not exist.
+     */
+    public void disableShooterPowerMode(Double maxShooter1MaxVel, Double maxShooter2MaxVel)
+    {
+        this.maxShooter1MaxVel = null;
+        this.maxShooter2MaxVel = null;
+    }   //disableShooterPowerMode
 
     /**
      * This method checks if the shooter motor power mode is enabled.
