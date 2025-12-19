@@ -83,6 +83,15 @@ public class TrcShootParams
         shootParamsMap = new HashMap<>();
     }   //TrcShootParam
 
+    /**
+     * This method adds a new entry to the table by insertion sort.
+     *
+     * @param name specifies the name of the entry so it can be retrieved by name.
+     * @param distance specifies the target distance.
+     * @param region specifies the region the data point is in.
+     * @param outputs specifies the output values.
+     * @return table object for chaining.
+     */
     public TrcShootParams addEntry(String name, double distance, Region region, double... outputs)
     {
         if (region.polynomialCoeffs.length != outputs.length)
