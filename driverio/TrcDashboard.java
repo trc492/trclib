@@ -28,6 +28,18 @@ package trclib.driverio;
  */
 public abstract class TrcDashboard
 {
+    public interface StatusUpdate
+    {
+        /**
+         * This method update the dashboard with status info.
+         *
+         * @param lineNum specifies the starting line number to print the subsystem status.
+         * @param slowLoop specifies true if this is a slow loop, false otherwise.
+         * @return updated line number for the next subsystem to print.
+         */
+        int statusUpdate(int lineNum, boolean slowLoop);
+    }   //interface StatusUpdate
+
     /**
      * This method clears all the display lines.
      */
