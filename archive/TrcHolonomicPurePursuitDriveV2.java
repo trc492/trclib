@@ -20,7 +20,7 @@
  * SOFTWARE.
  */
 
-package trclib.pathdrive;
+package trclib.archive;
 
 import org.apache.commons.math3.linear.RealVector;
 
@@ -28,6 +28,10 @@ import trclib.controller.TrcPidController;
 import trclib.dataprocessor.TrcUtil;
 import trclib.dataprocessor.TrcWarpSpace;
 import trclib.drivebase.TrcDriveBase;
+import trclib.pathdrive.TrcPath;
+import trclib.pathdrive.TrcPathBuilder;
+import trclib.pathdrive.TrcPose2D;
+import trclib.pathdrive.TrcWaypoint;
 import trclib.robotcore.TrcDbgTrace;
 import trclib.robotcore.TrcEvent;
 import trclib.robotcore.TrcRobot;

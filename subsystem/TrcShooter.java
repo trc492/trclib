@@ -37,6 +37,16 @@ import trclib.timer.TrcTimer;
  */
 public class TrcShooter implements TrcExclusiveSubsystem
 {
+    private static class ShooterState
+    {
+        private boolean active = false;
+        private TrcEvent shooterReadyEvent = null;
+        private TrcEvent shooter1OnTargetEvent = null;
+        private TrcEvent shooter2OnTargetEvent = null;
+        private TrcEvent tiltOnTargetEvent = null;
+        private TrcEvent panOnTargetEvent = null;
+    }   //class ShooterState
+
     /**
      * This interface must be implemented by the caller to provide a method for shooting the object.
      */
@@ -69,6 +79,7 @@ public class TrcShooter implements TrcExclusiveSubsystem
 
     }   //class PanTiltParams
 
+    private final ShooterState shooterState = new ShooterState();
     public final TrcDbgTrace tracer;
     private final String instanceName;
     public final TrcMotor shooterMotor1;
@@ -85,11 +96,6 @@ public class TrcShooter implements TrcExclusiveSubsystem
     private ShootOperation shootOp = null;
     private String shootOpOwner = null;
     private Double shootOffDelay = null;
-    private boolean active = false;
-    private TrcEvent shooter1OnTargetEvent = null;
-    private TrcEvent shooter2OnTargetEvent = null;
-    private TrcEvent tiltOnTargetEvent = null;
-    private TrcEvent panOnTargetEvent = null;
     private Double maxShooter1MaxVel = null;
     private Double maxShooter2MaxVel = null;
 
@@ -128,7 +134,10 @@ public class TrcShooter implements TrcExclusiveSubsystem
      */
     public boolean isActive()
     {
-        return active;
+        synchronized (shooterState)
+        {
+            return shooterState.active;
+        }
     }   //isActive
 
     /**
@@ -138,47 +147,56 @@ public class TrcShooter implements TrcExclusiveSubsystem
      */
     private void finish(boolean completed)
     {
-        aimTimer.cancel();
-        shootTimer.cancel();
-
-        if (!completed)
+        synchronized (shooterState)
         {
-            // The operation was canceled, stop the shooter motor.
-            stopShooter();
-            if (tiltMotor != null)
+            aimTimer.cancel();
+            shootTimer.cancel();
+
+            if (!completed)
             {
-                tiltMotor.cancel();
+                // The operation was canceled, stop the shooter motor.
+                stopShooter();
+                if (tiltMotor != null)
+                {
+                    tiltMotor.cancel();
+                }
+
+                if (panMotor != null)
+                {
+                    panMotor.cancel();
+                }
+            }
+            shootOp = null;
+            shootOpOwner = null;
+            shootOffDelay = null;
+
+            if (currOwner != null)
+            {
+                releaseExclusiveAccess(currOwner);
+                currOwner = null;
             }
 
-            if (panMotor != null)
+            if (completionEvent != null)
             {
-                panMotor.cancel();
+                if (completed)
+                {
+                    completionEvent.signal();
+                }
+                else
+                {
+                    completionEvent.cancel();
+                }
+                completionEvent = null;
+            }
+
+            shooterState.active = false;
+            if (shooterState.shooterReadyEvent != null)
+            {
+                tracer.traceInfo(instanceName, "Signal ShooterReady.");
+                shooterState.shooterReadyEvent.signal();
+                shooterState.shooterReadyEvent = null;
             }
         }
-        shootOp = null;
-        shootOpOwner = null;
-        shootOffDelay = null;
-
-        if (currOwner != null)
-        {
-            releaseExclusiveAccess(currOwner);
-            currOwner = null;
-        }
-
-        if (completionEvent != null)
-        {
-            if (completed)
-            {
-                completionEvent.signal();
-            }
-            else
-            {
-                completionEvent.cancel();
-            }
-            completionEvent = null;
-        }
-
-        active = false;
     }   //finish
 
     /**
@@ -249,6 +267,26 @@ public class TrcShooter implements TrcExclusiveSubsystem
     }   //isShooterPowerModeEnabled
 
     /**
+     * This method waits for the shooter finished aiming the target and will signal the given event.
+     *
+     * @param event specifies the event to signal when aiming is on-target.
+     */
+    public void waitForShooterReady(TrcEvent event)
+    {
+        synchronized (shooterState)
+        {
+            if (!shooterState.active)
+            {
+                event.signal();
+            }
+            else
+            {
+                shooterState.shooterReadyEvent = event;
+            }
+        }
+    }   //waitForShooterReady
+
+    /**
      * This method sets the shooter velocity and the tilt/pan angles if tilt/pan exist. This method is asynchronous.
      * When both shooter velocity and tilt/pan positions have reached target and if shoot method is provided, it will
      * shoot and signal an event if provided.
@@ -291,71 +329,74 @@ public class TrcShooter implements TrcExclusiveSubsystem
 
         if (validateOwnership(owner))
         {
-            this.completionEvent = event;
-            this.shootOp = shootOp;
-            this.shootOpOwner = shootOp != null? owner: null;
-            this.shootOffDelay = shootOffDelay;
+            synchronized (shooterState)
+            {
+                this.completionEvent = event;
+                this.shootOp = shootOp;
+                this.shootOpOwner = shootOp != null ? owner : null;
+                this.shootOffDelay = shootOffDelay;
 
-            if (maxShooter1MaxVel != null)
-            {
-                // motor 1 is in velocity mode.
-                shooter1OnTargetEvent = null;
-                shooterMotor1.setPower(TrcUtil.clipRange(velocity1/maxShooter1MaxVel));
-            }
-            else
-            {
-                shooter1OnTargetEvent = new TrcEvent(instanceName + ".shooter1OnTarget");
-                shooter1OnTargetEvent.setCallback(this::onTarget, null);
-                shooterMotor1.setVelocity(0.0, velocity1, 0.0, shooter1OnTargetEvent);
-            }
-
-            if (shooterMotor2 != null)
-            {
-                if (maxShooter2MaxVel != null)
+                if (maxShooter1MaxVel != null)
                 {
-                    shooter2OnTargetEvent = null;
-                    shooterMotor2.setPower(TrcUtil.clipRange(velocity2/maxShooter2MaxVel));
+                    // motor 1 is in velocity mode.
+                    shooterState.shooter1OnTargetEvent = null;
+                    shooterMotor1.setPower(TrcUtil.clipRange(velocity1/maxShooter1MaxVel));
                 }
                 else
                 {
-                    shooter2OnTargetEvent = new TrcEvent(instanceName + ".shooter2OnTarget");
-                    shooter2OnTargetEvent.setCallback(this::onTarget, null);
-                    shooterMotor2.setVelocity(0.0, velocity2, 0.0, shooter2OnTargetEvent);
+                    shooterState.shooter1OnTargetEvent = new TrcEvent(instanceName + ".shooter1OnTarget");
+                    shooterState.shooter1OnTargetEvent.setCallback(this::onTarget, null);
+                    shooterMotor1.setVelocity(0.0, velocity1, 0.0, shooterState.shooter1OnTargetEvent);
                 }
-            }
-            else
-            {
-                shooter2OnTargetEvent = null;
-            }
 
-            if (tiltMotor != null && tiltAngle != null)
-            {
-                tiltOnTargetEvent = new TrcEvent(instanceName + ".tiltOnTarget");
-                tiltOnTargetEvent.setCallback(this::onTarget, null);
-                tiltMotor.setPosition(0.0, tiltAngle, true, tiltParams.powerLimit, tiltOnTargetEvent);
-            }
-            else
-            {
-                tiltOnTargetEvent = null;
-            }
+                if (shooterMotor2 != null)
+                {
+                    if (maxShooter2MaxVel != null)
+                    {
+                        shooterState.shooter2OnTargetEvent = null;
+                        shooterMotor2.setPower(TrcUtil.clipRange(velocity2/maxShooter2MaxVel));
+                    }
+                    else
+                    {
+                        shooterState.shooter2OnTargetEvent = new TrcEvent(instanceName + ".shooter2OnTarget");
+                        shooterState.shooter2OnTargetEvent.setCallback(this::onTarget, null);
+                        shooterMotor2.setVelocity(0.0, velocity2, 0.0, shooterState.shooter2OnTargetEvent);
+                    }
+                }
+                else
+                {
+                    shooterState.shooter2OnTargetEvent = null;
+                }
 
-            if (panMotor != null && panAngle != null)
-            {
-                panOnTargetEvent = new TrcEvent(instanceName + ".panOnTarget");
-                panOnTargetEvent.setCallback(this::onTarget, null);
-                panMotor.setPosition(0.0, panAngle, true, panParams.powerLimit, panOnTargetEvent);
-            }
-            else
-            {
-                panOnTargetEvent = null;
-            }
+                if (tiltMotor != null && tiltAngle != null)
+                {
+                    shooterState.tiltOnTargetEvent = new TrcEvent(instanceName + ".tiltOnTarget");
+                    shooterState.tiltOnTargetEvent.setCallback(this::onTarget, null);
+                    tiltMotor.setPosition(0.0, tiltAngle, true, tiltParams.powerLimit, shooterState.tiltOnTargetEvent);
+                }
+                else
+                {
+                    shooterState.tiltOnTargetEvent = null;
+                }
 
-            if (timeout > 0.0)
-            {
-                aimTimer.set(timeout, this::timedOut, false);
-            }
+                if (panMotor != null && panAngle != null)
+                {
+                    shooterState.panOnTargetEvent = new TrcEvent(instanceName + ".panOnTarget");
+                    shooterState.panOnTargetEvent.setCallback(this::onTarget, null);
+                    panMotor.setPosition(0.0, panAngle, true, panParams.powerLimit, shooterState.panOnTargetEvent);
+                }
+                else
+                {
+                    shooterState.panOnTargetEvent = null;
+                }
 
-            active = true;
+                if (timeout > 0.0)
+                {
+                    aimTimer.set(timeout, this::timedOut, false);
+                }
+
+                shooterState.active = true;
+            }
         }
     }   //aimShooter
 
@@ -427,31 +468,34 @@ public class TrcShooter implements TrcExclusiveSubsystem
      */
     private void onTarget(Object context, boolean canceled)
     {
-        tracer.traceDebug(
-            instanceName,
-            "canceled=" + canceled +
-            ",shooter1Event=" + shooter1OnTargetEvent +
-            ",shooter2Event=" + shooter2OnTargetEvent +
-            ", tiltEvent=" + tiltOnTargetEvent +
-            ", panEvent=" + panOnTargetEvent +
-            ", aimOnly=" + (shootOp == null));
-        if (!canceled)
+        synchronized (shooterState)
         {
-            if ((shooter1OnTargetEvent == null || shooter1OnTargetEvent.isSignaled()) &&
-                (shooter2OnTargetEvent == null || shooter2OnTargetEvent.isSignaled()) &&
-                (tiltOnTargetEvent == null || tiltOnTargetEvent.isSignaled()) &&
-                (panOnTargetEvent == null || panOnTargetEvent.isSignaled()))
+            tracer.traceDebug(
+                instanceName,
+                "canceled=" + canceled +
+                ",shooter1Event=" + shooterState.shooter1OnTargetEvent +
+                ",shooter2Event=" + shooterState.shooter2OnTargetEvent +
+                ", tiltEvent=" + shooterState.tiltOnTargetEvent +
+                ", panEvent=" + shooterState.panOnTargetEvent +
+                ", aimOnly=" + (shootOp == null));
+            if (!canceled)
             {
-                if (shootOp != null)
+                if ((shooterState.shooter1OnTargetEvent == null || shooterState.shooter1OnTargetEvent.isSignaled()) &&
+                    (shooterState.shooter2OnTargetEvent == null || shooterState.shooter2OnTargetEvent.isSignaled()) &&
+                    (shooterState.tiltOnTargetEvent == null || shooterState.tiltOnTargetEvent.isSignaled()) &&
+                    (shooterState.panOnTargetEvent == null || shooterState.panOnTargetEvent.isSignaled()))
                 {
-                    // If both shooter velocity and tilt/pan position have reached target, shoot.
-                    TrcEvent shootCompletionEvent = new TrcEvent(instanceName + ".shootCompletionEvent");
-                    shootCompletionEvent.setCallback(this::shootCompleted, null);
-                    shootOp.shoot(shootOpOwner, shootCompletionEvent);
-                }
-                else
-                {
-                    finish(true);
+                    if (shootOp != null)
+                    {
+                        // If both shooter velocity and tilt/pan position have reached target, shoot.
+                        TrcEvent shootCompletionEvent = new TrcEvent(instanceName + ".shootCompletionEvent");
+                        shootCompletionEvent.setCallback(this::shootCompleted, null);
+                        shootOp.shoot(shootOpOwner, shootCompletionEvent);
+                    }
+                    else
+                    {
+                        finish(true);
+                    }
                 }
             }
         }
