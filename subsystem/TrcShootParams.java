@@ -227,7 +227,7 @@ public class TrcShootParams
             }
         }
 
-        return new Entry("RegressionEntry", distance, entry.region, outputs);
+        return new Entry("Regression", distance, entry.region, outputs);
     }   //calculateRegressionEntry
 
     /**
