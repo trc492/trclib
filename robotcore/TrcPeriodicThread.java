@@ -344,18 +344,28 @@ public class TrcPeriodicThread<T>
             long startNanoTime = TrcTimer.getNanoTime();
             long elapsedNanoTime;
 
-            if (taskState.isTaskEnabled())
+            try
             {
-                task.runPeriodic(context);
-                elapsedNanoTime = TrcTimer.getNanoTime() - startNanoTime;
-                totalThreadNanoTime += elapsedNanoTime;
-                loopCount++;
-                tracer.traceVerbose(
-                    instanceName,
-                    "start=" + (startNanoTime/1000000000.0) + ", elapsed=" + elapsedNanoTime/1000000000.0);
+                if (taskState.isTaskEnabled())
+                {
+                    task.runPeriodic(context);
+                    elapsedNanoTime = TrcTimer.getNanoTime() - startNanoTime;
+                    totalThreadNanoTime += elapsedNanoTime;
+                    loopCount++;
+                    tracer.traceVerbose(
+                        instanceName,
+                        "start=" + (startNanoTime/1000000000.0) + ", elapsed=" + elapsedNanoTime/1000000000.0);
+                }
+
+                TrcEvent.performEventCallback();
+            }
+            catch (Exception e)
+            {
+                tracer.traceFatal(instanceName, "Caught unexpected exception:\n" + e);
+                TrcDbgTrace.printExceptionStack(e);
+                throw e;
             }
 
-            TrcEvent.performEventCallback();
             if (threadWatchdog != null)
             {
                 threadWatchdog.sendHeartBeat();
