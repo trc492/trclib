@@ -27,6 +27,8 @@ import trclib.motor.TrcMotor;
 import trclib.robotcore.TrcDbgTrace;
 import trclib.robotcore.TrcEvent;
 import trclib.robotcore.TrcExclusiveSubsystem;
+import trclib.robotcore.TrcRobot;
+import trclib.robotcore.TrcTaskMgr;
 import trclib.timer.TrcTimer;
 
 /**
@@ -75,11 +77,39 @@ public class TrcShooter implements TrcExclusiveSubsystem
             this.powerLimit = powerLimit;
             this.minPos = minPos;
             this.maxPos = maxPos;
-        }   //PanTiltrParams
+        }   //PanTiltParams
 
     }   //class PanTiltParams
 
+    public static class ShootTargetParams
+    {
+        private Double flywheel1RPM = null;
+        private Double flywheel2RPM = null;
+        private Double panAngle = null;
+        private Double tiltAngle = null;
+
+        public ShootTargetParams(Double flywheel1RPM, Double flywheel2RPM, Double panAngle, Double tiltAngle)
+        {
+            this.flywheel1RPM = flywheel1RPM;
+            this.flywheel2RPM = flywheel2RPM;
+            this.panAngle = panAngle;
+            this.tiltAngle = tiltAngle;
+        }   //ShootTargetParams
+    }   //class ShootTargetParams
+
+    public interface TargetParamsSource
+    {
+        ShootTargetParams getTargetParams();
+    }   //interface TargetParamsSource
+
+    private static class GoalTrackingParams
+    {
+        boolean trackingPaused = false;
+        TargetParamsSource targetParamsSource = null;
+    }   //class GoalTrackingParams
+
     private final ShooterState shooterState = new ShooterState();
+    private final GoalTrackingParams goalTrackingParams = new GoalTrackingParams();
     public final TrcDbgTrace tracer;
     private final String instanceName;
     public final TrcMotor shooterMotor1;
@@ -90,6 +120,7 @@ public class TrcShooter implements TrcExclusiveSubsystem
     private final PanTiltParams panParams;
     private final TrcTimer aimTimer;
     private final TrcTimer shootTimer;
+    private final TrcTaskMgr.TaskObject goalTrackingTaskObj;
 
     private String currOwner = null;
     private TrcEvent completionEvent = null;
@@ -125,6 +156,7 @@ public class TrcShooter implements TrcExclusiveSubsystem
 
         aimTimer = new TrcTimer(instanceName + ".aimTimer");
         shootTimer = new TrcTimer(instanceName + ".shootTimer");
+        goalTrackingTaskObj = TrcTaskMgr.createTask(instanceName + ".goalTracking", this::goalTrackingTask);
     }   //TrcShooter
 
     /**
@@ -196,6 +228,8 @@ public class TrcShooter implements TrcExclusiveSubsystem
                 shooterState.shooterReadyEvent.signal();
                 shooterState.shooterReadyEvent = null;
             }
+            // Resume Goal Tracking if it was paused.
+            resumeGoalTracking();
         }
     }   //finish
 
@@ -221,6 +255,135 @@ public class TrcShooter implements TrcExclusiveSubsystem
     {
         cancel(null);
     }   //cancel
+
+    /**
+     * This method stops Goal Tracking.
+     */
+    private void stopGoalTracking()
+    {
+        tracer.traceInfo(instanceName, "Stop GoalTracking.");
+        panMotor.cancel();
+        tiltMotor.cancel();
+        stopShooter();
+    }   //stopGoalTracking
+
+    /**
+     * This method is called periodically to perform goal tracking.
+     *
+     * @param taskType specifies the type of task being run. This may be useful for handling multiple task types.
+     * @param runMode specifies the competition mode (e.g. Autonomous, TeleOp, Test).
+     * @param slowPeriodicLoop specifies true if it is running the slow periodic loop on the main robot thread,
+     *        false otherwise.
+     */
+    private void goalTrackingTask(TrcTaskMgr.TaskType taskType, TrcRobot.RunMode runMode, boolean slowPeriodicLoop)
+    {
+        synchronized (goalTrackingParams)
+        {
+            if (!goalTrackingParams.trackingPaused)
+            {
+                ShootTargetParams targetParams = goalTrackingParams.targetParamsSource.getTargetParams();
+                if (targetParams.flywheel1RPM != null || targetParams.flywheel2RPM != null)
+                {
+                    setShooterMotorRPM(targetParams.flywheel1RPM, targetParams.flywheel2RPM);
+                }
+
+                if (targetParams.panAngle != null)
+                {
+                    setPanAngle(targetParams.panAngle);
+                }
+
+                if (targetParams.tiltAngle != null)
+                {
+                    setTiltAngle(targetParams.tiltAngle);
+                }
+            }
+        }
+    }   //goalTrackingTask
+
+    /**
+     * This method checks if Goal Tracking is enabled.
+     *
+     * @return true if Goal Tracking is enabled, false if disabled.
+     */
+    public boolean isGoalTrackingEnabled()
+    {
+        synchronized (goalTrackingParams)
+        {
+            return goalTrackingParams.targetParamsSource != null;
+        }
+    }   //isGoalTrackingEnabled
+
+    /**
+     * This method checks if Goal Tracking is paused.
+     *
+     * @return true if goal tracking is enabled but paused, false otherwise.
+     */
+    public boolean isGoalTrackingPaused()
+    {
+        synchronized (goalTrackingParams)
+        {
+            return goalTrackingParams.targetParamsSource != null && goalTrackingParams.trackingPaused;
+        }
+    }   //isGoalTrackingPaused
+
+    /**
+     * This method enables/disables Goal Tracking.
+     *
+     * @param targetParamsSource specifies the method to call to get Shoot Target Parameters to enable, null to disable
+     *        Goal Tracking.
+     */
+    public void setGoalTrackingEnabled(TargetParamsSource targetParamsSource)
+    {
+        synchronized (goalTrackingParams)
+        {
+            goalTrackingParams.targetParamsSource = targetParamsSource;
+            goalTrackingParams.trackingPaused = false;
+            if (targetParamsSource != null)
+            {
+                tracer.traceInfo(instanceName, "Enable GoalTracking.");
+                // Cancel previous operation if any.
+                finish(false);
+                goalTrackingTaskObj.registerTask(TrcTaskMgr.TaskType.POST_PERIODIC_TASK);
+            }
+            else
+            {
+                tracer.traceInfo(instanceName, "Disable Goal Tracking.");
+                stopGoalTracking();
+                goalTrackingTaskObj.unregisterTask();
+            }
+        }
+    }   //setGoalTrackingEnabled
+
+    /**
+     * This method pauses Goal Tracking so that we can perform other operations such as aimShooter that needs the
+     * control of the shooter.
+     */
+    public void pauseGoalTracking()
+    {
+        synchronized (goalTrackingParams)
+        {
+            if (goalTrackingParams.targetParamsSource != null)
+            {
+                tracer.traceInfo(instanceName, "Pause GoalTracking.");
+                goalTrackingParams.trackingPaused = true;
+            }
+        }
+    }   //pauseGoalTracking
+
+    /**
+     * This method resumes Goal Tracking from a previous pause.
+     */
+    public void resumeGoalTracking()
+    {
+        synchronized (goalTrackingParams)
+        {
+            if (goalTrackingParams.targetParamsSource != null && goalTrackingParams.trackingPaused)
+            {
+                tracer.traceInfo(instanceName, "Resume GoalTracking.");
+                goalTrackingParams.trackingPaused = false;
+            }
+        }
+    }   //resumeGoalTracking
 
     /**
      * This methods enables power mode on the shooter motors. In power mode, it will do open-loop control of the
@@ -321,6 +484,10 @@ public class TrcShooter implements TrcExclusiveSubsystem
             ", timeout=" + timeout +
             ", aimOnly=" + (shootOp == null) +
             ", shootOffDelay=" + shootOffDelay);
+        if (isGoalTrackingEnabled())
+        {
+            pauseGoalTracking();
+        }
         // Caller specifies an owner but has not acquired ownership, let's acquire ownership on its behalf.
         if (owner != null && !hasOwnership(owner) && acquireExclusiveAccess(owner))
         {
@@ -711,26 +878,32 @@ public class TrcShooter implements TrcExclusiveSubsystem
      * @param velocity1 specifies the motor 1 velocity in revolutions per second.
      * @param velocity2 specifies the motor 2 velocity in revolutions per second, ignore if no motor 2.
      */
-    public void setShooterMotorVelocity(double velocity1, double velocity2)
+    public void setShooterMotorVelocity(Double velocity1, Double velocity2)
     {
-        if (maxShooter2MaxVel != null)
+        if (!isGoalTrackingEnabled())
         {
-            shooterMotor1.setPower(TrcUtil.clipRange(velocity1/maxShooter1MaxVel));
-        }
-        else
-        {
-            shooterMotor1.setVelocity(null, 0.0, velocity1, 0.0, null);
-        }
-
-        if (shooterMotor2 != null)
-        {
-            if (maxShooter2MaxVel != null)
+            if (velocity1 != null)
             {
-                shooterMotor2.setPower(TrcUtil.clipRange(velocity2/maxShooter2MaxVel));
+                if (maxShooter2MaxVel != null)
+                {
+                    shooterMotor1.setPower(TrcUtil.clipRange(velocity1/maxShooter1MaxVel));
+                }
+                else
+                {
+                    shooterMotor1.setVelocity(null, 0.0, velocity1, 0.0, null);
+                }
             }
-            else
+
+            if (velocity2 != null && shooterMotor2 != null)
             {
-                shooterMotor2.setVelocity(null, 0.0, velocity2, 0.0, null);
+                if (maxShooter2MaxVel != null)
+                {
+                    shooterMotor2.setPower(TrcUtil.clipRange(velocity2/maxShooter2MaxVel));
+                }
+                else
+                {
+                    shooterMotor2.setVelocity(null, 0.0, velocity2, 0.0, null);
+                }
             }
         }
     }   //setShooterMotorVelocity
@@ -739,11 +912,11 @@ public class TrcShooter implements TrcExclusiveSubsystem
      * This method sets the shooter motor velocity in RPM.
      *
      * @param rpm1 specifies the motor 1 velocity in RPM.
-     * @param rpm2 specifies the motor 2 velocity in RPM, ignore if no motor 2.
+     * @param rpm2 specifies the motor 2 velocity in RPM, null if motor2 does not exist.
      */
-    public void setShooterMotorRPM(double rpm1, double rpm2)
+    public void setShooterMotorRPM(Double rpm1, Double rpm2)
     {
-        setShooterMotorVelocity(rpm1/60.0, rpm2/60.0);
+        setShooterMotorVelocity(rpm1 != null? rpm1/60.0: null, rpm2 != null? rpm2/60.0: null);
     }   //setShooterMotorRPM
 
     /**
@@ -805,7 +978,7 @@ public class TrcShooter implements TrcExclusiveSubsystem
      */
     public void setTiltAngle(String owner, double angle, TrcEvent completionEvent, double timeout)
     {
-        if (tiltMotor != null)
+        if (tiltMotor != null && !isGoalTrackingEnabled())
         {
             tiltMotor.setPosition(owner, 0.0, angle, true, tiltParams.powerLimit, completionEvent, timeout);
         }
@@ -866,7 +1039,7 @@ public class TrcShooter implements TrcExclusiveSubsystem
      */
     public void setTiltPower(String owner, double power)
     {
-        if (tiltMotor != null)
+        if (tiltMotor != null && !isGoalTrackingEnabled())
         {
             tiltMotor.setPower(owner, 0.0, power, 0.0, null);;
         }
@@ -893,7 +1066,7 @@ public class TrcShooter implements TrcExclusiveSubsystem
      */
     public void setTiltPidPower(String owner, double power, boolean holdTarget)
     {
-        if (tiltMotor != null)
+        if (tiltMotor != null && !isGoalTrackingEnabled())
         {
             tiltMotor.setPidPower(owner, power, tiltParams.minPos, tiltParams.maxPos, holdTarget);
         }
@@ -977,7 +1150,7 @@ public class TrcShooter implements TrcExclusiveSubsystem
      */
     public void setPanAngle(String owner, double angle, TrcEvent completionEvent, double timeout)
     {
-        if (panMotor != null)
+        if (panMotor != null && !isGoalTrackingEnabled())
         {
             panMotor.setPosition(owner, 0.0, angle, true, panParams.powerLimit, completionEvent, timeout);
         }
@@ -1038,7 +1211,7 @@ public class TrcShooter implements TrcExclusiveSubsystem
      */
     public void setPanPower(String owner, double power)
     {
-        if (panMotor != null)
+        if (panMotor != null && !isGoalTrackingEnabled())
         {
             panMotor.setPower(owner, 0.0, power, 0.0, null);;
         }
@@ -1065,7 +1238,7 @@ public class TrcShooter implements TrcExclusiveSubsystem
      */
     public void setPanPidPower(String owner, double power, boolean holdTarget)
     {
-        if (panMotor != null)
+        if (panMotor != null && !isGoalTrackingEnabled())
         {
             panMotor.setPidPower(owner, power, panParams.minPos, panParams.maxPos, holdTarget);
         }
