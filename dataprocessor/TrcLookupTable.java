@@ -86,7 +86,7 @@ public class TrcLookupTable
     /**
      * This method adds a new entry to the table by insertion sort.
      *
-     * @param name specifies the name of the entry so it can be retrieved by name.
+     * @param name specifies the name of the entry so it can be retrieved by name, can be null if not provided.
      * @param input specifies the lookup input.
      * @param region specifies the region the data point is in.
      * @param outputs specifies the output values.
@@ -94,7 +94,7 @@ public class TrcLookupTable
      */
     public TrcLookupTable addEntry(String name, double input, Region region, double... outputs)
     {
-        if (namedEntriesMap.get(name) != null)
+        if (name != null && namedEntriesMap.get(name) != null)
         {
             throw new IllegalArgumentException("An entry with the same name already exist.");
         }
@@ -122,7 +122,10 @@ public class TrcLookupTable
             }
         }
         lookupTable.add(insertPoint, newEntry);
-        namedEntriesMap.put(name, newEntry);
+        if (name != null)
+        {
+            namedEntriesMap.put(name, newEntry);
+        }
 
         return this;
     }   //addEntry
@@ -135,7 +138,7 @@ public class TrcLookupTable
      */
     public Entry get(String name)
     {
-        return namedEntriesMap.get(name);
+        return name != null? namedEntriesMap.get(name): null;
     }   //get
 
     /**
