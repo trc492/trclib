@@ -92,7 +92,7 @@ public class TrcDbgTrace
     {
         if (callerName != null && dbgLog != null)
         {
-            if (TrcDbgTrace.dbgLog == null && callerName.equals("FrcRobotBase") || callerName.equals("FtcOpMode"))
+            if (TrcDbgTrace.dbgLog == null && callerName.equals("FrcRobot") || callerName.equals("FtcOpMode"))
             {
                 TrcDbgTrace.dbgLog = dbgLog;
                 TrcDbgTrace.globalTracer = this;
