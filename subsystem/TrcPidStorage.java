@@ -247,7 +247,7 @@ public class TrcPidStorage implements TrcExclusiveSubsystem
      */
     public TrcTrigger getEntryTrigger()
     {
-        return entryTriggerParams.trigger;
+        return entryTriggerParams != null? entryTriggerParams.trigger: null;
     }   //getEntryTrigger
 
     /**
@@ -257,7 +257,7 @@ public class TrcPidStorage implements TrcExclusiveSubsystem
      */
     public TrcTrigger getExitTrigger()
     {
-        return exitTriggerParams.trigger;
+        return exitTriggerParams != null? exitTriggerParams.trigger: null;
     }   //getExitTrigger
 
     /**
