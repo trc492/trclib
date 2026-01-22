@@ -324,7 +324,7 @@ public class TrcDbgTrace
             String msg =
                 callerInstance + "." + new Throwable().getStackTrace()[methodIndex].getMethodName() + "_" + level +
                 " [" + TrcTimer.getModeElapsedTime() + "] " + text;
-            dbgLog.msg(level, msg + "\n");
+            dbgLog.msg(level, msg);
             if (traceLogger != null)
             {
                 traceLogger.logMessage(msg);

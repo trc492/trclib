@@ -22,7 +22,6 @@
 
 package trclib.sensor;
 
-import java.util.Arrays;
 import java.util.Locale;
 import java.util.function.DoubleSupplier;
 
