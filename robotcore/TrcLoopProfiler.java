@@ -60,9 +60,9 @@ public class TrcLoopProfiler
 
     private final HashMap<String, ProfilePoint> profilePoints = new HashMap<>();
     private long loopStartNanoTime = 0;
+    private long minLoopIntervalTime = Long.MAX_VALUE;
+    private Long maxLoopIntervalTime = Long.MIN_VALUE;
     private long totalLoopIntervalTime = 0;
-    private long minLoopIntervalTime = 0;
-    private long maxLoopIntervalTime = 0;
     private long loopCount = 0;
 
     private final String instanceName;
@@ -96,9 +96,9 @@ public class TrcLoopProfiler
     {
         profilePoints.clear();
         loopStartNanoTime = 0;
+        minLoopIntervalTime = Long.MAX_VALUE;
+        maxLoopIntervalTime = Long.MIN_VALUE;
         totalLoopIntervalTime = 0;
-        minLoopIntervalTime = 0;
-        maxLoopIntervalTime = 0;
         loopCount = 0;
     }   //reset
 
