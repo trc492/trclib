@@ -23,7 +23,9 @@
 package trclib.subsystem;
 
 import trclib.dataprocessor.TrcUtil;
+import trclib.drivebase.TrcDriveBase;
 import trclib.motor.TrcMotor;
+import trclib.pathdrive.TrcPose2D;
 import trclib.robotcore.TrcDbgTrace;
 import trclib.robotcore.TrcEvent;
 import trclib.robotcore.TrcExclusiveSubsystem;
@@ -39,16 +41,6 @@ import trclib.timer.TrcTimer;
  */
 public class TrcShooter implements TrcExclusiveSubsystem
 {
-    private static class ShooterState
-    {
-        private boolean active = false;
-        private TrcEvent shooterReadyEvent = null;
-        private TrcEvent shooter1OnTargetEvent = null;
-        private TrcEvent shooter2OnTargetEvent = null;
-        private TrcEvent tiltOnTargetEvent = null;
-        private TrcEvent panOnTargetEvent = null;
-    }   //class ShooterState
-
     /**
      * This interface must be implemented by the caller to provide a method for shooting the object.
      */
@@ -78,35 +70,100 @@ public class TrcShooter implements TrcExclusiveSubsystem
             this.minPos = minPos;
             this.maxPos = maxPos;
         }   //PanTiltParams
-
     }   //class PanTiltParams
 
-    public static class ShootTargetParams
+    public static class AimInfo
     {
+        private TrcPose2D targetPose = null;
         private Double flywheel1RPM = null;
         private Double flywheel2RPM = null;
         private Double panAngle = null;
         private Double tiltAngle = null;
+        private Double timeOfFlight = null;
 
-        public ShootTargetParams(Double flywheel1RPM, Double flywheel2RPM, Double panAngle, Double tiltAngle)
+        public AimInfo(
+            TrcPose2D targetPose, Double flywheel1RPM, Double flywheel2RPM, Double panAngle, Double tiltAngle,
+            Double timeOfFlight)
         {
+            this.targetPose = targetPose;
             this.flywheel1RPM = flywheel1RPM;
             this.flywheel2RPM = flywheel2RPM;
             this.panAngle = panAngle;
             this.tiltAngle = tiltAngle;
-        }   //ShootTargetParams
-    }   //class ShootTargetParams
+            this.timeOfFlight = timeOfFlight;
+        }   //AimInfo
 
-    public interface TargetParamsSource
+        @Override
+        public String toString()
+        {
+            return "(TargetPose=" + targetPose +
+                   ", RPM1=" + flywheel1RPM +
+                   ", RPM2=" + flywheel2RPM +
+                   ", pan=" + panAngle +
+                   ", tilt=" + tiltAngle +
+                   ", ToF=" + timeOfFlight + ")";
+        }   //toString
+    }   //class AimInfo
+
+    public interface AimInfoSource
     {
-        ShootTargetParams getTargetParams();
-    }   //interface TargetParamsSource
+        AimInfo getAimInfo(TrcPose2D targetPose);
+    }   //interface AimInfoSource
+
+    public static class AimConvergenceStats
+    {
+        public enum ExitReason
+        {
+            CONVERGED,
+            DIVERGING,
+            MAX_ITERATIONS,
+            NULL_AIM,
+            SKIPPED_NO_MOTION
+        }
+
+        public ExitReason exitReason = ExitReason.MAX_ITERATIONS;
+        public int iterationsUsed = 0;
+        public double initialTof = 0.0;
+        public double finalTof = 0.0;
+        public double finalTofError = 0.0;
+        public double finalTofDelta = 0.0;
+        public double usedTof = 0.0;
+        public TrcPose2D compensation = null;
+        public double maxCompensationMag = 0.0;
+        public double rawYawComp = 0.0;
+        public double yawComp = 0.0;
+
+        @Override
+        public String toString()
+        {
+            return "exitReason=" + exitReason +
+                   "\niterations=" + iterationsUsed +
+                   "\ninitialTof=" + initialTof +
+                   "\nfinalTof=" + finalTof +
+                   "\nfinalTofError=" + finalTofError +
+                   "\nfinalTofDelta=" + finalTofDelta +
+                   "\nusedTof=" + usedTof +
+                   "\ncompensation=" + compensation +
+                   "\nmaxCompMag=" + maxCompensationMag +
+                   "\nyawComp=" + rawYawComp + "/" + yawComp + ")";
+        }   //toString
+    }   //class AimConvergenceStats
 
     private static class GoalTrackingParams
     {
         boolean trackingPaused = false;
-        TargetParamsSource targetParamsSource = null;
+        AimInfoSource aimInfoSource = null;
     }   //class GoalTrackingParams
+
+    private static class ShooterState
+    {
+        private boolean active = false;
+        private TrcEvent shooterReadyEvent = null;
+        private TrcEvent shooter1OnTargetEvent = null;
+        private TrcEvent shooter2OnTargetEvent = null;
+        private TrcEvent tiltOnTargetEvent = null;
+        private TrcEvent panOnTargetEvent = null;
+    }   //class ShooterState
 
     private final ShooterState shooterState = new ShooterState();
     private final GoalTrackingParams goalTrackingParams = new GoalTrackingParams();
@@ -281,20 +338,20 @@ public class TrcShooter implements TrcExclusiveSubsystem
         {
             if (!goalTrackingParams.trackingPaused)
             {
-                ShootTargetParams targetParams = goalTrackingParams.targetParamsSource.getTargetParams();
-                if (targetParams.flywheel1RPM != null || targetParams.flywheel2RPM != null)
+                AimInfo aimInfo = goalTrackingParams.aimInfoSource.getAimInfo(null);
+                if (aimInfo.flywheel1RPM != null || aimInfo.flywheel2RPM != null)
                 {
-                    setShooterMotorRPM(targetParams.flywheel1RPM, targetParams.flywheel2RPM);
+                    setShooterMotorRPM(aimInfo.flywheel1RPM, aimInfo.flywheel2RPM);
                 }
 
-                if (targetParams.panAngle != null)
+                if (aimInfo.panAngle != null)
                 {
-                    setPanAngle(targetParams.panAngle);
+                    setPanAngle(aimInfo.panAngle);
                 }
 
-                if (targetParams.tiltAngle != null)
+                if (aimInfo.tiltAngle != null)
                 {
-                    setTiltAngle(targetParams.tiltAngle);
+                    setTiltAngle(aimInfo.tiltAngle);
                 }
             }
         }
@@ -309,7 +366,7 @@ public class TrcShooter implements TrcExclusiveSubsystem
     {
         synchronized (goalTrackingParams)
         {
-            return goalTrackingParams.targetParamsSource != null;
+            return goalTrackingParams.aimInfoSource != null;
         }
     }   //isGoalTrackingEnabled
 
@@ -322,23 +379,22 @@ public class TrcShooter implements TrcExclusiveSubsystem
     {
         synchronized (goalTrackingParams)
         {
-            return goalTrackingParams.targetParamsSource != null && goalTrackingParams.trackingPaused;
+            return goalTrackingParams.aimInfoSource != null && goalTrackingParams.trackingPaused;
         }
     }   //isGoalTrackingPaused
 
     /**
      * This method enables/disables Goal Tracking.
      *
-     * @param targetParamsSource specifies the method to call to get Shoot Target Parameters to enable, null to disable
-     *        Goal Tracking.
+     * @param aimInfoSource specifies the method to call to get Aim Info to enable, null to disable Goal Tracking.
      */
-    public void setGoalTrackingEnabled(TargetParamsSource targetParamsSource)
+    public void setGoalTrackingEnabled(AimInfoSource aimInfoSource)
     {
         synchronized (goalTrackingParams)
         {
-            goalTrackingParams.targetParamsSource = targetParamsSource;
+            goalTrackingParams.aimInfoSource = aimInfoSource;
             goalTrackingParams.trackingPaused = false;
-            if (targetParamsSource != null)
+            if (aimInfoSource != null)
             {
                 tracer.traceInfo(instanceName, "Enable GoalTracking.");
                 // Cancel previous operation if any.
@@ -362,7 +418,7 @@ public class TrcShooter implements TrcExclusiveSubsystem
     {
         synchronized (goalTrackingParams)
         {
-            if (goalTrackingParams.targetParamsSource != null)
+            if (goalTrackingParams.aimInfoSource != null)
             {
                 tracer.traceInfo(instanceName, "Pause GoalTracking.");
                 goalTrackingParams.trackingPaused = true;
@@ -377,7 +433,7 @@ public class TrcShooter implements TrcExclusiveSubsystem
     {
         synchronized (goalTrackingParams)
         {
-            if (goalTrackingParams.targetParamsSource != null && goalTrackingParams.trackingPaused)
+            if (goalTrackingParams.aimInfoSource != null && goalTrackingParams.trackingPaused)
             {
                 tracer.traceInfo(instanceName, "Resume GoalTracking.");
                 goalTrackingParams.trackingPaused = false;
@@ -428,6 +484,129 @@ public class TrcShooter implements TrcExclusiveSubsystem
         // not because power mode is disabled.
         return maxShooter1MaxVel != null;
     }   //isShooterPowerModeEnabled
+
+    /**
+     * This method compensates the AimInfo by the motion of the robot.
+     *
+     * @param driveBase specifies the drive base object.
+     * @param aimInfoSource specifies the method to call to recompute AimInfo by target pose.
+     * @param aimInfo specifies the original AimInfo.
+     * @param tofThreshold specifies the time-of-flight threshold to terminate iterations.
+     * @param maxIterations specifies the maximum number of iterations.
+     * @param stats specifies the ConvergenceStat object to be filled in by stat info, null if not provided.
+     * @return compensated Aim Info.
+     */
+    public AimInfo compensateRobotMotion(
+        TrcDriveBase driveBase, AimInfoSource aimInfoSource, AimInfo aimInfo, double tofThreshold, int maxIterations,
+        AimConvergenceStats stats)
+    {
+        AimInfo compensatedAimInfo = aimInfo;
+        TrcPose2D fieldVel = driveBase.getFieldVelocity();
+        AimConvergenceStats.ExitReason exitReason = null;
+        int iterations = 0;
+        TrcPose2D compensation = new TrcPose2D();   // default zero pose
+        double maxCompensationMag = 0.0;
+        double tofError = Double.NaN;
+        double omega = driveBase.getTurnRate();
+        double rawYawComp = 0.0;
+        double yawComp = 0.0;
+        double usedTof = 0.0;
+
+        // Only compensate if robot is moving linearly or rotating
+        if (Math.hypot(fieldVel.x, fieldVel.y) > 0.01 || Math.abs(omega) > 1.0)
+        {
+            AimInfo currAimInfo = aimInfo;
+            double lastTofError = Double.NaN;
+            // Rotate field velocity into robot frame (CW-positive convention)
+            double headingRad = Math.toRadians(driveBase.getHeading());
+            double cos = Math.cos(headingRad);
+            double sin = Math.sin(headingRad);
+            double vxRobot =  fieldVel.x * cos + fieldVel.y * sin;
+            double vyRobot = -fieldVel.x * sin + fieldVel.y * cos;
+
+            maxIterations = Math.min(maxIterations, 5);
+            while (iterations < maxIterations)
+            {
+                usedTof = TrcUtil.clipRange(currAimInfo.timeOfFlight, 0.05, 2.0);
+                rawYawComp = omega * usedTof;
+                // yawLimit scales inversely with √ToF to avoid over-rotating at long shots.
+                double yawLimit = TrcUtil.clipRange(45.0 / Math.sqrt(usedTof), 10.0, 45.0);
+                yawComp = TrcUtil.clipRange(rawYawComp, -yawLimit, yawLimit);
+
+                compensation = new TrcPose2D(-vxRobot * usedTof, -vyRobot * usedTof, yawComp);
+                double compensationMag = Math.hypot(compensation.x, compensation.y);
+                TrcPose2D compensationPose = currAimInfo.targetPose.addRelativePose(compensation);
+
+                if (compensationMag > maxCompensationMag)
+                {
+                    maxCompensationMag = compensationMag;
+                }
+
+                compensatedAimInfo = aimInfoSource.getAimInfo(compensationPose);
+                if (compensatedAimInfo == null)
+                {
+                    compensatedAimInfo = currAimInfo;
+                    exitReason = AimConvergenceStats.ExitReason.NULL_AIM;
+                }
+                else
+                {
+                    tofError = Math.abs(compensatedAimInfo.timeOfFlight - currAimInfo.timeOfFlight);
+                    if (tofError <= tofThreshold)
+                    {
+                        exitReason = AimConvergenceStats.ExitReason.CONVERGED;
+                    }
+                    else if (!Double.isNaN(lastTofError) && tofError > lastTofError * 1.2)
+                    {
+                        exitReason = AimConvergenceStats.ExitReason.DIVERGING;
+                    }
+                    lastTofError = tofError;
+                }
+
+                iterations++;
+                if (exitReason != null)
+                {
+                    if (exitReason != AimConvergenceStats.ExitReason.CONVERGED)
+                    {
+                        iterations--;
+                    }
+                    break;
+                }
+                currAimInfo = compensatedAimInfo;
+            }
+
+            if (exitReason == null)
+            {
+                exitReason = AimConvergenceStats.ExitReason.MAX_ITERATIONS;
+            }
+        }
+        else
+        {
+            exitReason = AimConvergenceStats.ExitReason.SKIPPED_NO_MOTION;
+            tofError = 0.0;
+            usedTof = 0.0;
+        }
+
+        if (stats != null)
+        {
+            stats.iterationsUsed = iterations;
+            stats.initialTof = aimInfo.timeOfFlight;
+            stats.finalTof = compensatedAimInfo.timeOfFlight;
+            stats.finalTofError =
+                exitReason != AimConvergenceStats.ExitReason.SKIPPED_NO_MOTION &&
+                exitReason != AimConvergenceStats.ExitReason.NULL_AIM? tofError: 0.0;
+            stats.finalTofDelta = compensatedAimInfo.timeOfFlight - aimInfo.timeOfFlight;
+            stats.usedTof = usedTof;
+            stats.compensation = compensation;
+            stats.rawYawComp = rawYawComp;
+            stats.yawComp = yawComp;
+            stats.maxCompensationMag = maxCompensationMag;
+            stats.exitReason = exitReason;
+
+            tracer.traceDebug(instanceName, "ConvergenceState=%s", stats);
+        }
+
+        return compensatedAimInfo;
+    }   // compensateRobotMotion
 
     /**
      * This method waits for the shooter finished aiming the target and will signal the given event.
