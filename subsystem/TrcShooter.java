@@ -319,8 +319,8 @@ public class TrcShooter implements TrcExclusiveSubsystem
     private void stopGoalTracking()
     {
         tracer.traceInfo(instanceName, "Stop GoalTracking.");
-        panMotor.cancel();
-        tiltMotor.cancel();
+        if (panMotor != null) panMotor.cancel();
+        if (tiltMotor != null) tiltMotor.cancel();
         stopShooter();
     }   //stopGoalTracking
 
@@ -502,12 +502,12 @@ public class TrcShooter implements TrcExclusiveSubsystem
     {
         AimInfo compensatedAimInfo = aimInfo;
         TrcPose2D fieldVel = driveBase.getFieldVelocity();
+        double omega = driveBase.getTurnRate();
         AimConvergenceStats.ExitReason exitReason = null;
         int iterations = 0;
         TrcPose2D compensation = new TrcPose2D();   // default zero pose
         double maxCompensationMag = 0.0;
         double tofError = Double.NaN;
-        double omega = driveBase.getTurnRate();
         double rawYawComp = 0.0;
         double yawComp = 0.0;
         double usedTof = 0.0;
@@ -535,14 +535,14 @@ public class TrcShooter implements TrcExclusiveSubsystem
 
                 compensation = new TrcPose2D(-vxRobot * usedTof, -vyRobot * usedTof, yawComp);
                 double compensationMag = Math.hypot(compensation.x, compensation.y);
-                TrcPose2D compensationPose = currAimInfo.targetPose.addRelativePose(compensation);
+                TrcPose2D compensatedPose = currAimInfo.targetPose.addRelativePose(compensation);
 
                 if (compensationMag > maxCompensationMag)
                 {
                     maxCompensationMag = compensationMag;
                 }
 
-                compensatedAimInfo = aimInfoSource.getAimInfo(compensationPose);
+                compensatedAimInfo = aimInfoSource.getAimInfo(compensatedPose);
                 if (compensatedAimInfo == null)
                 {
                     compensatedAimInfo = currAimInfo;
