@@ -74,12 +74,12 @@ public class TrcShooter implements TrcExclusiveSubsystem
 
     public static class AimInfo
     {
-        private TrcPose2D targetPose = null;
-        private Double flywheel1RPM = null;
-        private Double flywheel2RPM = null;
-        private Double panAngle = null;
-        private Double tiltAngle = null;
-        private Double timeOfFlight = null;
+        public final TrcPose2D targetPose;
+        public final Double flywheel1RPM;
+        public final Double flywheel2RPM;
+        public final Double panAngle;
+        public final Double tiltAngle;
+        public final Double timeOfFlight;
 
         public AimInfo(
             TrcPose2D targetPose, Double flywheel1RPM, Double flywheel2RPM, Double panAngle, Double tiltAngle,
