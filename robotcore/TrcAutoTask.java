@@ -121,7 +121,7 @@ public abstract class TrcAutoTask<T>
      *
      * @param owner specifies the owner to acquire subsystem ownerships, can be null if not requiring ownership.
      * @param startState specifies the state to start the state machine.
-     * @param taskParams specifies the task parameters.
+     * @param taskParams specifies the task parameters, can be null if not provided.
      * @param completionEvent specifies the event to signal when the task is completed, can be null if none provided.
      */
     protected void startAutoTask(String owner, T startState, Object taskParams, TrcEvent completionEvent)
