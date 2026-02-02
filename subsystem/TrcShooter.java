@@ -184,8 +184,8 @@ public class TrcShooter implements TrcExclusiveSubsystem
     private ShootOperation shootOp = null;
     private String shootOpOwner = null;
     private Double shootOffDelay = null;
-    private Double maxShooter1MaxVel = null;
-    private Double maxShooter2MaxVel = null;
+    private Double maxShooter1MaxRPM = null;
+    private Double maxShooter2MaxRPM = null;
 
     /**
      * Constructor: Creates an instance of the object.
@@ -442,35 +442,27 @@ public class TrcShooter implements TrcExclusiveSubsystem
     }   //resumeGoalTracking
 
     /**
-     * This methods enables power mode on the shooter motors. In power mode, it will do open-loop control of the
-     * flywheel using percentage power of targetVelocity/maxVelocity. This is a failsafe mode in case the flywheel
-     * encoder is failing.
+     * This method enables power mode on the shooter motors. In power mode, it will do open-loop control of the
+     * flywheel using percentage power of targetRPM/maxRPM. This is a failsafe mode in case the flywheel encoder
+     * has malfunctioned.
      *
-     * @param maxShooter1MaxVel specifies maximum shooter motor velocity in scaled units/sec for enabling power mode,
+     * @param maxShooter1MaxRPM specifies maximum shooter motor RPM for enabling power mode,
      *        null for disabling power mode.
-     * @param maxShooter2MaxVel specifies maximum shooter motor velocity in scaled units/sec, null if motor 2 does
-     *        not exist.
+     * @param maxShooter2MaxVel specifies maximum shooter motor RPM, null if motor 2 does not exist.
      */
-    public void enableShooterPowerMode(Double maxShooter1MaxVel, Double maxShooter2MaxVel)
+    public void enableShooterPowerMode(Double maxShooter1MaxRPM, Double maxShooter2MaxRPM)
     {
-        this.maxShooter1MaxVel = maxShooter1MaxVel;
-        this.maxShooter2MaxVel = maxShooter2MaxVel;
+        this.maxShooter1MaxRPM = maxShooter1MaxRPM;
+        this.maxShooter2MaxRPM = maxShooter2MaxRPM;
     }   //enableShooterPowerMode
 
     /**
-     * This methods enables power mode on the shooter motors. In power mode, it will do open-loop control of the
-     * flywheel using percentage power of targetVelocity/maxVelocity. This is a failsafe mode in case the flywheel
-     * encoder is failing.
-     *
-     * @param maxShooter1MaxVel specifies maximum shooter motor velocity in scaled units/sec for enabling power mode,
-     *        null for disabling power mode.
-     * @param maxShooter2MaxVel specifies maximum shooter motor velocity in scaled units/sec, null if motor 2 does
-     *        not exist.
+     * This method disables power mode on the shooter motors.
      */
-    public void disableShooterPowerMode(Double maxShooter1MaxVel, Double maxShooter2MaxVel)
+    public void disableShooterPowerMode()
     {
-        this.maxShooter1MaxVel = null;
-        this.maxShooter2MaxVel = null;
+        this.maxShooter1MaxRPM = null;
+        this.maxShooter2MaxRPM = null;
     }   //disableShooterPowerMode
 
     /**
@@ -482,7 +474,7 @@ public class TrcShooter implements TrcExclusiveSubsystem
     {
         // Only need to check max velocity of motor 1. Max velocity of motor 2 could be null because it doesn't exist,
         // not because power mode is disabled.
-        return maxShooter1MaxVel != null;
+        return maxShooter1MaxRPM != null;
     }   //isShooterPowerModeEnabled
 
     /**
@@ -633,14 +625,8 @@ public class TrcShooter implements TrcExclusiveSubsystem
      * When both shooter velocity and tilt/pan positions have reached target and if shoot method is provided, it will
      * shoot and signal an event if provided.
      *
-     * @param owner specifies the ID string of the caller for checking ownership, can be null if caller is not
-     *        ownership aware.
-     * @param velocity1 specifies the shooter motor 1 velocity in revolutions per second if in velocity mode,
-     *        otherwise specifies percentage power in the range of 0.0 to 1.0.
-     * @param velocity2 specifies the shooter motor 2 velocity in revolutions per second if in velocity mode,
-     *        otherwise specifies percentage power in the range of 0.0 to 1.0. Ignored if there is no motor2.
-     * @param tiltAngle specifies the absolute tilt angle in degrees, null if no tilting.
-     * @param panAngle specifies the absolute pan angle in degrees, null if no panning.
+     * @param owner specifies the owner that acquired the subsystem ownerships, null if no ownership required.
+     * @param aimInfo specifies the AimInfo for aiming the target.
      * @param event specifies an event to signal when both reached target, can be null if not provided.
      * @param timeout specifies maximum timeout period, can be zero if no timeout.
      * @param shootOp specifies the shoot method, can be null if aim only.
@@ -649,16 +635,13 @@ public class TrcShooter implements TrcExclusiveSubsystem
      *        on.
      */
     public void aimShooter(
-        String owner, double velocity1, double velocity2, Double tiltAngle, Double panAngle, TrcEvent event,
-        double timeout, ShootOperation shootOp, Double shootOffDelay)
+        String owner, AimInfo aimInfo, TrcEvent event, double timeout, ShootOperation shootOp, Double shootOffDelay)
     {
         tracer.traceDebug(
             instanceName,
             "owner=" + owner +
             ", currOwner=" + getCurrentOwner() +
-            ", vel=" + velocity1 + "/" + velocity2 +
-            ", tiltAngle=" + tiltAngle +
-            ", panAngle=" + panAngle +
+            ", aimInfo=" + aimInfo +
             ", event=" + event +
             ", timeout=" + timeout +
             ", aimOnly=" + (shootOp == null) +
@@ -682,31 +665,34 @@ public class TrcShooter implements TrcExclusiveSubsystem
                 this.shootOpOwner = shootOp != null ? owner : null;
                 this.shootOffDelay = shootOffDelay;
 
-                if (maxShooter1MaxVel != null)
+                if (maxShooter1MaxRPM != null)
                 {
-                    // motor 1 is in velocity mode.
+                    // Shooter is in power mode.
                     shooterState.shooter1OnTargetEvent = null;
-                    shooterMotor1.setPower(TrcUtil.clipRange(velocity1/maxShooter1MaxVel));
+                    shooterMotor1.setPower(TrcUtil.clipRange(aimInfo.flywheel1RPM/maxShooter1MaxRPM));
                 }
                 else
                 {
+                    // Shooter is in velocity mode.
                     shooterState.shooter1OnTargetEvent = new TrcEvent(instanceName + ".shooter1OnTarget");
                     shooterState.shooter1OnTargetEvent.setCallback(this::onTarget, null);
-                    shooterMotor1.setVelocity(0.0, velocity1, 0.0, shooterState.shooter1OnTargetEvent);
+                    shooterMotor1.setVelocity(
+                        0.0, aimInfo.flywheel1RPM/60.0, 0.0, shooterState.shooter1OnTargetEvent);
                 }
 
                 if (shooterMotor2 != null)
                 {
-                    if (maxShooter2MaxVel != null)
+                    if (maxShooter2MaxRPM != null)
                     {
                         shooterState.shooter2OnTargetEvent = null;
-                        shooterMotor2.setPower(TrcUtil.clipRange(velocity2/maxShooter2MaxVel));
+                        shooterMotor2.setPower(TrcUtil.clipRange(aimInfo.flywheel2RPM/maxShooter2MaxRPM));
                     }
                     else
                     {
                         shooterState.shooter2OnTargetEvent = new TrcEvent(instanceName + ".shooter2OnTarget");
                         shooterState.shooter2OnTargetEvent.setCallback(this::onTarget, null);
-                        shooterMotor2.setVelocity(0.0, velocity2, 0.0, shooterState.shooter2OnTargetEvent);
+                        shooterMotor2.setVelocity(
+                            0.0, aimInfo.flywheel2RPM/60.0, 0.0, shooterState.shooter2OnTargetEvent);
                     }
                 }
                 else
@@ -714,22 +700,24 @@ public class TrcShooter implements TrcExclusiveSubsystem
                     shooterState.shooter2OnTargetEvent = null;
                 }
 
-                if (tiltMotor != null && tiltAngle != null)
+                if (tiltMotor != null && aimInfo.tiltAngle != null)
                 {
                     shooterState.tiltOnTargetEvent = new TrcEvent(instanceName + ".tiltOnTarget");
                     shooterState.tiltOnTargetEvent.setCallback(this::onTarget, null);
-                    tiltMotor.setPosition(0.0, tiltAngle, true, tiltParams.powerLimit, shooterState.tiltOnTargetEvent);
+                    tiltMotor.setPosition(
+                        0.0, aimInfo.tiltAngle, true, tiltParams.powerLimit, shooterState.tiltOnTargetEvent);
                 }
                 else
                 {
                     shooterState.tiltOnTargetEvent = null;
                 }
 
-                if (panMotor != null && panAngle != null)
+                if (panMotor != null && aimInfo.panAngle != null)
                 {
                     shooterState.panOnTargetEvent = new TrcEvent(instanceName + ".panOnTarget");
                     shooterState.panOnTargetEvent.setCallback(this::onTarget, null);
-                    panMotor.setPosition(0.0, panAngle, true, panParams.powerLimit, shooterState.panOnTargetEvent);
+                    panMotor.setPosition(
+                        0.0, aimInfo.panAngle, true, panParams.powerLimit, shooterState.panOnTargetEvent);
                 }
                 else
                 {
@@ -753,20 +741,13 @@ public class TrcShooter implements TrcExclusiveSubsystem
      *
      * @param owner specifies the ID string of the caller for checking ownership, can be null if caller is not
      *        ownership aware.
-     * @param velocity1 specifies the shooter motor 1 velocity in revolutions per second if in velocity mode,
-     *        otherwise specifies percentage power in the range of 0.0 to 1.0.
-     * @param velocity2 specifies the shooter motor 2 velocity in revolutions per second if in velocity mode,
-     *        otherwise specifies percentage power in the range of 0.0 to 1.0. Ignored if there is no motor2.
-     * @param tiltAngle specifies the absolute tilt angle in degrees, null if no tilting.
-     * @param panAngle specifies the absolute pan angle in degrees, null if no panning.
+     * @param aimInfo specifies the AimInfo for aiming the target.
      * @param event specifies an event to signal when both reached target, can be null if not provided.
      * @param timeout specifies maximum timeout period, can be zero if no timeout.
      */
-    public void aimShooter(
-        String owner, double velocity1, double velocity2, Double tiltAngle, Double panAngle, TrcEvent event,
-        double timeout)
+    public void aimShooter(String owner, AimInfo aimInfo, TrcEvent event, double timeout)
     {
-        aimShooter(owner, velocity1, velocity2, tiltAngle, panAngle, event, timeout, null, null);
+        aimShooter(owner, aimInfo, event, timeout, null, null);
     }   //aimShooter
 
     /**
@@ -776,17 +757,11 @@ public class TrcShooter implements TrcExclusiveSubsystem
      *
      * @param owner specifies the ID string of the caller for checking ownership, can be null if caller is not
      *        ownership aware.
-     * @param velocity1 specifies the shooter motor 1 velocity in revolutions per second if in velocity mode,
-     *        otherwise specifies percentage power in the range of 0.0 to 1.0.
-     * @param velocity2 specifies the shooter motor 2 velocity in revolutions per second if in velocity mode,
-     *        otherwise specifies percentage power in the range of 0.0 to 1.0. Ignored if there is no motor2.
-     * @param tiltAngle specifies the absolute tilt angle in degrees, null if no tilting.
-     * @param panAngle specifies the absolute pan angle in degrees, null if no panning.
+     * @param aimInfo specifies the AimInfo for aiming the target.
      */
-    public void aimShooter(
-        String owner, double velocity1, double velocity2, Double tiltAngle, Double panAngle)
+    public void aimShooter(String owner, AimInfo aimInfo)
     {
-        aimShooter(owner, velocity1, velocity2, tiltAngle, panAngle, null, 0.0, null, null);
+        aimShooter(owner, aimInfo, null, 0.0, null, null);
     }   //aimShooter
 
     /**
@@ -794,16 +769,11 @@ public class TrcShooter implements TrcExclusiveSubsystem
      * When both shooter velocity and tilt/pan positions have reached target and if shoot method is provided, it will
      * shoot and signal an event if provided.
      *
-     * @param velocity1 specifies the shooter motor 1 velocity in revolutions per second if in velocity mode,
-     *        otherwise specifies percentage power in the range of 0.0 to 1.0.
-     * @param velocity2 specifies the shooter motor 2 velocity in revolutions per second if in velocity mode,
-     *        otherwise specifies percentage power in the range of 0.0 to 1.0. Ignored if there is no motor2.
-     * @param tiltAngle specifies the absolute tilt angle in degrees, null if no tilting.
-     * @param panAngle specifies the absolute pan angle in degrees, null if no panning.
+     * @param aimInfo specifies the AimInfo for aiming the target.
      */
-    public void aimShooter(double velocity1, double velocity2, Double tiltAngle, Double panAngle)
+    public void aimShooter(AimInfo aimInfo)
     {
-        aimShooter(null, velocity1, velocity2, tiltAngle, panAngle, null, 0.0, null, null);
+        aimShooter(null, aimInfo, null, 0.0, null, null);
     }   //aimShooter
 
     /**
@@ -1054,49 +1024,49 @@ public class TrcShooter implements TrcExclusiveSubsystem
     /**
      * This method sets the shooter motor velocity.
      *
-     * @param velocity1 specifies the motor 1 velocity in revolutions per second.
-     * @param velocity2 specifies the motor 2 velocity in revolutions per second, ignore if no motor 2.
+     * @param flywheel1RPM specifies the motor 1 RPM.
+     * @param flywheel2RPM specifies the motor 2 RPM, ignore if no motor 2.
      */
-    public void setShooterMotorVelocity(Double velocity1, Double velocity2)
+    public void setShooterMotorRPM(Double flywheel1RPM, Double flywheel2RPM)
     {
         if (!isGoalTrackingEnabled())
         {
-            if (velocity1 != null)
+            if (flywheel1RPM != null)
             {
-                if (maxShooter2MaxVel != null)
+                if (maxShooter2MaxRPM != null)
                 {
-                    shooterMotor1.setPower(TrcUtil.clipRange(velocity1/maxShooter1MaxVel));
+                    shooterMotor1.setPower(TrcUtil.clipRange(flywheel1RPM/maxShooter1MaxRPM));
                 }
                 else
                 {
-                    shooterMotor1.setVelocity(null, 0.0, velocity1, 0.0, null);
+                    shooterMotor1.setVelocity(null, 0.0, flywheel1RPM/60.0, 0.0, null);
                 }
             }
 
-            if (velocity2 != null && shooterMotor2 != null)
+            if (flywheel2RPM != null && shooterMotor2 != null)
             {
-                if (maxShooter2MaxVel != null)
+                if (maxShooter2MaxRPM != null)
                 {
-                    shooterMotor2.setPower(TrcUtil.clipRange(velocity2/maxShooter2MaxVel));
+                    shooterMotor2.setPower(TrcUtil.clipRange(flywheel2RPM/maxShooter2MaxRPM));
                 }
                 else
                 {
-                    shooterMotor2.setVelocity(null, 0.0, velocity2, 0.0, null);
+                    shooterMotor2.setVelocity(null, 0.0, flywheel2RPM/60.0, 0.0, null);
                 }
             }
         }
-    }   //setShooterMotorVelocity
+    }   //setShooterMotorRPM
 
     /**
      * This method sets the shooter motor velocity in RPM.
      *
-     * @param rpm1 specifies the motor 1 velocity in RPM.
-     * @param rpm2 specifies the motor 2 velocity in RPM, null if motor2 does not exist.
+     * @param velocity1 specifies the motor 1 velocity in rev/sec.
+     * @param velocity2 specifies the motor 2 velocity in rev/sec, null if motor2 does not exist.
      */
-    public void setShooterMotorRPM(Double rpm1, Double rpm2)
+    public void setShooterMotorVelocity(Double velocity1, Double velocity2)
     {
-        setShooterMotorVelocity(rpm1 != null? rpm1/60.0: null, rpm2 != null? rpm2/60.0: null);
-    }   //setShooterMotorRPM
+        setShooterMotorVelocity(velocity1 != null? velocity1*60.0: null, velocity2 != null? velocity2*60.0: null);
+    }   //setShooterMotorVelocity
 
     /**
      * This method stops the shooter. Use this method instead of setting shooter velocity to zero because the shooter
