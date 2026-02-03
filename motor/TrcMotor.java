@@ -3523,8 +3523,10 @@ public abstract class TrcMotor implements TrcMotorController, TrcExclusiveSubsys
      *        the desire direction of movement.
      * @param completionEvent specifies an event to signal when zero calibration is done, can be null if not provided.
      * @param callback specifies a callback handler when zero calibration is done.
+     * @param callbackContext specifies the context object pass to the callback, null if not provided.
      */
-    private void zeroCalibrate(String owner, double calPower, TrcEvent completionEvent, TrcEvent.Callback callback)
+    private void zeroCalibrate(
+        String owner, double calPower, TrcEvent completionEvent, TrcEvent.Callback callback, Object callbackContext)
     {
         tracer.traceDebug(
             instanceName, "owner=%s, calPower=%f, event=%s, callback=%s",
@@ -3550,7 +3552,7 @@ public abstract class TrcMotor implements TrcMotorController, TrcExclusiveSubsys
                 if (callback != null)
                 {
                     taskParams.zeroCalCallbackEvent = new TrcEvent(instanceName + ".zeroCalCallback");
-                    taskParams.zeroCalCallbackEvent.setCallback(callback, null);
+                    taskParams.zeroCalCallbackEvent.setCallback(callback, callbackContext);
                 }
                 else
                 {
@@ -3577,7 +3579,7 @@ public abstract class TrcMotor implements TrcMotorController, TrcExclusiveSubsys
      */
     public void zeroCalibrate(String owner, double calPower, TrcEvent completionEvent)
     {
-        zeroCalibrate(owner, calPower, completionEvent, null);
+        zeroCalibrate(owner, calPower, completionEvent, null, null);
     }   //zeroCalibrate
 
     /**
@@ -3594,7 +3596,7 @@ public abstract class TrcMotor implements TrcMotorController, TrcExclusiveSubsys
      */
     public void zeroCalibrate(double calPower, TrcEvent completionEvent)
     {
-        zeroCalibrate(null, calPower, completionEvent, null);
+        zeroCalibrate(null, calPower, completionEvent, null, null);
     }   //zeroCalibrate
 
     /**
@@ -3611,10 +3613,11 @@ public abstract class TrcMotor implements TrcMotorController, TrcExclusiveSubsys
      * @param calPower specifies the motor power for the zero calibration, can be positive or negative depending on
      *        the desire direction of movement.
      * @param callback specifies a callback handler when zero calibration is done.
+     * @param callbackContext specifies the context object pass to the callback, null if not provided.
      */
-    public void zeroCalibrate(String owner, double calPower, TrcEvent.Callback callback)
+    public void zeroCalibrate(String owner, double calPower, TrcEvent.Callback callback, Object callbackContext)
     {
-        zeroCalibrate(owner, calPower, null, callback);
+        zeroCalibrate(owner, calPower, null, callback, callbackContext);
     }   //zeroCalibrate
 
     /**
@@ -3628,10 +3631,11 @@ public abstract class TrcMotor implements TrcMotorController, TrcExclusiveSubsys
      * @param calPower specifies the motor power for the zero calibration, can be positive or negative depending on
      *        the desire direction of movement.
      * @param callback specifies a callback handler when zero calibration is done.
+     * @param callbackContext specifies the context object pass to the callback, null if not provided.
      */
-    public void zeroCalibrate(double calPower, TrcEvent.Callback callback)
+    public void zeroCalibrate(double calPower, TrcEvent.Callback callback, Object callbackContext)
     {
-        zeroCalibrate(null, calPower, null, callback);
+        zeroCalibrate(null, calPower, null, callback, callbackContext);
     }   //zeroCalibrate
 
     /**
@@ -3648,7 +3652,7 @@ public abstract class TrcMotor implements TrcMotorController, TrcExclusiveSubsys
      */
     public void zeroCalibrate(String owner, double calPower)
     {
-        zeroCalibrate(owner, calPower, null, null);
+        zeroCalibrate(owner, calPower, null, null, null);
     }   //zeroCalibrate
 
     /**
@@ -3664,7 +3668,7 @@ public abstract class TrcMotor implements TrcMotorController, TrcExclusiveSubsys
      */
     public void zeroCalibrate(double calPower)
     {
-        zeroCalibrate(null, calPower, null, null);
+        zeroCalibrate(null, calPower, null, null, null);
     }   //zeroCalibrate
 
     //
