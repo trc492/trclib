@@ -129,4 +129,16 @@ public class TrcVision
         }   //setHomographyParams
     }   //class CameraInfo
 
+    public interface ObjectInfo
+    {
+        /**
+         * This method provides the object offset from ground so that vision can accurately calculate the target
+         * position from the camera.
+         *
+         * @param object specifies the detected object.
+         * @return object ground offset in inches.
+         */
+        double getObjectGroundOffset(Object object);
+    }   //interface ObjectInfo
+
 }   //class TrcVision
