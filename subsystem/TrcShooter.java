@@ -339,19 +339,22 @@ public class TrcShooter implements TrcExclusiveSubsystem
             if (!goalTrackingParams.trackingPaused)
             {
                 AimInfo aimInfo = goalTrackingParams.aimInfoSource.getAimInfo(null);
-                if (aimInfo.flywheel1RPM != null || aimInfo.flywheel2RPM != null)
+                if (aimInfo != null)
                 {
-                    setShooterMotorRPM(aimInfo.flywheel1RPM, aimInfo.flywheel2RPM);
-                }
+                    if (aimInfo.flywheel1RPM != null || aimInfo.flywheel2RPM != null)
+                    {
+                        setShooterMotorRPM(aimInfo.flywheel1RPM, aimInfo.flywheel2RPM);
+                    }
 
-                if (aimInfo.panAngle != null)
-                {
-                    setPanAngle(aimInfo.panAngle);
-                }
+                    if (aimInfo.panAngle != null)
+                    {
+                        setPanAngle(aimInfo.panAngle);
+                    }
 
-                if (aimInfo.tiltAngle != null)
-                {
-                    setTiltAngle(aimInfo.tiltAngle);
+                    if (aimInfo.tiltAngle != null)
+                    {
+                        setTiltAngle(aimInfo.tiltAngle);
+                    }
                 }
             }
         }
