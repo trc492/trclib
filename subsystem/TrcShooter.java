@@ -74,12 +74,12 @@ public class TrcShooter implements TrcExclusiveSubsystem
 
     public static class AimInfo
     {
-        public final TrcPose2D targetPose;
-        public final Double flywheel1RPM;
-        public final Double flywheel2RPM;
-        public final Double panAngle;
-        public final Double tiltAngle;
-        public final Double timeOfFlight;
+        public TrcPose2D targetPose;
+        public Double flywheel1RPM;
+        public Double flywheel2RPM;
+        public Double panAngle;
+        public Double tiltAngle;
+        public Double timeOfFlight;
 
         public AimInfo(
             TrcPose2D targetPose, Double flywheel1RPM, Double flywheel2RPM, Double panAngle, Double tiltAngle,
@@ -92,6 +92,12 @@ public class TrcShooter implements TrcExclusiveSubsystem
             this.tiltAngle = tiltAngle;
             this.timeOfFlight = timeOfFlight;
         }   //AimInfo
+
+        @Override
+        public AimInfo clone()
+        {
+            return new AimInfo(targetPose, flywheel1RPM, flywheel2RPM, panAngle, tiltAngle, timeOfFlight);
+        }   //clone
 
         @Override
         public String toString()
