@@ -486,14 +486,14 @@ public class TrcShooter implements TrcExclusiveSubsystem
      * @param driveBase specifies the drive base object.
      * @param aimInfoSource specifies the method to call to recompute AimInfo by target pose.
      * @param aimInfo specifies the original AimInfo.
-     * @param tofThreshold specifies the time-of-flight threshold to terminate iterations.
+     * @param tofErrorThreshold specifies the time-of-flight error threshold to terminate iterations.
      * @param maxIterations specifies the maximum number of iterations.
      * @param stats specifies the ConvergenceStat object to be filled in by stat info, null if not provided.
      * @return compensated Aim Info.
      */
     public AimInfo compensateRobotMotion(
-        TrcDriveBase driveBase, AimInfoSource aimInfoSource, AimInfo aimInfo, double tofThreshold, int maxIterations,
-        AimConvergenceStats stats)
+        TrcDriveBase driveBase, AimInfoSource aimInfoSource, AimInfo aimInfo, double tofErrorThreshold,
+        int maxIterations, AimConvergenceStats stats)
     {
         AimInfo compensatedAimInfo = aimInfo;
         TrcPose2D fieldVel = driveBase.getFieldVelocity();
@@ -546,7 +546,7 @@ public class TrcShooter implements TrcExclusiveSubsystem
                 else
                 {
                     tofError = Math.abs(compensatedAimInfo.timeOfFlight - currAimInfo.timeOfFlight);
-                    if (tofError <= tofThreshold)
+                    if (tofError <= tofErrorThreshold)
                     {
                         exitReason = AimConvergenceStats.ExitReason.CONVERGED;
                     }
