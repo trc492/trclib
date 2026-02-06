@@ -41,6 +41,8 @@ import trclib.timer.TrcTimer;
  */
 public class TrcShooter implements TrcExclusiveSubsystem
 {
+    private static final boolean COMPENSATE_ROBOT_ROTATION = false;
+
     /**
      * This interface must be implemented by the caller to provide a method for shooting the object.
      */
@@ -503,7 +505,7 @@ public class TrcShooter implements TrcExclusiveSubsystem
     {
         AimInfo compensatedAimInfo = aimInfo;
         TrcPose2D fieldVel = driveBase.getFieldVelocity();
-        double omega = driveBase.getTurnRate();
+        double omega = COMPENSATE_ROBOT_ROTATION? driveBase.getTurnRate(): 0.0;
         AimConvergenceStats.ExitReason exitReason = null;
         int iterations = 0;
         TrcPose2D compensation = new TrcPose2D();   // default zero pose
