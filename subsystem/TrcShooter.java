@@ -31,6 +31,8 @@ import trclib.robotcore.TrcEvent;
 import trclib.robotcore.TrcExclusiveSubsystem;
 import trclib.robotcore.TrcRobot;
 import trclib.robotcore.TrcTaskMgr;
+import trclib.sensor.TrcTrigger;
+import trclib.sensor.TrcTriggerThresholdRange;
 import trclib.timer.TrcTimer;
 
 /**
@@ -170,7 +172,9 @@ public class TrcShooter implements TrcExclusiveSubsystem
     public final TrcDbgTrace tracer;
     private final String instanceName;
     public final TrcMotor shooterMotor1;
+    public final TrcTrigger shooterMotor1VelTrigger;
     public final TrcMotor shooterMotor2;
+    public final TrcTrigger shooterMotor2VelTrigger;
     public final TrcMotor tiltMotor;
     private final PanTiltParams tiltParams;
     public final TrcMotor panMotor;
@@ -192,15 +196,20 @@ public class TrcShooter implements TrcExclusiveSubsystem
      *
      * @param instanceName specifies the hardware name.
      * @param shooterMotor1 specifies the shooter motor 1 object.
+     * @param shooterMotor1HasVelTrigger specifies true to create velocity trigger for shooter motor 1,
+     *        false otherwise.
      * @param shooterMotor2 specifies the shooter motor 2 object, can be null for one-motor shooter.
+     * @param shooterMotor2HasVelTrigger specifies true to create velocity trigger for shooter motor 2,
+     *        false otherwise.
      * @param tiltMotor specifies the tilt motor object, can be null if none.
      * @param tiltParams specifies the tilt parameters, null if no tilt motor.
      * @param panMotor specifies the pan motor object, can be null if none.
      * @param panParams specifies the pan parameters, null if no pan motor.
      */
     public TrcShooter(
-        String instanceName, TrcMotor shooterMotor1, TrcMotor shooterMotor2,
-        TrcMotor tiltMotor, PanTiltParams tiltParams, TrcMotor panMotor, PanTiltParams panParams)
+        String instanceName, TrcMotor shooterMotor1, boolean shooterMotor1HasVelTrigger, TrcMotor shooterMotor2,
+        boolean shooterMotor2HasVelTrigger, TrcMotor tiltMotor, PanTiltParams tiltParams, TrcMotor panMotor,
+        PanTiltParams panParams)
     {
         this.tracer = new TrcDbgTrace();
         this.instanceName = instanceName;
@@ -210,6 +219,11 @@ public class TrcShooter implements TrcExclusiveSubsystem
         this.tiltParams = tiltParams;
         this.panMotor = panMotor;
         this.panParams = panParams;
+
+        shooterMotor1VelTrigger = shooterMotor1HasVelTrigger?
+            new TrcTriggerThresholdRange(instanceName + ".ShooterMotor1VelTrigger", this::getShooterMotor1RPM): null;
+        shooterMotor2VelTrigger = shooterMotor2HasVelTrigger?
+            new TrcTriggerThresholdRange(instanceName + ".ShooterMotor2VelTrigger", this::getShooterMotor2RPM): null;
 
         aimTimer = new TrcTimer(instanceName + ".aimTimer");
         shootTimer = new TrcTimer(instanceName + ".shootTimer");
