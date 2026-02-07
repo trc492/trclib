@@ -50,7 +50,7 @@ public class TrcShooter implements TrcExclusiveSubsystem
      */
     public interface ShootOperation
     {
-        void shoot(String owner, TrcEvent completionEvent);
+        void shoot(String owner, TrcShooter shooter, TrcEvent completionEvent);
     }   //interface ShootOperation
 
     /**
@@ -779,7 +779,7 @@ public class TrcShooter implements TrcExclusiveSubsystem
                         // If both shooter velocity and tilt/pan position have reached target, shoot.
                         TrcEvent shootCompletionEvent = new TrcEvent(instanceName + ".shootCompletionEvent");
                         shootCompletionEvent.setCallback(this::shootCompleted, null);
-                        shootOp.shoot(shootOpOwner, shootCompletionEvent);
+                        shootOp.shoot(shootOpOwner, this, shootCompletionEvent);
                     }
                     else
                     {
