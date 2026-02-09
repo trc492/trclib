@@ -114,20 +114,25 @@ public class TrcVisionRelocalize
                 }
 
                 double timeDelta = Math.abs(visionTimestamp - timedPoses[i].timestamp);
-                if (timeDelta < minTimeDelta)
+                if (timeDelta <= minTimeDelta)
                 {
                     minTimeDelta = timeDelta;
                     minTimeDeltaPose = timedPoses[i];
                 }
-                else
+                else if (visionTimestamp > timedPoses[i].timestamp)
                 {
+                    // Safe to stop after crossing visionTimestamp because
+                    // |Δt| is now guaranteed to increase
                     break;
                 }
             }
             // Determine the relative position from the time of the vision frame to current robot pose.
             // Adjust the vision re-localized pose with the same amount of travel.
-            TrcPose2D deltaPose = robotPose.relativeTo(minTimeDeltaPose.pose);
-            relocalizedPose = visionPose.addRelativePose(deltaPose);
+            if (minTimeDeltaPose != null)
+            {
+                TrcPose2D deltaPose = robotPose.relativeTo(minTimeDeltaPose.pose);
+                relocalizedPose = visionPose.addRelativePose(deltaPose);
+            }
         }
 
         return relocalizedPose;
