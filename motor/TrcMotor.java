@@ -1499,10 +1499,10 @@ public abstract class TrcMotor implements TrcMotorController, TrcExclusiveSubsys
      * of setMotorPosition because this will set the correct control mode and will take care of the followers.
      *
      * @param position specifies the position in scaled units.
-     * @param powerLimit specifies the maximum power output limits.
+     * @param powerLimit specifies the maximum power output limits, can be null if not provided.
      * @param feedforward specifies the feedforward value
      */
-    private void setControllerMotorPosition(double position, double powerLimit, double feedforward)
+    private void setControllerMotorPosition(double position, Double powerLimit, double feedforward)
     {
         // Optimization: Only do this if we are not already in position control mode or position is different from
         // last time.
@@ -2186,12 +2186,12 @@ public abstract class TrcMotor implements TrcMotorController, TrcExclusiveSubsys
      * @param delay specifies the time in seconds to delay before setting the value, 0.0 if no delay.
      * @param position specifies the position in scaled units to be set.
      * @param holdTarget specifies true to hold position target, false otherwise.
-     * @param powerLimit specifies the maximum power output limits.
+     * @param powerLimit specifies the maximum power output limits, can be null if not provided.
      * @param completionEvent specifies the event to signal when the motor operation is completed.
      * @param timeout specifies timeout in seconds.
      */
     public void setPosition(
-        String owner, double delay, double position, boolean holdTarget, double powerLimit, TrcEvent completionEvent,
+        String owner, double delay, double position, boolean holdTarget, Double powerLimit, TrcEvent completionEvent,
         double timeout)
     {
         tracer.traceDebug(
@@ -2256,12 +2256,12 @@ public abstract class TrcMotor implements TrcMotorController, TrcExclusiveSubsys
      * @param delay specifies the time in seconds to delay before setting the value, 0.0 if no delay.
      * @param position specifies the position in scaled units to be set.
      * @param holdTarget specifies true to hold position target, false otherwise.
-     * @param powerLimit specifies the maximum power output limits.
+     * @param powerLimit specifies the maximum power output limits, can be null if not provided.
      * @param completionEvent specifies the event to signal when the motor operation is completed.
      * @param timeout specifies timeout in seconds.
      */
     public void setPosition(
-        double delay, double position, boolean holdTarget, double powerLimit, TrcEvent completionEvent, double timeout)
+        double delay, double position, boolean holdTarget, Double powerLimit, TrcEvent completionEvent, double timeout)
     {
         setPosition(null, delay, position, holdTarget, powerLimit, completionEvent, timeout);
     }   //setPosition
@@ -2273,11 +2273,11 @@ public abstract class TrcMotor implements TrcMotorController, TrcExclusiveSubsys
      * @param delay specifies the time in seconds to delay before setting the value, 0.0 if no delay.
      * @param position specifies the position in scaled units to be set.
      * @param holdTarget specifies true to hold position target, false otherwise.
-     * @param powerLimit specifies the maximum power output limits.
+     * @param powerLimit specifies the maximum power output limits, can be null if not provided.
      * @param completionEvent specifies the event to signal when the motor operation is completed.
      */
     public void setPosition(
-        double delay, double position, boolean holdTarget, double powerLimit, TrcEvent completionEvent)
+        double delay, double position, boolean holdTarget, Double powerLimit, TrcEvent completionEvent)
     {
         setPosition(null, delay, position, holdTarget, powerLimit, completionEvent, 0.0);
     }   //setPosition
@@ -2289,9 +2289,9 @@ public abstract class TrcMotor implements TrcMotorController, TrcExclusiveSubsys
      * @param delay specifies the time in seconds to delay before setting the value, 0.0 if no delay.
      * @param position specifies the position in scaled units to be set.
      * @param holdTarget specifies true to hold position target, false otherwise.
-     * @param powerLimit specifies the maximum power output limits.
+     * @param powerLimit specifies the maximum power output limits, can be null if not provided.
      */
-    public void setPosition(double delay, double position, boolean holdTarget, double powerLimit)
+    public void setPosition(double delay, double position, boolean holdTarget, Double powerLimit)
     {
         setPosition(null, delay, position, holdTarget, powerLimit, null, 0.0);
     }   //setPosition
@@ -2302,9 +2302,9 @@ public abstract class TrcMotor implements TrcMotorController, TrcExclusiveSubsys
      *
      * @param position specifies the position in scaled units to be set.
      * @param holdTarget specifies true to hold position target, false otherwise.
-     * @param powerLimit specifies the maximum power output limits.
+     * @param powerLimit specifies the maximum power output limits, can be null if not provided.
      */
-    public void setPosition(double position, boolean holdTarget, double powerLimit)
+    public void setPosition(double position, boolean holdTarget, Double powerLimit)
     {
         setPosition(null, 0.0, position, holdTarget, powerLimit, null, 0.0);
     }   //setPosition
@@ -2318,7 +2318,7 @@ public abstract class TrcMotor implements TrcMotorController, TrcExclusiveSubsys
      */
     public void setPosition(double position, boolean holdTarget)
     {
-        setPosition(null, 0.0, position, holdTarget, 1.0, null, 0.0);
+        setPosition(null, 0.0, position, holdTarget, null, null, 0.0);
     }   //setPosition
 
     /**
@@ -2329,7 +2329,7 @@ public abstract class TrcMotor implements TrcMotorController, TrcExclusiveSubsys
      */
     public void setPosition(double position)
     {
-        setPosition(null, 0.0, position, true, 1.0, null, 0.0);
+        setPosition(null, 0.0, position, true, null, null, 0.0);
     }   //setPosition
 
     /**
@@ -3212,20 +3212,6 @@ public abstract class TrcMotor implements TrcMotorController, TrcExclusiveSubsys
                                 {
                                     taskParams.softwarePidCtrl.printPidInfo(tracer, verbosePidInfo, battery);
                                 }
-
-                                // double error = taskParams.softwarePidCtrl.getError();
-                                // double errorRate = taskParams.softwarePidCtrl.getErrorRate();
-                                // if (error != 0.0 && errorRate != 0.00 &&
-                                //     Math.signum(error) * Math.signum(errorRate) > 0.0)
-                                // {
-                                //     // We are moving away from the target.
-                                //     tracer.traceWarn(
-                                //         instanceName,
-                                //         "PID control is moving away from target, " +
-                                //         "motor direction does not agree with position sensor! " +
-                                //         "(err=" + error + ", errRate=" + errorRate + ")");
-                                //     pidPower = limitedPower = power = 0.0;
-                                // }
                                 // Software PID control sets motor power but control mode is not Power, so don't
                                 // overwrite it.
                                 setControllerMotorPower(power, false);
@@ -3246,14 +3232,13 @@ public abstract class TrcMotor implements TrcMotorController, TrcExclusiveSubsys
                                     // Set the same target position but change powerLimit and powerComp if necessary.
                                     // If powerLimit and powerComp did not change from last time,
                                     // setControllerMotorPosition is a no-op.
-                                    double powerLimit = taskParams.powerLimit != null? taskParams.powerLimit: 0.0;
                                     double powerComp = taskParams.powerComp != null?
                                             taskParams.powerComp.getCompensation(this, currMotorPower): 0.0;
-                                    setControllerMotorPosition(controllerPosition, powerLimit, powerComp);
+                                    setControllerMotorPosition(controllerPosition, taskParams.powerLimit, powerComp);
                                     tracer.traceDebug(
                                         instanceName,
                                         "PositionControl: pos=%f, powerLimit=%f, powerComp=%f, onTarget=%s",
-                                        controllerPosition, powerLimit, powerComp, onTarget);
+                                        controllerPosition, taskParams.powerLimit, powerComp, onTarget);
                                 }
                                 else if (taskParams.currControlMode == ControlMode.Velocity)
                                 {
@@ -3695,14 +3680,14 @@ public abstract class TrcMotor implements TrcMotorController, TrcExclusiveSubsys
      * @param delay specifies delay time in seconds before setting position, can be zero if no delay.
      * @param presetIndex specifies the index to the preset position array.
      * @param holdTarget specifies true to hold target after PID operation is completed.
-     * @param powerLimit specifies the maximum power limit.
+     * @param powerLimit specifies the maximum power limit, can be null if not provided.
      * @param event specifies the event to signal when target is reached, can be null if not provided.
      * @param timeout specifies a timeout value in seconds. If the operation is not completed without the specified
      *                timeout, the operation will be canceled and the event will be signaled. If no timeout is
      *                specified, it should be set to zero.
      */
     public void setPresetPosition(
-        String owner, double delay, int presetIndex, boolean holdTarget, double powerLimit, TrcEvent event,
+        String owner, double delay, int presetIndex, boolean holdTarget, Double powerLimit, TrcEvent event,
         double timeout)
     {
         if (!velocityPresets && presets != null && presets.validatePresetIndex(presetIndex))
@@ -3729,68 +3714,6 @@ public abstract class TrcMotor implements TrcMotorController, TrcExclusiveSubsys
         }
     }   //setPresetVelocity
 
-//    /**
-//     * This method determines the next preset index up from the current preset value.
-//     *
-//     * @return next preset index up, -1 if there is no preset table.
-//     */
-//    public int nextPresetIndexUp()
-//    {
-//        int index = -1;
-//
-//        if (presets != null)
-//        {
-//            double currValue = (velocityPresets? getVelocity(): getPosition()) + presetTolerance;
-//
-//            for (int i = 0; i < presets.length; i++)
-//            {
-//                if (presets[i] > currValue)
-//                {
-//                    index = i;
-//                    break;
-//                }
-//            }
-//
-//            if (index == -1)
-//            {
-//                index = presets.length - 1;
-//            }
-//        }
-//
-//        return index;
-//    }   //nextPresetIndexUp
-//
-//    /**
-//     * This method determines the next preset index down from the current value.
-//     *
-//     * @return next preset index down, -1 if there is no preset table.
-//     */
-//    public int nextPresetIndexDown()
-//    {
-//        int index = -1;
-//
-//        if (presets != null)
-//        {
-//            double currValue = (velocityPresets? getVelocity(): getPosition()) - presetTolerance;
-//
-//            for (int i = presets.length - 1; i >= 0; i--)
-//            {
-//                if (presets[i] < currValue)
-//                {
-//                    index = i;
-//                    break;
-//                }
-//            }
-//
-//            if (index == -1)
-//            {
-//                index = 0;
-//            }
-//        }
-//
-//        return index;
-//    }   //nextPresetIndexDown
-
     /**
      * This method sets the motor to the next preset position up or down from the current position.
      *
@@ -3798,9 +3721,9 @@ public abstract class TrcMotor implements TrcMotorController, TrcExclusiveSubsys
      *        automatically release ownership when the motor movement is completed, can be null if no ownership
      *        is required.
      * @param presetUp specifies true to move to next preset up, false to move to next preset down.
-     * @param powerLimit specifies the maximum power limit.
+     * @param powerLimit specifies the maximum power limit, can be null if not provided.
      */
-    private void setNextPresetPosition(String owner, boolean presetUp, double powerLimit)
+    private void setNextPresetPosition(String owner, boolean presetUp, Double powerLimit)
     {
         if (presets != null)
         {
@@ -3820,9 +3743,9 @@ public abstract class TrcMotor implements TrcMotorController, TrcExclusiveSubsys
      * @param owner specifies the owner ID that will acquire ownership before setting the preset position and will
      *        automatically release ownership when the motor movement is completed, can be null if no ownership
      *        is required.
-     * @param powerLimit specifies the maximum power limit.
+     * @param powerLimit specifies the maximum power limit, can be null if not provided.
      */
-    public void presetPositionUp(String owner, double powerLimit)
+    public void presetPositionUp(String owner, Double powerLimit)
     {
         setNextPresetPosition(owner, true, powerLimit);
     }   //presetPositionUp
@@ -3833,9 +3756,9 @@ public abstract class TrcMotor implements TrcMotorController, TrcExclusiveSubsys
      * @param owner specifies the owner ID that will acquire ownership before setting the preset position and will
      *        automatically release ownership when the motor movement is completed, can be null if no ownership
      *        is required.
-     * @param powerLimit specifies the maximum power limit.
+     * @param powerLimit specifies the maximum power limit, can be null if not provided.
      */
-    public void presetPositionDown(String owner, double powerLimit)
+    public void presetPositionDown(String owner, Double powerLimit)
     {
         setNextPresetPosition(owner, false, powerLimit);
     }   //presetPositionDown
