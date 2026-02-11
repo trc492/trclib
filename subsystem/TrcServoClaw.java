@@ -579,7 +579,7 @@ public class TrcServoClaw implements TrcExclusiveSubsystem
      */
     public boolean getTriggerState()
     {
-        return sensorTrigger != null && sensorTrigger.getTriggerState();
+        return sensorTrigger != null && sensorTrigger.getSensorState();
     }   //getTriggerState
 
     /**

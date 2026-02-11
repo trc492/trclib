@@ -289,7 +289,7 @@ public class TrcPidStorage implements TrcExclusiveSubsystem
      */
     public boolean isEntrySensorActive()
     {
-        return entryTriggerParams != null && entryTriggerParams.trigger.getTriggerState();
+        return entryTriggerParams != null && entryTriggerParams.trigger.getSensorState();
     }   //isEntrySensorActive
 
     /**
@@ -299,7 +299,7 @@ public class TrcPidStorage implements TrcExclusiveSubsystem
      */
     public boolean isExitSensorActive()
     {
-        return exitTriggerParams != null && exitTriggerParams.trigger.getTriggerState();
+        return exitTriggerParams != null && exitTriggerParams.trigger.getSensorState();
     }   //isExitSensorActive
 
     /**
