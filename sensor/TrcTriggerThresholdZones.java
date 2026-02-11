@@ -329,10 +329,10 @@ public class TrcTriggerThresholdZones implements TrcTrigger
      * @return current trigger state.
      */
     @Override
-    public boolean getTriggerState()
+    public boolean getSensorState()
     {
-        throw new UnsupportedOperationException("TrcTriggerThresholdZones does not support trigger state.");
-    }   //getTriggerState
+        throw new UnsupportedOperationException("TrcTriggerThresholdZones does not support sensor state.");
+    }   //getSensorState
 
     /**
      * This method returns the current zone it is in.

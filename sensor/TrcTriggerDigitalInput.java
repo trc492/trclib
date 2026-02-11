@@ -292,10 +292,10 @@ public class TrcTriggerDigitalInput implements TrcTrigger
      * @return current sensor state.
      */
     @Override
-    public boolean getTriggerState()
+    public boolean getSensorState()
     {
         return sensor.isActive();
-    }   //getTriggerState
+    }   //getSensorState
 
     /**
      * This method is called periodically to check the current sensor state. If it has changed from the previous

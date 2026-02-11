@@ -330,37 +330,6 @@ public class TrcRollerIntake implements TrcExclusiveSubsystem
     }   //isAutoActive
 
     /**
-     * This method returns the front trigger state.
-     *
-     * @return front trigger state, false if there is no front trigger.
-     */
-    public boolean getFrontTriggerState()
-    {
-        return frontTriggerParams != null && frontTriggerParams.trigger.getTriggerState();
-    }   //getFrontTriggerState
-
-    /**
-     * This method returns the back trigger state.
-     *
-     * @return back trigger state, false if there is no back trigger.
-     */
-    public boolean getBackTriggerState()
-    {
-        return backTriggerParams != null && backTriggerParams.trigger.getTriggerState();
-    }   //getBackTriggerState
-
-    /**
-     *
-     * This method checks if object is detected.
-     *
-     * @return true if object is detected, false otherwise.
-     */
-    public boolean hasObject()
-    {
-        return getFrontTriggerState() || getBackTriggerState();
-    }   //hasObject
-
-    /**
      * This method returns the sensor value read from the front analog sensor.
      *
      * @return front analog sensor value, or zero if there is no front sensor.
@@ -371,6 +340,16 @@ public class TrcRollerIntake implements TrcExclusiveSubsystem
     }   //getFrontSensorValue
 
     /**
+     * This method returns the sensor state read from the front sensor.
+     *
+     * @return front sensor state, or false if there is no front sensor.
+     */
+    public boolean getFrontSensorState()
+    {
+        return frontTriggerParams != null && frontTriggerParams.trigger.getSensorState();
+    }   //getFrontSensorState
+
+    /**
      * This method returns the sensor value read from the back analog sensor.
      *
      * @return back analog sensor value, or zero if there is no back sensor.
@@ -379,6 +358,27 @@ public class TrcRollerIntake implements TrcExclusiveSubsystem
     {
         return backTriggerParams != null? backTriggerParams.trigger.getSensorValue(): 0.0;
     }   //getBackSensorValue
+
+    /**
+     * This method returns the sensor state read from the back sensor.
+     *
+     * @return back sensor state, or false if there is no back sensor.
+     */
+    public boolean getBackSensorState()
+    {
+        return backTriggerParams != null && backTriggerParams.trigger.getSensorState();
+    }   //getBackSensorState
+
+    /**
+     *
+     * This method checks if object is detected.
+     *
+     * @return true if object is detected, false otherwise.
+     */
+    public boolean hasObject()
+    {
+        return getFrontSensorState() || getBackSensorState();
+    }   //hasObject
 
     /**
      * This method checks if the intake motor is ON.

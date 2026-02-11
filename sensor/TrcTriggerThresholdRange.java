@@ -390,10 +390,10 @@ public class TrcTriggerThresholdRange implements TrcTrigger
      * @return current trigger state.
      */
     @Override
-    public boolean getTriggerState()
+    public boolean getSensorState()
     {
         return triggerState.triggerActive;
-    }   //getTriggerState
+    }   //getSensorState
 
     /**
      * This method sets the low/high threshold values within which the sensor reading must stay for at least the

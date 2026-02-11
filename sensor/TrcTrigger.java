@@ -101,12 +101,12 @@ public interface TrcTrigger
     double getSensorValue();
 
     /**
-     * This method reads the current trigger state. For digital sensor trigger, it will return the active state of the
+     * This method reads the current sensor state. For digital sensor trigger, it will return the active state of the
      * digital sensor. For analog sensor trigger, it will return triggered if the analog sensor value is within the
      * trigger zone. TrcTriggerThresholdZones does not support getTriggerState and will throw an exception.
      *
      * @return current trigger state.
      */
-    boolean getTriggerState();
+    boolean getSensorState();
 
 }   //interface TrcTrigger
