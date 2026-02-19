@@ -2371,11 +2371,13 @@ public abstract class TrcMotor implements TrcMotorController, TrcExclusiveSubsys
      *
      * @param owner specifies the owner ID to check if the caller has ownership of the motor.
      * @param power specifies the upper bound power of the motor.
+     * @param powerLimit specifies the maximum power limit of the motor.
      * @param minPos specifies the minimum of the position range.
      * @param maxPos specifies the maximum of the position range.
      * @param holdTarget specifies true to hold target when speed is set to 0, false otherwise.
      */
-    public void setPidPower(String owner, double power, double minPos, double maxPos, boolean holdTarget)
+    public void setPidPower(
+        String owner, double power, double powerLimit, double minPos, double maxPos, boolean holdTarget)
     {
         if (validateOwnership(owner))
         {
@@ -2400,7 +2402,7 @@ public abstract class TrcMotor implements TrcMotorController, TrcExclusiveSubsys
                 {
                     if (currTarget == null)
                     {
-                        // We are stopping, Relax the power range to max range so we have full power to hold target if
+                        // We are stopping, Relax the power range to power limit range so we have enough power to hold target if
                         // necessary.
                         if (holdTarget)
                         {
@@ -2408,7 +2410,7 @@ public abstract class TrcMotor implements TrcMotorController, TrcExclusiveSubsys
                             tracer.traceDebug(
                                 instanceName, "Holding: power=%f, currPos=%f, prevTarget=%f",
                                 power, currPos, taskParams.prevPosTarget);
-                            setPosition(0.0, currPos, true, 1.0, null, 0.0);
+                            setPosition(0.0, currPos, true, powerLimit, null, 0.0);
                         }
                         else
                         {
@@ -2431,12 +2433,12 @@ public abstract class TrcMotor implements TrcMotorController, TrcExclusiveSubsys
                 else if (power == 0.0)
                 {
                     // We remain stopping, keep the power range relaxed in case we are holding previous target.
-                    taskParams.powerLimit = 1.0;
+                    taskParams.powerLimit = powerLimit;
                 }
                 else
                 {
                     // Direction did not change but we need to update the power range.
-                    taskParams.powerLimit = power;
+                    taskParams.powerLimit = TrcUtil.clipRange(power, powerLimit);
                     tracer.traceDebug(
                         instanceName, "UpdatePower: power=%f, currPos=%f, target=%f, prevTarget=%f",
                         power, currPos, currTarget, taskParams.prevPosTarget);
@@ -2455,13 +2457,14 @@ public abstract class TrcMotor implements TrcMotorController, TrcExclusiveSubsys
      * elevator will only go half power even though it is far away from the target.
      *
      * @param power specifies the upper bound power of the motor.
+     * @param powerLimit specifies the maximum power limit of the motor.
      * @param minPos specifies the minimum of the position range.
      * @param maxPos specifies the maximum of the position range.
      * @param holdTarget specifies true to hold target when speed is set to 0, false otherwise.
      */
-    public void setPidPower(double power, double minPos, double maxPos, boolean holdTarget)
+    public void setPidPower(double power, double powerLimit, double minPos, double maxPos, boolean holdTarget)
     {
-        setPidPower(null, power, minPos, maxPos, holdTarget);
+        setPidPower(null, power, powerLimit, minPos, maxPos, holdTarget);
     }   //setPidPower
 
     /**

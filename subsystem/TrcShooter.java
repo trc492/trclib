@@ -1184,13 +1184,14 @@ public class TrcShooter implements TrcExclusiveSubsystem
      *
      * @param owner specifies the owner ID to check if the caller has ownership of the motor.
      * @param power specifies the upper bound power of the motor.
+     * @param powerLimit specifies the maximum power limit of the motor.
      * @param holdTarget specifies true to hold target when speed is set to 0, false otherwise.
      */
-    public void setTiltPidPower(String owner, double power, boolean holdTarget)
+    public void setTiltPidPower(String owner, double power, double powerLimit, boolean holdTarget)
     {
         if (tiltMotor != null && !isGoalTrackingEnabled())
         {
-            tiltMotor.setPidPower(owner, power, tiltParams.minPos, tiltParams.maxPos, holdTarget);
+            tiltMotor.setPidPower(owner, power, powerLimit, tiltParams.minPos, tiltParams.maxPos, holdTarget);
         }
     }   //setTiltPidPower
 
@@ -1199,11 +1200,12 @@ public class TrcShooter implements TrcExclusiveSubsystem
      * TeleOp to control tilting by a joystick value.
      *
      * @param power specifies the upper bound power of the motor.
+     * @param powerLimit specifies the maximum power limit of the motor.
      * @param holdTarget specifies true to hold target when speed is set to 0, false otherwise.
      */
-    public void setTiltPidPower(double power, boolean holdTarget)
+    public void setTiltPidPower(double power, double powerLimit, boolean holdTarget)
     {
-        setTiltPidPower(null, power, holdTarget);
+        setTiltPidPower(null, power, powerLimit, holdTarget);
     }   //setTiltPidPower
 
     /**
@@ -1356,13 +1358,14 @@ public class TrcShooter implements TrcExclusiveSubsystem
      *
      * @param owner specifies the owner ID to check if the caller has ownership of the motor.
      * @param power specifies the upper bound power of the motor.
+     * @param powerLimit specifies the maximum power limit of the motor.
      * @param holdTarget specifies true to hold target when speed is set to 0, false otherwise.
      */
-    public void setPanPidPower(String owner, double power, boolean holdTarget)
+    public void setPanPidPower(String owner, double power, double powerLimit, boolean holdTarget)
     {
         if (panMotor != null && !isGoalTrackingEnabled())
         {
-            panMotor.setPidPower(owner, power, panParams.minPos, panParams.maxPos, holdTarget);
+            panMotor.setPidPower(owner, power, powerLimit, panParams.minPos, panParams.maxPos, holdTarget);
         }
     }   //setPanPidPower
 
@@ -1371,11 +1374,12 @@ public class TrcShooter implements TrcExclusiveSubsystem
      * TeleOp to control panning by a joystick value.
      *
      * @param power specifies the upper bound power of the motor.
+     * @param powerLimit specifies the maximum power limit of the motor.
      * @param holdTarget specifies true to hold target when speed is set to 0, false otherwise.
      */
-    public void setPanPidPower(double power, boolean holdTarget)
+    public void setPanPidPower(double power, double powerLimit, boolean holdTarget)
     {
-        setPanPidPower(null, power, holdTarget);
+        setPanPidPower(null, power, powerLimit, holdTarget);
     }   //setPanPidPower
 
     /**
