@@ -68,6 +68,7 @@ public abstract class TrcDriveBase implements TrcExclusiveSubsystem
         public double driveMotorMaxVelocity = 0.0;
         public Double driveMotorPosScale = null;
         public TrcPidController.PidCoefficients driveMotorVelPidCoeffs = null;
+        public TrcPidController.FFCoefficients driveMotorVelFFCoeffs = null;
         public double driveMotorVelPidTolerance = 0.0;
         public boolean driveMotorSoftwarePid = false;
 
@@ -95,6 +96,7 @@ public abstract class TrcDriveBase implements TrcExclusiveSubsystem
          * This method sets parameters for drive motor velocity control.
          *
          * @param velPidCoeffs specifies the velocity control PID Coefficients.
+         * @param velFFCoeffs speecifies the velocity control FF Coefficients.
          * @param posScale specifies the motor encoder position scale, null if not provided.
          * @param useSoftwarePid specifies true to use software PID control, false to use motor native PID control.
          * @param maxVelocity specifies the max motor velocity.
@@ -102,11 +104,12 @@ public abstract class TrcDriveBase implements TrcExclusiveSubsystem
          * @return this object for chaining.
          */
         public BaseParams setDriveMotorVelocityControl(
-            TrcPidController.PidCoefficients velPidCoeffs, Double posScale, boolean useSoftwarePid, double maxVelocity,
-            double pidTolerance)
+            TrcPidController.PidCoefficients velPidCoeffs, TrcPidController.FFCoefficients velFFCoeffs,
+            Double posScale, boolean useSoftwarePid, double maxVelocity, double pidTolerance)
         {
             this.driveMotorVelControlEnabled = true;
             this.driveMotorVelPidCoeffs = velPidCoeffs;
+            this.driveMotorVelFFCoeffs = velFFCoeffs;
             this.driveMotorPosScale = posScale;
             this.driveMotorSoftwarePid = useSoftwarePid;
             this.driveMotorMaxVelocity = maxVelocity;
@@ -118,14 +121,16 @@ public abstract class TrcDriveBase implements TrcExclusiveSubsystem
          * This method sets parameters for drive motor velocity control.
          *
          * @param velPidCoeffs specifies the velocity control PID Coefficients.
+         * @param velFFCoeffs speecifies the velocity control FF Coefficients.
          * @param posScale specifies the motor encoder position scale, null if not provided.
          * @param useSoftwarePid specifies true to use software PID control, false to use motor native PID control.
          * @return this object for chaining.
          */
         public BaseParams setDriveMotorVelocityControl(
-            TrcPidController.PidCoefficients velPidCoeffs, double posScale, boolean useSoftwarePid)
+            TrcPidController.PidCoefficients velPidCoeffs, TrcPidController.FFCoefficients velFFCoeffs,
+            double posScale, boolean useSoftwarePid)
         {
-            setDriveMotorVelocityControl(velPidCoeffs, posScale, useSoftwarePid, 0.0, 0.0);
+            setDriveMotorVelocityControl(velPidCoeffs, velFFCoeffs, posScale, useSoftwarePid, 0.0, 0.0);
             return this;
         }   //setDriveMotorVelocityControl
 
@@ -1424,16 +1429,21 @@ public abstract class TrcDriveBase implements TrcExclusiveSubsystem
      * This method sets drive motor native velocity control parameters.
      *
      * @param velPidCoeffs specifies drive motor velocity control PID coefficients.
+     * @param velFFCoeffs speecifies drive motor velocity control FF Coefficients.
      * @param posScale specifies drive motor encoder position scale.
      * @param softwarePid specifies true to use software PID control, false to use native motor PID.
      */
     public void setDriveMotorVelocityControl(
-        TrcPidController.PidCoefficients velPidCoeffs, double posScale, boolean softwarePid)
+        TrcPidController.PidCoefficients velPidCoeffs, TrcPidController.FFCoefficients velFFCoeffs, double posScale,
+        boolean softwarePid)
     {
         for (TrcMotor motor: motors)
         {
             motor.setVelocityPidParameters(
-                new PidParams().setPidCoefficients(velPidCoeffs).setPidControlParams(softwarePid), null);
+                new PidParams().setPidCoefficients(velPidCoeffs)
+                               .setFFCoefficients(velFFCoeffs)
+                               .setPidControlParams(softwarePid),
+                null);
             motor.setPositionSensorScaleAndOffset(posScale, 0.0);
         }
     }   //enableDriveMotorVelocityControl
