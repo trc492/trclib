@@ -45,6 +45,7 @@ public class TrcSwerveModule
     private double steerLowLimit = 0.0;
     private double steerHighLimit = 0.0;
     private double optimizedWheelDir = 1.0;
+    private double steerDirection = 1.0;
 
     /**
      * Constructor: Create an instance of the object.
@@ -156,6 +157,17 @@ public class TrcSwerveModule
     }   //doneZeroCalibrate
 
     /**
+     * This method inverts the steer direction. This is mainly for dealing with CTRE FusedCANcoder/SyncCANcoder modes
+     * where it is doing CCW+ and we are doing CW+.
+     *
+     * @param inverted specifies true to invert steer direction, false otherwise.
+     */
+    public void setSteerInverted(boolean inverted)
+    {
+        this.steerDirection = inverted? -1.0: 1.0;
+    }   //setSteerInverted
+
+    /**
      * This method sets the steer angle.
      *
      * @param angle    specifies the angle in degrees to set the steer motor to. Not necessarily within [0,360).
@@ -164,6 +176,7 @@ public class TrcSwerveModule
      */
     public void setSteerAngle(double angle, boolean optimize, boolean hold)
     {
+        angle *= steerDirection;
         double prevSteerAngle = getSteerAngle();
         angle = warpSpace.getOptimizedTarget(angle, prevSteerAngle);
         double angleDelta = angle - prevSteerAngle;
@@ -244,7 +257,7 @@ public class TrcSwerveModule
      */
     public double getSteerAngle()
     {
-        return steerMotor != null ? steerMotor.getPosition() : steerServo.getPosition();
+        return steerDirection * (steerMotor != null ? steerMotor.getPosition() : steerServo.getPosition());
     }   //getSteerAngle
 
     /**
