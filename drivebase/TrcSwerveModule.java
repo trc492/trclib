@@ -176,7 +176,7 @@ public class TrcSwerveModule
      */
     public void setSteerAngle(double angle, boolean optimize, boolean hold)
     {
-        //angle *= steerDirection;
+        angle *= steerDirection;
         double prevSteerAngle = getSteerAngle();
         angle = warpSpace.getOptimizedTarget(angle, prevSteerAngle);
         double angleDelta = angle - prevSteerAngle;
@@ -257,8 +257,7 @@ public class TrcSwerveModule
      */
     public double getSteerAngle()
     {
-        //return steerDirection * (steerMotor != null ? steerMotor.getPosition() : steerServo.getPosition());
-        return  (steerMotor != null ? steerMotor.getPosition() : steerServo.getPosition());
+        return steerDirection * (steerMotor != null ? steerMotor.getPosition() : steerServo.getPosition());
     }   //getSteerAngle
 
     /**
