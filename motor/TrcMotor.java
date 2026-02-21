@@ -2579,7 +2579,14 @@ public abstract class TrcMotor implements TrcMotorController, TrcExclusiveSubsys
             setMotorVelocityPidCoefficients(pidParams.pidCoeffs);
             if (pidParams.ffCoeffs != null)
             {
-                setMotorVelocityFFCoefficients(pidParams.ffCoeffs);
+                try
+                {
+                    setMotorVelocityFFCoefficients(pidParams.ffCoeffs);
+                }
+                catch (UnsupportedOperationException e)
+                {
+                    tracer.traceWarn(instanceName, "Motor does not support FeedForward.");
+                }
             }
         }
     }   //setVelocityPidParameters
@@ -2619,7 +2626,7 @@ public abstract class TrcMotor implements TrcMotorController, TrcExclusiveSubsys
      */
     public TrcPidController.FFCoefficients getVelocityFFCoefficients()
     {
-        TrcPidController.FFCoefficients ffCoeffs;
+        TrcPidController.FFCoefficients ffCoeffs = null;
 
         if (softwarePidEnabled)
         {
@@ -2634,7 +2641,14 @@ public abstract class TrcMotor implements TrcMotorController, TrcExclusiveSubsys
         }
         else
         {
-            ffCoeffs = getMotorVelocityFFCoefficients();
+            try
+            {
+                ffCoeffs = getMotorVelocityFFCoefficients();
+            }
+            catch (UnsupportedOperationException e)
+            {
+                tracer.traceWarn(instanceName, "Motor does not support FeedForward.");
+            }
         }
 
         return ffCoeffs;
@@ -2747,7 +2761,14 @@ public abstract class TrcMotor implements TrcMotorController, TrcExclusiveSubsys
             setMotorPositionPidCoefficients(pidParams.pidCoeffs);
             if (pidParams.ffCoeffs != null)
             {
-                setMotorPositionFFCoefficients(pidParams.ffCoeffs);
+                try
+                {
+                    setMotorPositionFFCoefficients(pidParams.ffCoeffs);
+                }
+                catch (UnsupportedOperationException e)
+                {
+                    tracer.traceWarn(instanceName, "Motor does not support FeedForward.");
+                }
             }
         }
     }   //setPositionPidParameters
@@ -2787,7 +2808,7 @@ public abstract class TrcMotor implements TrcMotorController, TrcExclusiveSubsys
      */
     public TrcPidController.FFCoefficients getPositionFFCoefficients()
     {
-        TrcPidController.FFCoefficients ffCoeffs;
+        TrcPidController.FFCoefficients ffCoeffs = null;
 
         if (softwarePidEnabled)
         {
@@ -2802,7 +2823,14 @@ public abstract class TrcMotor implements TrcMotorController, TrcExclusiveSubsys
         }
         else
         {
-            ffCoeffs = getMotorPositionFFCoefficients();
+            try
+            {
+                ffCoeffs = getMotorPositionFFCoefficients();
+            }
+            catch (UnsupportedOperationException e)
+            {
+                tracer.traceWarn(instanceName, "Motor does not support FeedForward.");
+            }
         }
 
         return ffCoeffs;
@@ -2917,7 +2945,14 @@ public abstract class TrcMotor implements TrcMotorController, TrcExclusiveSubsys
             setMotorCurrentPidCoefficients(pidParams.pidCoeffs);
             if (pidParams.ffCoeffs != null)
             {
-                setMotorCurrentFFCoefficients(pidParams.ffCoeffs);
+                try
+                {
+                    setMotorCurrentFFCoefficients(pidParams.ffCoeffs);
+                }
+                catch (UnsupportedOperationException e)
+                {
+                    tracer.traceWarn(instanceName, "Motor does not support FeedForward.");
+                }
             }
         }
     }   //setCurrentPidParameters
@@ -2957,7 +2992,7 @@ public abstract class TrcMotor implements TrcMotorController, TrcExclusiveSubsys
      */
     public TrcPidController.FFCoefficients getCurrentFFCoefficients()
     {
-        TrcPidController.FFCoefficients ffCoeffs;
+        TrcPidController.FFCoefficients ffCoeffs = null;
 
         if (softwarePidEnabled)
         {
@@ -2972,7 +3007,14 @@ public abstract class TrcMotor implements TrcMotorController, TrcExclusiveSubsys
         }
         else
         {
-            ffCoeffs = getMotorCurrentFFCoefficients();
+            try
+            {
+                ffCoeffs = getMotorCurrentFFCoefficients();
+            }
+            catch (UnsupportedOperationException e)
+            {
+                tracer.traceWarn(instanceName, "Motor does not support FeedForward.");
+            }
         }
 
         return ffCoeffs;
