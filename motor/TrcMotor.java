@@ -3109,8 +3109,10 @@ public abstract class TrcMotor implements TrcMotorController, TrcExclusiveSubsys
             // - motor has not moved for at least stallTimeout.
             double currTime = TrcTimer.getCurrentTime();
             double currPos = getPosition();
+            double deltaTime = taskParams.prevTime != null? currTime - taskParams.prevTime: 0.0;
+            double deltaPos = Math.abs(currPos - taskParams.prevPos);
             if (Math.abs(power) < taskParams.stallMinPower ||
-                Math.abs(currPos - taskParams.prevPos) > taskParams.stallTolerance ||
+                deltaPos > taskParams.stallTolerance ||
                 taskParams.prevTime == null)
             {
                 tracer.traceDebug(
@@ -3125,7 +3127,7 @@ public abstract class TrcMotor implements TrcMotorController, TrcExclusiveSubsys
                 power, taskParams.stallMinPower, currPos - taskParams.prevPos, taskParams.stallTolerance,
                 currTime - taskParams.prevTime, taskParams.stallTimeout);
 
-            if (currTime - taskParams.prevTime > taskParams.stallTimeout)
+            if (deltaTime > taskParams.stallTimeout)
             {
                 // We have detected a stalled condition for at least stallTimeout.
                 stalled = true;
@@ -3168,6 +3170,7 @@ public abstract class TrcMotor implements TrcMotorController, TrcExclusiveSubsys
                     {
                         beepDevice.playTone(beepLowFrequency, beepDuration);
                     }
+                    tracer.traceInfo(instanceName, "Resetting stall.");
                 }
             }
             else
