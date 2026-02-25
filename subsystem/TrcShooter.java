@@ -155,6 +155,9 @@ public class TrcShooter implements TrcExclusiveSubsystem
     private static class GoalTrackingParams
     {
         AimInfoSource aimInfoSource = null;
+        boolean trackFlywheel = false;
+        boolean trackTiltPos = false;
+        boolean trackPanPos = false;
     }   //class GoalTrackingParams
 
     private static class ShooterState
@@ -345,19 +348,20 @@ public class TrcShooter implements TrcExclusiveSubsystem
             AimInfo aimInfo = goalTrackingParams.aimInfoSource.getAimInfo(null);
             if (aimInfo != null)
             {
-                if (aimInfo.flywheel1RPM != null || aimInfo.flywheel2RPM != null)
+                if (goalTrackingParams.trackFlywheel &&
+                    (aimInfo.flywheel1RPM != null || aimInfo.flywheel2RPM != null))
                 {
                     setShooterMotorRPM(aimInfo.flywheel1RPM, aimInfo.flywheel2RPM);
                 }
 
-                if (aimInfo.panAngle != null)
-                {
-                    setPanAngle(aimInfo.panAngle);
-                }
-
-                if (aimInfo.tiltAngle != null)
+                if (goalTrackingParams.trackTiltPos && aimInfo.tiltAngle != null)
                 {
                     setTiltAngle(aimInfo.tiltAngle);
+                }
+
+                if (goalTrackingParams.trackPanPos && aimInfo.panAngle != null)
+                {
+                    setPanAngle(aimInfo.panAngle);
                 }
             }
         }
@@ -391,31 +395,51 @@ public class TrcShooter implements TrcExclusiveSubsystem
     }   //isGoalTrackingEnabled
 
     /**
-     * This method enables/disables Goal Tracking.
+     * This method enables Goal Tracking.
      *
      * @param aimInfoSource specifies the method to call to get Aim Info to enable, null to disable Goal Tracking.
+     * @param trackFlywheel specifies true to change flywheel speed according to distance to goal, false to not
+     *        track flywheel speed.
+     * @param trackTiltPos specifies true to change tilt position according to distance to goal, false to not
+     *        track tilt position.
+     * @param trackPanPos specifies true to change pan position according to goal bearing, false to not
+     *        track pan position.
      */
-    public void setGoalTrackingEnabled(AimInfoSource aimInfoSource)
+    public void enableGoalTracking(
+        AimInfoSource aimInfoSource, boolean trackFlywheel, boolean trackTiltPos, boolean trackPanPos)
     {
         synchronized (goalTrackingParams)
         {
-            if (goalTrackingParams.aimInfoSource == null && aimInfoSource != null)
+            if (goalTrackingParams.aimInfoSource == null)
             {
-                tracer.traceInfo(instanceName, "Enable GoalTracking.");
+                tracer.traceInfo(
+                    instanceName, "Enable GoalTracking (flywheel/tilt/pan=%s/%s/%s).",
+                    trackFlywheel, trackTiltPos, trackPanPos);
+
                 // Cancel previous operation if any.
                 finish(false);
-                goalTrackingTaskObj.registerTask(TrcTaskMgr.TaskType.POST_PERIODIC_TASK);
                 goalTrackingParams.aimInfoSource = aimInfoSource;
-            }
-            else if (goalTrackingParams.aimInfoSource != null && aimInfoSource == null)
-            {
-                tracer.traceInfo(instanceName, "Disable Goal Tracking.");
-                stopGoalTracking();
-                goalTrackingTaskObj.unregisterTask();
-                goalTrackingParams.aimInfoSource = null;
+                goalTrackingParams.trackFlywheel = trackFlywheel;
+                goalTrackingParams.trackTiltPos = trackTiltPos;
+                goalTrackingParams.trackPanPos = trackPanPos;
+                goalTrackingTaskObj.registerTask(TrcTaskMgr.TaskType.POST_PERIODIC_TASK);
             }
         }
-    }   //setGoalTrackingEnabled
+    }   //enableGoalTracking
+
+    /**
+     * This method disables Goal Tracking.
+     */
+    public void disableGoalTracking()
+    {
+        if (goalTrackingParams.aimInfoSource != null)
+        {
+            tracer.traceInfo(instanceName, "Disable Goal Tracking.");
+            stopGoalTracking();
+            goalTrackingTaskObj.unregisterTask();
+            goalTrackingParams.aimInfoSource = null;
+        }
+    }   //disableGoalTracking
 
     /**
      * This method enables power mode on the shooter motors. In power mode, it will do open-loop control of the
