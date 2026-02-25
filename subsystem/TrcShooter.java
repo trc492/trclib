@@ -22,6 +22,8 @@
 
 package trclib.subsystem;
 
+import java.util.concurrent.atomic.AtomicReference;
+
 import trclib.dataprocessor.TrcUtil;
 import trclib.drivebase.TrcDriveBase;
 import trclib.motor.TrcMotor;
@@ -152,12 +154,26 @@ public class TrcShooter implements TrcExclusiveSubsystem
         }   //toString
     }   //class AimConvergenceStats
 
-    private static class GoalTrackingParams
+    public static class GoalTrackingParams
     {
-        AimInfoSource aimInfoSource = null;
-        boolean trackFlywheel = false;
-        boolean trackTiltPos = false;
-        boolean trackPanPos = false;
+        private boolean trackFlywheel = false;
+        private boolean trackTiltPos = false;
+        private boolean trackPanPos = false;
+
+        public GoalTrackingParams(boolean trackFlywheel, boolean trackTiltPos, boolean trackPanPos)
+        {
+            this.trackFlywheel = trackFlywheel;
+            this.trackTiltPos = trackTiltPos;
+            this.trackPanPos = trackPanPos;
+        }   //GoalTrackingParams
+
+        @Override
+        public String toString()
+        {
+            return "(trackFlywheel=" + trackFlywheel +
+                   ",trackTiltPos=" + trackTiltPos +
+                   ",trackPanPos=" + trackPanPos + ")";
+        }   //toString
     }   //class GoalTrackingParams
 
     private static class ShooterState
@@ -171,7 +187,7 @@ public class TrcShooter implements TrcExclusiveSubsystem
     }   //class ShooterState
 
     private final ShooterState shooterState = new ShooterState();
-    private final GoalTrackingParams goalTrackingParams = new GoalTrackingParams();
+    private final AtomicReference<GoalTrackingParams> goalTrackingParams = new AtomicReference<>(null);
     public final TrcDbgTrace tracer;
     private final String instanceName;
     public final TrcMotor shooterMotor1;
@@ -193,6 +209,7 @@ public class TrcShooter implements TrcExclusiveSubsystem
     private Double shootOffDelay = null;
     private Double maxShooter1MaxRPM = null;
     private Double maxShooter2MaxRPM = null;
+    private AimInfoSource aimInfoSource = null;
 
     /**
      * Constructor: Creates an instance of the object.
@@ -343,26 +360,26 @@ public class TrcShooter implements TrcExclusiveSubsystem
      */
     private void goalTrackingTask(TrcTaskMgr.TaskType taskType, TrcRobot.RunMode runMode, boolean slowPeriodicLoop)
     {
-        synchronized (goalTrackingParams)
+        // If goalTrackingTask is running, aimInfoSource should not be null.
+        GoalTrackingParams trackingParams = goalTrackingParams.get();
+        AimInfo aimInfo = aimInfoSource.getAimInfo(null);
+
+        if (aimInfo != null)
         {
-            AimInfo aimInfo = goalTrackingParams.aimInfoSource.getAimInfo(null);
-            if (aimInfo != null)
+            if (trackingParams.trackFlywheel &&
+                (aimInfo.flywheel1RPM != null || aimInfo.flywheel2RPM != null))
             {
-                if (goalTrackingParams.trackFlywheel &&
-                    (aimInfo.flywheel1RPM != null || aimInfo.flywheel2RPM != null))
-                {
-                    setShooterMotorRPM(aimInfo.flywheel1RPM, aimInfo.flywheel2RPM);
-                }
+                setShooterMotorRPM(aimInfo.flywheel1RPM, aimInfo.flywheel2RPM);
+            }
 
-                if (goalTrackingParams.trackTiltPos && aimInfo.tiltAngle != null)
-                {
-                    setTiltAngle(aimInfo.tiltAngle);
-                }
+            if (trackingParams.trackTiltPos && aimInfo.tiltAngle != null)
+            {
+                setTiltAngle(aimInfo.tiltAngle);
+            }
 
-                if (goalTrackingParams.trackPanPos && aimInfo.panAngle != null)
-                {
-                    setPanAngle(aimInfo.panAngle);
-                }
+            if (trackingParams.trackPanPos && aimInfo.panAngle != null)
+            {
+                setPanAngle(aimInfo.panAngle);
             }
         }
 
@@ -388,42 +405,25 @@ public class TrcShooter implements TrcExclusiveSubsystem
      */
     public boolean isGoalTrackingEnabled()
     {
-        synchronized (goalTrackingParams)
-        {
-            return goalTrackingParams.aimInfoSource != null;
-        }
+        return goalTrackingParams.get() != null;
     }   //isGoalTrackingEnabled
 
     /**
      * This method enables Goal Tracking.
      *
-     * @param aimInfoSource specifies the method to call to get Aim Info to enable, null to disable Goal Tracking.
-     * @param trackFlywheel specifies true to change flywheel speed according to distance to goal, false to not
-     *        track flywheel speed.
-     * @param trackTiltPos specifies true to change tilt position according to distance to goal, false to not
-     *        track tilt position.
-     * @param trackPanPos specifies true to change pan position according to goal bearing, false to not
-     *        track pan position.
+     * @param trackingParams specifies the goal tracking parameters.
+     * @param aimInfoSource specifies the method to call for getting AimInfo.
      */
-    public void enableGoalTracking(
-        AimInfoSource aimInfoSource, boolean trackFlywheel, boolean trackTiltPos, boolean trackPanPos)
+    public void enableGoalTracking(GoalTrackingParams trackingParams, AimInfoSource aimInfoSource)
     {
-        synchronized (goalTrackingParams)
+        tracer.traceInfo(instanceName, "Enable GoalTracking (trackingParams=%s).", trackingParams);
+        // Cancel previous operation if any.
+        finish(false);
+        this.aimInfoSource = aimInfoSource;
+        if (goalTrackingParams.getAndSet(trackingParams) == null)
         {
-            if (goalTrackingParams.aimInfoSource == null)
-            {
-                tracer.traceInfo(
-                    instanceName, "Enable GoalTracking (flywheel/tilt/pan=%s/%s/%s).",
-                    trackFlywheel, trackTiltPos, trackPanPos);
-
-                // Cancel previous operation if any.
-                finish(false);
-                goalTrackingParams.aimInfoSource = aimInfoSource;
-                goalTrackingParams.trackFlywheel = trackFlywheel;
-                goalTrackingParams.trackTiltPos = trackTiltPos;
-                goalTrackingParams.trackPanPos = trackPanPos;
-                goalTrackingTaskObj.registerTask(TrcTaskMgr.TaskType.POST_PERIODIC_TASK);
-            }
+            // Tracking task was not enabled, enable it now.
+            goalTrackingTaskObj.registerTask(TrcTaskMgr.TaskType.POST_PERIODIC_TASK);
         }
     }   //enableGoalTracking
 
@@ -432,12 +432,13 @@ public class TrcShooter implements TrcExclusiveSubsystem
      */
     public void disableGoalTracking()
     {
-        if (goalTrackingParams.aimInfoSource != null)
+        GoalTrackingParams trackingParams = goalTrackingParams.getAndSet(null);
+        if (trackingParams != null)
         {
             tracer.traceInfo(instanceName, "Disable Goal Tracking.");
             stopGoalTracking();
             goalTrackingTaskObj.unregisterTask();
-            goalTrackingParams.aimInfoSource = null;
+            aimInfoSource = null;
         }
     }   //disableGoalTracking
 
