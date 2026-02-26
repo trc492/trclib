@@ -156,9 +156,9 @@ public class TrcShooter implements TrcExclusiveSubsystem
 
     public static class GoalTrackingParams
     {
-        private boolean trackFlywheel = false;
-        private boolean trackTiltPos = false;
-        private boolean trackPanPos = false;
+        public boolean trackFlywheel = false;
+        public boolean trackTiltPos = false;
+        public boolean trackPanPos = false;
 
         public GoalTrackingParams(boolean trackFlywheel, boolean trackTiltPos, boolean trackPanPos)
         {
