@@ -436,15 +436,15 @@ public class TrcTriggerThresholdRange implements TrcTrigger
     {
         synchronized (triggerState)
         {
-            if (triggerState.triggerParams != null)
+            if (triggerState.triggerParams == null)
+            {
+                triggerState.triggerParams = new TriggerParams(lowThreshold, highThreshold, settlingPeriod);
+            }
+            else
             {
                 triggerState.triggerParams.lowThreshold = lowThreshold;
                 triggerState.triggerParams.highThreshold = highThreshold;
                 triggerState.triggerParams.settlingPeriod = settlingPeriod;
-            }
-            else
-            {
-                tracer.traceErr(instanceName, "Initial trigger params were not set up.");
             }
         }
     }   //setTrigger

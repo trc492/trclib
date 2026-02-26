@@ -894,6 +894,26 @@ public class TrcShooter implements TrcExclusiveSubsystem
     }   //getShooterMotor2
 
     /**
+     * This method returns the created Shooter motor 1 velocity trigger if any.
+     *
+     * @return created shooter motor 1 velocity trigger, null if none created.
+     */
+    public TrcTriggerThresholdRange getShooterMotor1VelTrigger()
+    {
+        return (TrcTriggerThresholdRange) shooterMotor1VelTrigger;
+    }   //getShooterMotor1VelTrigger
+
+    /**
+     * This method returns the created Shooter motor 2 velocity trigger if any.
+     *
+     * @return created shooter motor 2 velocity trigger, null if none created.
+     */
+    public TrcTriggerThresholdRange getShooterMotor2VelTrigger()
+    {
+        return (TrcTriggerThresholdRange) shooterMotor2VelTrigger;
+    }   //getShooterMotor2VelTrigger
+
+    /**
      * This methods returns the shooter motor 1 power.
      *
      * @return shooter motor 1 power.
