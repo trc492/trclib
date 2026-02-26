@@ -786,12 +786,12 @@ public class TrcShooter implements TrcExclusiveSubsystem
         {
             tracer.traceDebug(
                 instanceName,
-                "canceled=" + canceled +
-                ",shooter1Event=" + shooterState.shooter1OnTargetEvent +
-                ",shooter2Event=" + shooterState.shooter2OnTargetEvent +
-                ", tiltEvent=" + shooterState.tiltOnTargetEvent +
-                ", panEvent=" + shooterState.panOnTargetEvent +
-                ", aimOnly=" + (shootOp == null));
+                "\ncanceled=" + canceled +
+                "\nshooter1Event=" + shooterState.shooter1OnTargetEvent +
+                "\nshooter2Event=" + shooterState.shooter2OnTargetEvent +
+                "\ntiltEvent=" + shooterState.tiltOnTargetEvent +
+                "\npanEvent=" + shooterState.panOnTargetEvent +
+                "\naimOnly=" + (shootOp == null));
             if (!canceled)
             {
                 if ((shooterState.shooter1OnTargetEvent == null || shooterState.shooter1OnTargetEvent.isSignaled()) &&

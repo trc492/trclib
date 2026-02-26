@@ -438,7 +438,7 @@ public class TrcTriggerThresholdRange implements TrcTrigger
         {
             if (triggerState.triggerParams == null)
             {
-                triggerState.triggerParams = new TriggerParams(lowThreshold, highThreshold, settlingPeriod);
+                setTrigger(new TriggerParams(lowThreshold, highThreshold, settlingPeriod), DEF_CACHE_SIZE);
             }
             else
             {
