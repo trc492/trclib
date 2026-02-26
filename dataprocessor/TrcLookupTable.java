@@ -193,7 +193,7 @@ public class TrcLookupTable
             {
                 interpolatedEntry =
                     interpolation == Interpolation.PolynomialRegression && firstEntry.region.polynomialCoeffs != null?
-                        polynomialRegression(input, firstEntry):
+                        polynomialRegression(input, firstEntry.region):
                         // The provided input is below the table range, extrapolate.
                         linearExtrapolation(input, firstEntry, lookupTable.get(1));
             }
@@ -201,7 +201,7 @@ public class TrcLookupTable
             {
                 interpolatedEntry =
                     interpolation == Interpolation.PolynomialRegression && lastEntry.region.polynomialCoeffs != null?
-                        polynomialRegression(input, lastEntry):
+                        polynomialRegression(input, lastEntry.region):
                         // The provided input is above the table range, extrapolate.
                         linearExtrapolation(input, lookupTable.get(lookupTable.size() - 2), lastEntry);
             }
@@ -215,7 +215,7 @@ public class TrcLookupTable
                         interpolatedEntry =
                             interpolation == Interpolation.PolynomialRegression &&
                                              entry.region.polynomialCoeffs != null?
-                            polynomialRegression(input, entry):
+                            polynomialRegression(input, entry.region):
                             linearInterpolation(input, lookupTable.get(i - 1), entry);
                         break;
                     }
@@ -231,23 +231,23 @@ public class TrcLookupTable
      * neighboring entry in the table.
      *
      * @param input specifies the input value.
-     * @param entry specifies the neighboring entry.
+     * @param region specifies the region the given input is in.
      * @return polynomial regression entry.
      */
-    public Entry polynomialRegression(double input, Entry entry)
+    public Entry polynomialRegression(double input, Region region)
     {
-        double[] outputs = new double[entry.outputs.length];
+        double[] outputs = new double[region.polynomialCoeffs.length];
 
         for (int i = 0; i < outputs.length; i++)
         {
-            outputs[i] = entry.region.polynomialCoeffs[i][0];
-            for (int j = 1; j < entry.region.polynomialCoeffs[i].length; j++)
+            outputs[i] = region.polynomialCoeffs[i][0];
+            for (int j = 1; j < region.polynomialCoeffs[i].length; j++)
             {
-                outputs[i] += Math.pow(input, j) * entry.region.polynomialCoeffs[i][j];
+                outputs[i] += Math.pow(input, j) * region.polynomialCoeffs[i][j];
             }
         }
 
-        return new Entry("Polynomial", input, entry.region, outputs);
+        return new Entry("Polynomial", input, region, outputs);
     }   //polynomialRegression
 
     /**
