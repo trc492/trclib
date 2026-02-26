@@ -2671,7 +2671,7 @@ public abstract class TrcMotor implements TrcMotorController, TrcExclusiveSubsys
      */
     public boolean isVelocityOnTarget()
     {
-        boolean onTarget;
+        boolean onTarget = false;
 
         if (softwarePidEnabled)
         {
@@ -2684,7 +2684,7 @@ public abstract class TrcMotor implements TrcMotorController, TrcExclusiveSubsys
                 throw new IllegalStateException("Software Velocity PID coefficients have not been set.");
             }
         }
-        else
+        else if (controllerVelocity != null)
         {
             onTarget = Math.abs(controllerVelocity - getVelocity()) <= velPidParams.pidTolerance;
         }
@@ -2853,7 +2853,7 @@ public abstract class TrcMotor implements TrcMotorController, TrcExclusiveSubsys
      */
     public boolean isPositionOnTarget()
     {
-        boolean onTarget;
+        boolean onTarget = false;
 
         if (softwarePidEnabled)
         {
@@ -2867,7 +2867,7 @@ public abstract class TrcMotor implements TrcMotorController, TrcExclusiveSubsys
                 throw new IllegalStateException("Software Position PID coefficients have not been set.");
             }
         }
-        else
+        else if (controllerPosition != null)
         {
             onTarget = Math.abs(controllerPosition - getPosition()) <= posPidParams.pidTolerance;
             // posTolerance = tolerance;
@@ -3037,7 +3037,7 @@ public abstract class TrcMotor implements TrcMotorController, TrcExclusiveSubsys
      */
     public boolean isCurrentOnTarget()
     {
-        boolean onTarget;
+        boolean onTarget = false;
 
         if (softwarePidEnabled)
         {
@@ -3051,7 +3051,7 @@ public abstract class TrcMotor implements TrcMotorController, TrcExclusiveSubsys
                 throw new IllegalStateException("Software Current PID coefficients have not been set.");
             }
         }
-        else
+        else if (controllerCurrent != null)
         {
             onTarget = Math.abs(controllerCurrent - getCurrent()) <= currentPidParams.pidTolerance;
             // currentTolerance = tolerance;
