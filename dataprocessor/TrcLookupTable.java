@@ -28,6 +28,18 @@ import java.util.HashMap;
 
 public class TrcLookupTable
 {
+    public enum Interpolation
+    {
+        LinearInterpolation,
+        PolynomialRegression,
+        CustomInterpolation
+    }   //enum Interpolation
+
+    public interface CustomInterpolation
+    {
+        Entry interpolate(double input);
+    }   //interface CustomInterpolation
+
     public static class Region
     {
         public final double value;
@@ -73,6 +85,7 @@ public class TrcLookupTable
 
     private final ArrayList<Entry> lookupTable;
     private final HashMap<String, Entry> namedEntriesMap;
+    private CustomInterpolation customInterpolation = null;
 
     /**
      * Constructor: Create an instance of the object.
@@ -82,6 +95,16 @@ public class TrcLookupTable
         lookupTable = new ArrayList<>();
         namedEntriesMap = new HashMap<>();
     }   //TrcLookupTable
+
+    /**
+     * This method sets a custom function to be used for interpolation.
+     *
+     * @param customInterpolation specifies the custom interpolation function to call.
+     */
+    public void setCustomInterpolation(CustomInterpolation customInterpolation)
+    {
+        this.customInterpolation = customInterpolation;
+    }   //setCustomInterpolation
 
     /**
      * This method adds a new entry to the table by insertion sort.
@@ -146,62 +169,72 @@ public class TrcLookupTable
      * polynomial regression or linearly interpolated between two adjacent entries in the table.
      *
      * @param input specifies the input value to lookup in the table.
-     * @param useRegression specifies true to use polynomial regression, false to use table lookup with linear
-     *        interpolation.
-     * @return entry that is calculated from polynomial regression if specified, or a linear interpolated or
-     *         extrapolated entry is returned.
+     * @param interpolation specifies the interpolation method.
+     * @return entry that is calculated from the specified interpolation method.
      */
-    public Entry get(double input, boolean useRegression)
+    public Entry get(double input, Interpolation interpolation)
     {
-        if (lookupTable.size() < 2)
-        {
-            throw new RuntimeException("LookupTable must have at least 2 entries.");
-        }
+        Entry interpolatedEntry = null;
 
-        Entry calculatedEntry = null;
-        Entry firstEntry = lookupTable.get(0);
-        Entry lastEntry = lookupTable.get(lookupTable.size() - 1);
-        if (input <= firstEntry.input)
+        if (interpolation == Interpolation.CustomInterpolation && customInterpolation != null)
         {
-            calculatedEntry = useRegression && firstEntry.region.polynomialCoeffs != null?
-                calculateRegressionEntry(input, firstEntry):
-                // The provided input is below the table range, extrapolate.
-                calculateExtrapolatedEntry(input, firstEntry, lookupTable.get(1));
-        }
-        else if (input > lastEntry.input)
-        {
-            calculatedEntry = useRegression && lastEntry.region.polynomialCoeffs != null?
-                calculateRegressionEntry(input, lastEntry):
-                // The provided input is above the table range, extrapolate.
-                calculateExtrapolatedEntry(input, lookupTable.get(lookupTable.size() - 2), lastEntry);
+            interpolatedEntry = customInterpolation.interpolate(input);
         }
         else
         {
-            for (int i = 1; i < lookupTable.size(); i++)
+            if (lookupTable.size() < 2)
             {
-                Entry entry = lookupTable.get(i);
-                if (input <= entry.input)
+                throw new RuntimeException("LookupTable must have at least 2 entries.");
+            }
+
+            Entry firstEntry = lookupTable.get(0);
+            Entry lastEntry = lookupTable.get(lookupTable.size() - 1);
+            if (input <= firstEntry.input)
+            {
+                interpolatedEntry =
+                    interpolation == Interpolation.PolynomialRegression && firstEntry.region.polynomialCoeffs != null?
+                        polynomialRegression(input, firstEntry):
+                        // The provided input is below the table range, extrapolate.
+                        linearExtrapolation(input, firstEntry, lookupTable.get(1));
+            }
+            else if (input > lastEntry.input)
+            {
+                interpolatedEntry =
+                    interpolation == Interpolation.PolynomialRegression && lastEntry.region.polynomialCoeffs != null?
+                        polynomialRegression(input, lastEntry):
+                        // The provided input is above the table range, extrapolate.
+                        linearExtrapolation(input, lookupTable.get(lookupTable.size() - 2), lastEntry);
+            }
+            else
+            {
+                for (int i = 1; i < lookupTable.size(); i++)
                 {
-                    calculatedEntry = useRegression && entry.region.polynomialCoeffs != null?
-                        calculateRegressionEntry(input, entry):
-                        calculateInterpolatedEntry(input, lookupTable.get(i - 1), entry);
-                    break;
+                    Entry entry = lookupTable.get(i);
+                    if (input <= entry.input)
+                    {
+                        interpolatedEntry =
+                            interpolation == Interpolation.PolynomialRegression &&
+                                             entry.region.polynomialCoeffs != null?
+                            polynomialRegression(input, entry):
+                            linearInterpolation(input, lookupTable.get(i - 1), entry);
+                        break;
+                    }
                 }
             }
         }
 
-        return calculatedEntry;
+        return interpolatedEntry;
     }   //get
 
     /**
-     * This method creates an entry calculated using regression with the given input and a lower neighboring entry
-     * in the table.
+     * This method creates an entry calculated using polynomial regression with the given input and a lower
+     * neighboring entry in the table.
      *
      * @param input specifies the input value.
      * @param entry specifies the neighboring entry.
-     * @return regression entry.
+     * @return polynomial regression entry.
      */
-    public Entry calculateRegressionEntry(double input, Entry entry)
+    public Entry polynomialRegression(double input, Entry entry)
     {
         double[] outputs = new double[entry.outputs.length];
 
@@ -214,18 +247,19 @@ public class TrcLookupTable
             }
         }
 
-        return new Entry("Regression", input, entry.region, outputs);
-    }   //calculateRegressionEntry
+        return new Entry("Polynomial", input, entry.region, outputs);
+    }   //polynomialRegression
 
     /**
-     * This method creates an interpolated entry with the given input and the two neighboring points in the table.
+     * This method creates a linear interpolated entry with the given input and the two neighboring points in the
+     * table.
      *
      * @param input specifies the input value.
      * @param lowerEntry specifies the lower neighboring entry.
      * @param upperEntry specifies the upper neighboring entry.
-     * @return interpolated entry.
+     * @return linear interpolated entry.
      */
-    private Entry calculateInterpolatedEntry(double input, Entry lowerEntry, Entry upperEntry)
+    private Entry linearInterpolation(double input, Entry lowerEntry, Entry upperEntry)
     {
         double[] outputs = new double[lowerEntry.outputs.length];
         double w = (input - lowerEntry.input) / (upperEntry.input - lowerEntry.input);
@@ -236,18 +270,18 @@ public class TrcLookupTable
         }
 
         return new Entry("Interpolated", input, lowerEntry.region, outputs);
-    }   //calculateInterpolatedEntry
+    }   //linearInterpolation
 
     /**
-     * This method creates an extrapolated entry with the given input and the two closest neighboring points in
+     * This method creates a linear extrapolated entry with the given input and the two closest neighboring points in
      * the table.
      *
      * @param input specifies the input value.
      * @param lowerEntry specifies the lower neighboring entry.
      * @param upperEntry specifies the upper neighboring entry.
-     * @return extrapolated entry.
+     * @return linear extrapolated entry.
      */
-    private Entry calculateExtrapolatedEntry(double input, Entry lowerEntry, Entry upperEntry)
+    private Entry linearExtrapolation(double input, Entry lowerEntry, Entry upperEntry)
     {
         double[] outputs = new double[lowerEntry.outputs.length];
         double deltaInput = upperEntry.input - lowerEntry.input;
@@ -269,6 +303,6 @@ public class TrcLookupTable
         }
 
         return new Entry("Extrapolated", input, upperEntry.region, outputs);
-    }   //calculateExtrapolatedEntry
+    }   //linearExtrapolation
 
 }   //class TrcLookupTable
