@@ -52,7 +52,7 @@ public class TrcShooter implements TrcExclusiveSubsystem
      */
     public interface ShootOperation
     {
-        void shoot(String owner, TrcShooter shooter, TrcEvent completionEvent);
+        void shoot(String owner, TrcEvent completionEvent, Object context);
     }   //interface ShootOperation
 
     /**
@@ -205,6 +205,7 @@ public class TrcShooter implements TrcExclusiveSubsystem
     private String currOwner = null;
     private TrcEvent completionEvent = null;
     private ShootOperation shootOp = null;
+    private Object shootContext = null;
     private String shootOpOwner = null;
     private Double shootOffDelay = null;
     private Double maxShooter1MaxRPM = null;
@@ -290,6 +291,7 @@ public class TrcShooter implements TrcExclusiveSubsystem
                 }
             }
             shootOp = null;
+            shootContext = null;
             shootOpOwner = null;
             shootOffDelay = null;
 
@@ -610,13 +612,14 @@ public class TrcShooter implements TrcExclusiveSubsystem
      * @param event specifies an event to signal when both reached target, can be null if not provided.
      * @param timeout specifies maximum timeout period, can be zero if no timeout.
      * @param shootOp specifies the shoot method, can be null if aim only.
+     * @param shootContext specifies the context object passed to the ShootOp method.
      * @param shootOffDelay specifies the delay in seconds to turn off shooter after shooting, or zero if no delay
      *        (turn off immediately), only applicable if shootOp is not null. Can also be null if keeping the shooter
      *        on.
      */
     public void aimShooter(
         String owner, Double flywheel1RPM, Double flywheel2RPM, Double panAngle, Double tiltAngle, TrcEvent event,
-        double timeout, ShootOperation shootOp, Double shootOffDelay)
+        double timeout, ShootOperation shootOp, Object shootContext, Double shootOffDelay)
     {
         tracer.traceDebug(
             instanceName,
@@ -642,6 +645,7 @@ public class TrcShooter implements TrcExclusiveSubsystem
             {
                 this.completionEvent = event;
                 this.shootOp = shootOp;
+                this.shootContext = shootContext;
                 this.shootOpOwner = shootOp != null ? owner : null;
                 this.shootOffDelay = shootOffDelay;
 
@@ -720,16 +724,18 @@ public class TrcShooter implements TrcExclusiveSubsystem
      * @param event specifies an event to signal when both reached target, can be null if not provided.
      * @param timeout specifies maximum timeout period, can be zero if no timeout.
      * @param shootOp specifies the shoot method, can be null if aim only.
+     * @param shootContext specifies the context object passed to the ShootOp method.
      * @param shootOffDelay specifies the delay in seconds to turn off shooter after shooting, or zero if no delay
      *        (turn off immediately), only applicable if shootOp is not null. Can also be null if keeping the shooter
      *        on.
      */
     public void aimShooter(
-        String owner, AimInfo aimInfo, TrcEvent event, double timeout, ShootOperation shootOp, Double shootOffDelay)
+        String owner, AimInfo aimInfo, TrcEvent event, double timeout, ShootOperation shootOp, Object shootContext,
+        Double shootOffDelay)
     {
         aimShooter(
             owner, aimInfo.flywheel1RPM, aimInfo.flywheel2RPM, aimInfo.panAngle, aimInfo.tiltAngle, event, timeout,
-            shootOp, shootOffDelay);
+            shootOp, shootContext, shootOffDelay);
     }   //aimShooter
 
     /**
@@ -745,7 +751,7 @@ public class TrcShooter implements TrcExclusiveSubsystem
      */
     public void aimShooter(String owner, AimInfo aimInfo, TrcEvent event, double timeout)
     {
-        aimShooter(owner, aimInfo, event, timeout, null, null);
+        aimShooter(owner, aimInfo, event, timeout, null, null, null);
     }   //aimShooter
 
     /**
@@ -759,7 +765,7 @@ public class TrcShooter implements TrcExclusiveSubsystem
      */
     public void aimShooter(String owner, AimInfo aimInfo)
     {
-        aimShooter(owner, aimInfo, null, 0.0, null, null);
+        aimShooter(owner, aimInfo, null, 0.0, null, null, null);
     }   //aimShooter
 
     /**
@@ -771,7 +777,7 @@ public class TrcShooter implements TrcExclusiveSubsystem
      */
     public void aimShooter(AimInfo aimInfo)
     {
-        aimShooter(null, aimInfo, null, 0.0, null, null);
+        aimShooter(null, aimInfo, null, 0.0, null, null, null);
     }   //aimShooter
 
     /**
@@ -786,12 +792,12 @@ public class TrcShooter implements TrcExclusiveSubsystem
         {
             tracer.traceDebug(
                 instanceName,
-                "\ncanceled=" + canceled +
-                "\nshooter1Event=" + shooterState.shooter1OnTargetEvent +
-                "\nshooter2Event=" + shooterState.shooter2OnTargetEvent +
-                "\ntiltEvent=" + shooterState.tiltOnTargetEvent +
-                "\npanEvent=" + shooterState.panOnTargetEvent +
-                "\naimOnly=" + (shootOp == null));
+                "canceled=" + canceled +
+                ",shooter1Event=" + shooterState.shooter1OnTargetEvent +
+                ",shooter2Event=" + shooterState.shooter2OnTargetEvent +
+                ",tiltEvent=" + shooterState.tiltOnTargetEvent +
+                ",panEvent=" + shooterState.panOnTargetEvent +
+                ",aimOnly=" + (shootOp == null));
             if (!canceled)
             {
                 if ((shooterState.shooter1OnTargetEvent == null || shooterState.shooter1OnTargetEvent.isSignaled()) &&
@@ -804,7 +810,7 @@ public class TrcShooter implements TrcExclusiveSubsystem
                         // If both shooter velocity and tilt/pan position have reached target, shoot.
                         TrcEvent shootCompletionEvent = new TrcEvent(instanceName + ".shootCompletionEvent");
                         shootCompletionEvent.setCallback(this::shootCompleted, null);
-                        shootOp.shoot(shootOpOwner, this, shootCompletionEvent);
+                        shootOp.shoot(shootOpOwner, shootCompletionEvent, shootContext);
                     }
                     else
                     {
