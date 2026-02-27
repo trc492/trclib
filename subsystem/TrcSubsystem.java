@@ -63,10 +63,11 @@ public abstract class TrcSubsystem
     /**
      * This method starts zero calibrate of the subsystem.
      *
-     * @param owner specifies the owner ID to to claim subsystem ownership, can be null if ownership not required.
-     * @param event specifies an event to signal when zero calibration is done, can be null if not provided.
+     * @param owner specifies the owner ID to check if the caller has ownership of the motor.
+     * @param completionEvent specifies the event to signal when the zero calibration is done,
+     *        can be null if not provided.
      */
-    public abstract void zeroCalibrate(String owner, TrcEvent event);
+    public abstract void zeroCalibrate(String owner, TrcEvent completionEvent);
 
     /**
      * This method resets the subsystem state. Typically, this is used to retract the subsystem for turtle mode.
@@ -165,8 +166,12 @@ public abstract class TrcSubsystem
 
     /**
      * This method enumerates all subsystems and calls their zeroCalibrate method.
+     *
+     * @param owner specifies the owner ID to check if the caller has ownership of the motor.
+     * @param completionEvent specifies the event to signal when the zero calibration is done,
+     *        can be null if not provided.
      */
-    public static void zeroCalibrateAll(String owner, TrcEvent completionEvent)
+     public static void zeroCalibrateAll(String owner, TrcEvent completionEvent)
     {
         zeroCalCompletionEvent = completionEvent;
         for (SubsystemInfo subsystemInfo: subsystemList)

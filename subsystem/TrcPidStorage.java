@@ -232,12 +232,13 @@ public class TrcPidStorage implements TrcExclusiveSubsystem
      *
      * @param owner specifies the owner ID to to claim subsystem ownership, can be null if ownership not required.
      * @param event specifies an event to signal when zero calibration is done, can be null if not provided.
+     * @param timeout specifies timeout time in seconds, can be 0.0 if no timeout.
      */
-    public void zeroCalibrate(String owner, double calPower, TrcEvent event)
+    public void zeroCalibrate(String owner, double calPower, TrcEvent event, double timeout)
     {
         tracer.traceInfo(
             instanceName, "zeroCalibrate(owner=" + owner + ", calPower=" + calPower + ", event=" + event + ")");
-        motor.zeroCalibrate(owner, calPower, event);
+        motor.zeroCalibrate(owner, calPower, event, timeout);
     }   //zeroCalibrate
 
     /**

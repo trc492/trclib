@@ -416,6 +416,7 @@ public abstract class TrcMotor implements TrcMotorController, TrcExclusiveSubsys
         double calPower;
         boolean calibrating = false;
         TrcEvent zeroCalCallbackEvent = null;
+        Double zeroCalTimeout = null;
         // Stall protection.
         double stallMinPower = 0.0;
         double stallTolerance = 0.0;
@@ -1631,6 +1632,7 @@ public abstract class TrcMotor implements TrcMotorController, TrcExclusiveSubsys
         synchronized (taskParams)
         {
             taskParams.calibrating = false;
+            taskParams.zeroCalTimeout = null;
 
             if (taskParams.zeroCalCallbackEvent != null)
             {
@@ -3196,7 +3198,8 @@ public abstract class TrcMotor implements TrcMotorController, TrcExclusiveSubsys
      */
     private boolean zeroCalibratingMotor(double calPower)
     {
-        boolean done = isLowerLimitSwitchActive() || taskParams.stalled;
+        boolean timedout = taskParams.zeroCalTimeout != null && TrcTimer.getCurrentTime() > taskParams.zeroCalTimeout;
+        boolean done = isLowerLimitSwitchActive() || taskParams.stalled || timedout;
 
         if (done)
         {
@@ -3208,15 +3211,22 @@ public abstract class TrcMotor implements TrcMotorController, TrcExclusiveSubsys
                 {
                     beepDevice.playTone(beepLowFrequency, beepDuration);
                 }
-                tracer.traceWarn(instanceName, "Stalled, lower limit switch might have failed!");
+                tracer.traceWarn(instanceName, "Stalled, lower limit switch may not exist or might have failed!");
             }
             else
             {
                 tracer.traceInfo(instanceName, "Limit switch triggered, zero calibration done.");
             }
+
+            if (timedout)
+            {
+                tracer.traceWarn(instanceName, "Zero calibration timed out.");
+            }
+
             setControllerMotorPower(0.0, true);
             resetPosition(false);
             taskParams.stalled = false;
+            taskParams.zeroCalTimeout = null;
         }
         else
         {
@@ -3618,14 +3628,16 @@ public abstract class TrcMotor implements TrcMotorController, TrcExclusiveSubsys
      * @param calPower specifies the motor power for the zero calibration, can be positive or negative depending on
      *        the desire direction of movement.
      * @param completionEvent specifies an event to signal when zero calibration is done, can be null if not provided.
+     * @param timeout specifies timeout time in seconds, can be 0.0 if no timeout.
      * @param callback specifies a callback handler when zero calibration is done.
      * @param callbackContext specifies the context object pass to the callback, null if not provided.
      */
     private void zeroCalibrate(
-        String owner, double calPower, TrcEvent completionEvent, TrcEvent.Callback callback, Object callbackContext)
+        String owner, double calPower, TrcEvent completionEvent, double timeout,
+        TrcEvent.Callback callback, Object callbackContext)
     {
         tracer.traceDebug(
-            instanceName, "owner=%s, calPower=%f, event=%s, callback=%s",
+            instanceName, "owner=%s, calPower=%f, event=%s, timeout=%f, callback=%s",
             owner, calPower, completionEvent, callback != null);
         if (completionEvent != null)
         {
@@ -3643,6 +3655,7 @@ public abstract class TrcMotor implements TrcMotorController, TrcExclusiveSubsys
             {
                 taskParams.calPower = calPower;
                 taskParams.notifyEvent = completionEvent;
+                taskParams.zeroCalTimeout = timeout > 0.0? TrcTimer.getCurrentTime() + timeout: null;
                 taskParams.calibrating = true;
                 taskParams.prevTime = null;
                 if (callback != null)
@@ -3672,10 +3685,11 @@ public abstract class TrcMotor implements TrcMotorController, TrcExclusiveSubsys
      * @param calPower specifies the motor power for the zero calibration, can be positive or negative depending on
      *        the desire direction of movement.
      * @param completionEvent specifies an event to signal when zero calibration is done, can be null if not provided.
+     * @param timeout specifies timeout time in seconds, can be 0.0 if no timeout.
      */
-    public void zeroCalibrate(String owner, double calPower, TrcEvent completionEvent)
+    public void zeroCalibrate(String owner, double calPower, TrcEvent completionEvent, double timeout)
     {
-        zeroCalibrate(owner, calPower, completionEvent, null, null);
+        zeroCalibrate(owner, calPower, completionEvent, timeout, null, null);
     }   //zeroCalibrate
 
     /**
@@ -3689,10 +3703,11 @@ public abstract class TrcMotor implements TrcMotorController, TrcExclusiveSubsys
      * @param calPower specifies the motor power for the zero calibration, can be positive or negative depending on
      *        the desire direction of movement.
      * @param completionEvent specifies an event to signal when zero calibration is done, can be null if not provided.
+     * @param timeout specifies timeout time in seconds, can be 0.0 if no timeout.
      */
-    public void zeroCalibrate(double calPower, TrcEvent completionEvent)
+    public void zeroCalibrate(double calPower, TrcEvent completionEvent, double timeout)
     {
-        zeroCalibrate(null, calPower, completionEvent, null, null);
+        zeroCalibrate(null, calPower, completionEvent, timeout, null, null);
     }   //zeroCalibrate
 
     /**
@@ -3708,12 +3723,14 @@ public abstract class TrcMotor implements TrcMotorController, TrcExclusiveSubsys
      * @param owner specifies the owner ID to to claim subsystem ownership, can be null if ownership not required.
      * @param calPower specifies the motor power for the zero calibration, can be positive or negative depending on
      *        the desire direction of movement.
+     * @param timeout specifies timeout time in seconds, can be 0.0 if no timeout.
      * @param callback specifies a callback handler when zero calibration is done.
      * @param callbackContext specifies the context object pass to the callback, null if not provided.
      */
-    public void zeroCalibrate(String owner, double calPower, TrcEvent.Callback callback, Object callbackContext)
+    public void zeroCalibrate(
+        String owner, double calPower, double timeout, TrcEvent.Callback callback, Object callbackContext)
     {
-        zeroCalibrate(owner, calPower, null, callback, callbackContext);
+        zeroCalibrate(owner, calPower, null, timeout, callback, callbackContext);
     }   //zeroCalibrate
 
     /**
@@ -3726,12 +3743,13 @@ public abstract class TrcMotor implements TrcMotorController, TrcExclusiveSubsys
      *
      * @param calPower specifies the motor power for the zero calibration, can be positive or negative depending on
      *        the desire direction of movement.
+     * @param timeout specifies timeout time in seconds, can be 0.0 if no timeout.
      * @param callback specifies a callback handler when zero calibration is done.
      * @param callbackContext specifies the context object pass to the callback, null if not provided.
      */
-    public void zeroCalibrate(double calPower, TrcEvent.Callback callback, Object callbackContext)
+    public void zeroCalibrate(double calPower, double timeout, TrcEvent.Callback callback, Object callbackContext)
     {
-        zeroCalibrate(null, calPower, null, callback, callbackContext);
+        zeroCalibrate(null, calPower, null, timeout, callback, callbackContext);
     }   //zeroCalibrate
 
     /**
@@ -3748,7 +3766,7 @@ public abstract class TrcMotor implements TrcMotorController, TrcExclusiveSubsys
      */
     public void zeroCalibrate(String owner, double calPower)
     {
-        zeroCalibrate(owner, calPower, null, null, null);
+        zeroCalibrate(owner, calPower, null, 0.0, null, null);
     }   //zeroCalibrate
 
     /**
@@ -3764,7 +3782,7 @@ public abstract class TrcMotor implements TrcMotorController, TrcExclusiveSubsys
      */
     public void zeroCalibrate(double calPower)
     {
-        zeroCalibrate(null, calPower, null, null, null);
+        zeroCalibrate(null, calPower, null, 0.0, null, null);
     }   //zeroCalibrate
 
     //
