@@ -383,8 +383,10 @@ public interface TrcMotorController
      * @param acceleration specifies acceleration in the unit of rot per sec square.
      * @param deceleration specifies deceleration in the unit of rot per sec square.
      * @param jerk specifies acceleration derivation in the unit of rot per sec cube.
+     * @param tolerance specifies close-loop tolerance in unit of rot.
      */
-    void enableMotionProfile(double velocity, double acceleration, double deceleration, double jerk);
+    void enableMotionProfile(
+        double velocity, double acceleration, double deceleration, double jerk, double tolerance);
 
     /**
      * This method disables motion profile support.

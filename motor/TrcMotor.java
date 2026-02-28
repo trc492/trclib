@@ -346,13 +346,16 @@ public abstract class TrcMotor implements TrcMotorController, TrcExclusiveSubsys
         double deceleration;
         @SuppressWarnings("unused")
         double jerk;
+        @SuppressWarnings("unused")
+        double tolerance;
 
-        MotionProfile(double velocity, double acceleration, double deceleration, double jerk)
+        MotionProfile(double velocity, double acceleration, double deceleration, double jerk, double tolerance)
         {
             this.velocity = velocity;
             this.acceleration = acceleration;
             this.deceleration = deceleration;
             this.jerk = jerk;
+            this.tolerance = tolerance;
         }   //MotionProfile
     }   //class MotionProfile
 
@@ -723,11 +726,13 @@ public abstract class TrcMotor implements TrcMotorController, TrcExclusiveSubsys
      * @param acceleration specifies acceleration in the unit of rot per sec square.
      * @param deceleration specifies deceleration in the unit of rot per sec square.
      * @param jerk specifies acceleration derivation in the unit of rot per sec cube.
+     * @param tolerance specifies close-loop tolerance in unit of rot.
      */
     @Override
-    public void enableMotionProfile(double velocity, double acceleration, double deceleration, double jerk)
+    public void enableMotionProfile(
+        double velocity, double acceleration, double deceleration, double jerk, double tolerance)
     {
-        motionProfile = new MotionProfile(velocity, acceleration, deceleration, jerk);
+        motionProfile = new MotionProfile(velocity, acceleration, deceleration, jerk, tolerance);
     }   //enableMotionProfile
 
     /**
@@ -3500,7 +3505,7 @@ public abstract class TrcMotor implements TrcMotorController, TrcExclusiveSubsys
     }   //pidCtrlTask
 
     /**
-     * This method calculates the target velocity at the current position.
+     * This method calculates the target velocity at the current position for position motion profile.
      *
      * @param pos specifies the current position.
      * @return calculated target velocity.
