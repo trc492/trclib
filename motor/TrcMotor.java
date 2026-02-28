@@ -3218,6 +3218,10 @@ public abstract class TrcMotor implements TrcMotorController, TrcExclusiveSubsys
                 }
                 tracer.traceWarn(instanceName, "Stalled, lower limit switch may not exist or might have failed!");
             }
+            else if (timedout)
+            {
+                tracer.traceInfo(instanceName, "Timed out, zero calibration done.");
+            }
             else
             {
                 tracer.traceInfo(instanceName, "Limit switch triggered, zero calibration done.");
