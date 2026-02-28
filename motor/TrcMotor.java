@@ -1429,12 +1429,13 @@ public abstract class TrcMotor implements TrcMotorController, TrcExclusiveSubsys
      *
      * @param power specifies the percentage power (range -1.0 to 1.0) to be set.
      * @param changeControlMode specifies true to change control mode, false otherwise.
+     * @param optimize specifies true to not set power when it has not changed since last setPower, false otherwise.
      */
-    private void setControllerMotorPower(double power, boolean changeControlMode)
+    private void setControllerMotorPower(double power, boolean changeControlMode, boolean optimize)
     {
         // Optimization: Only do this if we are not already in power control mode or power is different from
         // last time.
-        if (controllerPower == null || power != controllerPower)
+        if (!optimize || controllerPower == null || power != controllerPower)
         {
             // In most cases, changeControlMode should be true. In rare cases where we want to set motor power while
             // running a close loop control mode, then we don't want to disturb the close loop control mode. This is
@@ -1476,12 +1477,13 @@ public abstract class TrcMotor implements TrcMotorController, TrcExclusiveSubsys
      *
      * @param velocity specifies the velocity in scaled units/sec.
      * @param feedforward specifies the feedforward value
+     * @param optimize specifies true to not set power when it has not changed since last setPower, false otherwise.
      */
-    private void setControllerMotorVelocity(double velocity, double feedforward)
+    private void setControllerMotorVelocity(double velocity, double feedforward, boolean optimize)
     {
         // Optimization: Only do this if we are not already in velocity control mode or velocity is different from
         // last time.
-        if (controllerVelocity == null || velocity != controllerVelocity ||
+        if (!optimize || controllerVelocity == null || velocity != controllerVelocity ||
             controllerFeedforward == null || feedforward != controllerFeedforward)
         {
             setMotorControlMode(ControlMode.Velocity, false);
@@ -1501,13 +1503,14 @@ public abstract class TrcMotor implements TrcMotorController, TrcExclusiveSubsys
      *
      * @param position specifies the position in scaled units.
      * @param powerLimit specifies the maximum power output limits, can be null if not provided.
-     * @param feedforward specifies the feedforward value
+     * @param feedforward specifies the feedforward value.
+     * @param optimize specifies true to not set power when it has not changed since last setPower, false otherwise.
      */
-    private void setControllerMotorPosition(double position, Double powerLimit, double feedforward)
+    private void setControllerMotorPosition(double position, Double powerLimit, double feedforward, boolean optimize)
     {
         // Optimization: Only do this if we are not already in position control mode or position is different from
         // last time.
-        if (controllerPosition == null || position != controllerPosition ||
+        if (!optimize || controllerPosition == null || position != controllerPosition ||
             controllerPowerLimit == null || powerLimit != controllerPowerLimit ||
             controllerFeedforward == null || feedforward != controllerFeedforward)
         {
@@ -1530,12 +1533,13 @@ public abstract class TrcMotor implements TrcMotorController, TrcExclusiveSubsys
      * value to the motor repeatedly and also will take care of the followers.
      *
      * @param current specifies the current in amperes.
+     * @param optimize specifies true to not set power when it has not changed since last setPower, false otherwise.
      */
-    private void setControllerMotorCurrent(double current)
+    private void setControllerMotorCurrent(double current, boolean optimize)
     {
         // Optimization: Only do this if we are not already in power control mode or power is different from
         // last time.
-        if (controllerCurrent == null || current != controllerCurrent)
+        if (!optimize || controllerCurrent == null || current != controllerCurrent)
         {
             setMotorControlMode(ControlMode.Current, false);
             controllerCurrent = current;
@@ -1663,7 +1667,8 @@ public abstract class TrcMotor implements TrcMotorController, TrcExclusiveSubsys
         if (stopMotor)
         {
             // In addition to canceling the previous operation states, stop the physical motor.
-            setControllerMotorPower(0.0, true);
+            tracer.traceInfo(instanceName, "Cancel: stopping motor.");
+            setControllerMotorPower(0.0, true, false);
         }
     }   //cancel
 
@@ -1708,7 +1713,7 @@ public abstract class TrcMotor implements TrcMotorController, TrcExclusiveSubsys
                     case Power:
                         if (maxMotorVel == null)
                         {
-                            setControllerMotorPower(params.motorValue, true);
+                            setControllerMotorPower(params.motorValue, true, true);
                             break;
                         }
                         //
@@ -1730,7 +1735,7 @@ public abstract class TrcMotor implements TrcMotorController, TrcExclusiveSubsys
                         {
                             double feedforward = params.powerComp != null?
                                 params.powerComp.getCompensation(this, params.motorValue): 0.0;
-                            setControllerMotorVelocity(params.motorValue, feedforward);
+                            setControllerMotorVelocity(params.motorValue, feedforward, true);
                         }
                         break;
 
@@ -1742,7 +1747,7 @@ public abstract class TrcMotor implements TrcMotorController, TrcExclusiveSubsys
                         }
                         else
                         {
-                            setControllerMotorCurrent(params.motorValue);
+                            setControllerMotorCurrent(params.motorValue, true);
                         }
                         break;
 
@@ -1774,7 +1779,7 @@ public abstract class TrcMotor implements TrcMotorController, TrcExclusiveSubsys
         {
             params.duration = 0.0;
             params.motorValue = 0.0;
-            setControllerMotorPower(0.0, true);
+            setControllerMotorPower(0.0, true, true);
             if (params.notifyEvent != null)
             {
                 if (canceled)
@@ -1968,7 +1973,7 @@ public abstract class TrcMotor implements TrcMotorController, TrcExclusiveSubsys
             {
                 // The motor may be spinning, let's stop it but don't change the control mode we already set in
                 // setTaskParams above.
-                setControllerMotorPower(0.0, false);
+                setControllerMotorPower(0.0, false, true);
                 timer.set(delay, this::delayValueExpiredCallback, taskParams);
             }
             else
@@ -2173,7 +2178,7 @@ public abstract class TrcMotor implements TrcMotorController, TrcExclusiveSubsys
                 {
                     double feedforward =
                         params.powerComp != null? params.powerComp.getCompensation(this, params.motorValue): 0.0;
-                    setControllerMotorPosition(params.motorValue, params.powerLimit, feedforward);
+                    setControllerMotorPosition(params.motorValue, params.powerLimit, feedforward, true);
                 }
             }
         }
@@ -2240,7 +2245,7 @@ public abstract class TrcMotor implements TrcMotorController, TrcExclusiveSubsys
                 {
                     // The motor may be spinning, let's stop it but don't change the control mode we already set in
                     // setTaskParams above.
-                    setControllerMotorPower(0.0, false);
+                    setControllerMotorPower(0.0, false, true);
                     timer.set(delay, this::delayPositionExpiredCallback, taskParams);
                 }
                 else
@@ -2419,7 +2424,7 @@ public abstract class TrcMotor implements TrcMotorController, TrcExclusiveSubsys
                             tracer.traceDebug(
                                 instanceName, "Stopping: power=%f, currPos=%f, prevTarget=%f",
                                 power, currPos, taskParams.prevPosTarget);
-                            setControllerMotorPower(0.0, true);
+                            setControllerMotorPower(0.0, true, true);
                         }
                     }
                     else
@@ -3223,7 +3228,7 @@ public abstract class TrcMotor implements TrcMotorController, TrcExclusiveSubsys
                 tracer.traceWarn(instanceName, "Zero calibration timed out.");
             }
 
-            setControllerMotorPower(0.0, true);
+            setControllerMotorPower(0.0, true, true);
             resetPosition(false);
             taskParams.stalled = false;
             taskParams.zeroCalTimeout = null;
@@ -3231,7 +3236,7 @@ public abstract class TrcMotor implements TrcMotorController, TrcExclusiveSubsys
         else
         {
             taskParams.stalled = isMotorStalled(calPower);
-            setControllerMotorPower(calPower, true);
+            setControllerMotorPower(calPower, true, true);
         }
 
         return done;
@@ -3304,7 +3309,7 @@ public abstract class TrcMotor implements TrcMotorController, TrcExclusiveSubsys
                         if (!taskParams.holdTarget && (onTarget || expired || stalled))
                         {
                             // We are stopping motor but control mode is not Power, so don't overwrite it.
-                            setControllerMotorPower(0.0, false);
+                            setControllerMotorPower(0.0, false, true);
                         }
                         else
                         {
@@ -3336,7 +3341,7 @@ public abstract class TrcMotor implements TrcMotorController, TrcExclusiveSubsys
                             }
                             // Software PID control sets motor power but control mode is not Power, so don't
                             // overwrite it.
-                            setControllerMotorPower(power, false);
+                            setControllerMotorPower(power, false, true);
                         }
                     }
                     else
@@ -3356,7 +3361,7 @@ public abstract class TrcMotor implements TrcMotorController, TrcExclusiveSubsys
                                 // setControllerMotorPosition is a no-op.
                                 double powerComp = taskParams.powerComp != null?
                                         taskParams.powerComp.getCompensation(this, currMotorPower): 0.0;
-                                setControllerMotorPosition(controllerPosition, taskParams.powerLimit, powerComp);
+                                setControllerMotorPosition(controllerPosition, taskParams.powerLimit, powerComp, true);
                                 tracer.traceDebug(
                                     instanceName,
                                     "PositionControl: pos=%f, powerLimit=%f, powerComp=%f, onTarget=%s",
@@ -3369,7 +3374,7 @@ public abstract class TrcMotor implements TrcMotorController, TrcExclusiveSubsys
                                 // no-op.
                                 double powerComp = taskParams.powerComp != null?
                                         taskParams.powerComp.getCompensation(this, currMotorPower): 0.0;
-                                setControllerMotorVelocity(controllerVelocity, powerComp);
+                                setControllerMotorVelocity(controllerVelocity, powerComp, true);
                                 tracer.traceDebug(
                                     instanceName, "VelocityControl: vel=%f, powerComp=%f, onTarget=%s",
                                     controllerVelocity, powerComp, onTarget);
@@ -3398,7 +3403,7 @@ public abstract class TrcMotor implements TrcMotorController, TrcExclusiveSubsys
                                                 // same velocity if it hasn't change.
                                                 follower.motor.setControllerMotorVelocity(
                                                     taskParams.motorValue * follower.valueScale,
-                                                    controllerFeedforward);
+                                                    controllerFeedforward, true);
                                                 break;
 
                                             case Position:
@@ -3413,7 +3418,7 @@ public abstract class TrcMotor implements TrcMotorController, TrcExclusiveSubsys
                                                 // just sharing the load. In this case, all the followers should
                                                 // just mimic the power output of the master.
                                                 follower.motor.setControllerMotorPower(
-                                                    power * follower.valueScale, true);
+                                                    power * follower.valueScale, true, true);
                                                 break;
 
                                             case Current:
@@ -3423,7 +3428,7 @@ public abstract class TrcMotor implements TrcMotorController, TrcExclusiveSubsys
                                                 // setControllerMotorCurrent which has optimization to not sending
                                                 // same current if it hasn't change.
                                                 follower.motor.setControllerMotorCurrent(
-                                                    taskParams.motorValue * follower.valueScale);
+                                                    taskParams.motorValue * follower.valueScale, true);
                                                 break;
 
                                             default:

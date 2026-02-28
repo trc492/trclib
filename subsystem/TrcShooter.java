@@ -393,9 +393,15 @@ public class TrcShooter implements TrcExclusiveSubsystem
                 (panMotor == null || panMotor.isPositionOnTarget()) &&
                 (tiltMotor == null || tiltMotor.isPositionOnTarget()))
             {
-                tracer.traceDebug(instanceName, "Shooter is ready!");
                 shooterState.shooterReadyEvent.signal();
                 shooterState.shooterReadyEvent = null;
+                tracer.traceInfo(
+                    instanceName, "%s is ready: rpm1=%f/%f, rpm2=%f/%f, tilt=%f/%f, pan=%f/%f",
+                    instanceName,
+                    getShooterMotor1RPM(), getShooterMotor1TargetRPM(),
+                    getShooterMotor2RPM(), getShooterMotor2TargetRPM(),
+                    getTiltAngle(), getTiltAngleTarget(),
+                    getPanAngle(), getPanAngleTarget());
             }
         }
     }   //goalTrackingTask
@@ -1053,30 +1059,27 @@ public class TrcShooter implements TrcExclusiveSubsystem
      */
     public void setShooterMotorRPM(Double flywheel1RPM, Double flywheel2RPM)
     {
-        if (!isGoalTrackingEnabled())
+        if (flywheel1RPM != null)
         {
-            if (flywheel1RPM != null)
+            if (maxShooter1MaxRPM != null)
             {
-                if (maxShooter2MaxRPM != null)
-                {
-                    shooterMotor1.setPower(TrcUtil.clipRange(flywheel1RPM/maxShooter1MaxRPM));
-                }
-                else
-                {
-                    shooterMotor1.setVelocity(null, 0.0, flywheel1RPM/60.0, 0.0, null);
-                }
+                shooterMotor1.setPower(TrcUtil.clipRange(flywheel1RPM/maxShooter1MaxRPM));
             }
-
-            if (flywheel2RPM != null && shooterMotor2 != null)
+            else
             {
-                if (maxShooter2MaxRPM != null)
-                {
-                    shooterMotor2.setPower(TrcUtil.clipRange(flywheel2RPM/maxShooter2MaxRPM));
-                }
-                else
-                {
-                    shooterMotor2.setVelocity(null, 0.0, flywheel2RPM/60.0, 0.0, null);
-                }
+                shooterMotor1.setVelocity(null, 0.0, flywheel1RPM/60.0, 0.0, null);
+            }
+        }
+
+        if (flywheel2RPM != null && shooterMotor2 != null)
+        {
+            if (maxShooter2MaxRPM != null)
+            {
+                shooterMotor2.setPower(TrcUtil.clipRange(flywheel2RPM/maxShooter2MaxRPM));
+            }
+            else
+            {
+                shooterMotor2.setVelocity(null, 0.0, flywheel2RPM/60.0, 0.0, null);
             }
         }
     }   //setShooterMotorRPM
@@ -1151,7 +1154,7 @@ public class TrcShooter implements TrcExclusiveSubsystem
      */
     public void setTiltAngle(String owner, double angle, TrcEvent completionEvent, double timeout)
     {
-        if (tiltMotor != null && !isGoalTrackingEnabled())
+        if (tiltMotor != null)
         {
             tiltMotor.setPosition(owner, 0.0, angle, true, tiltParams.powerLimit, completionEvent, timeout);
         }
@@ -1212,6 +1215,7 @@ public class TrcShooter implements TrcExclusiveSubsystem
      */
     public void setTiltPower(String owner, double power)
     {
+        // Nobody should call setTiltPower if GoalTracking is enabled.
         if (tiltMotor != null && !isGoalTrackingEnabled())
         {
             tiltMotor.setPower(owner, 0.0, power, 0.0, null);;
@@ -1240,6 +1244,7 @@ public class TrcShooter implements TrcExclusiveSubsystem
      */
     public void setTiltPidPower(String owner, double power, double powerLimit, boolean holdTarget)
     {
+        // Nobody should call setTiltPidPower if GoalTracking is enabled.
         if (tiltMotor != null && !isGoalTrackingEnabled())
         {
             tiltMotor.setPidPower(owner, power, powerLimit, tiltParams.minPos, tiltParams.maxPos, holdTarget);
@@ -1325,7 +1330,7 @@ public class TrcShooter implements TrcExclusiveSubsystem
      */
     public void setPanAngle(String owner, double angle, TrcEvent completionEvent, double timeout)
     {
-        if (panMotor != null && !isGoalTrackingEnabled())
+        if (panMotor != null)
         {
             panMotor.setPosition(owner, 0.0, angle, true, panParams.powerLimit, completionEvent, timeout);
         }
@@ -1386,6 +1391,7 @@ public class TrcShooter implements TrcExclusiveSubsystem
      */
     public void setPanPower(String owner, double power)
     {
+        // Nobody should call setPanPower if GoalTracking is enabled.
         if (panMotor != null && !isGoalTrackingEnabled())
         {
             panMotor.setPower(owner, 0.0, power, 0.0, null);;
@@ -1414,6 +1420,7 @@ public class TrcShooter implements TrcExclusiveSubsystem
      */
     public void setPanPidPower(String owner, double power, double powerLimit, boolean holdTarget)
     {
+        // Nobody should call setPanPidPower if GoalTracking is enabled.
         if (panMotor != null && !isGoalTrackingEnabled())
         {
             panMotor.setPidPower(owner, power, powerLimit, panParams.minPos, panParams.maxPos, holdTarget);
