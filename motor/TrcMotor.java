@@ -720,8 +720,10 @@ public abstract class TrcMotor implements TrcMotorController, TrcExclusiveSubsys
     }   //isVoltageCompensationEnabled
 
     /**
-     * This method enables motion profile support.
+     * This method enables software motion profile support.
      *
+     * @param useSoftwarePid specifies true to use software PID motion profile, false to use native motor motion
+     *        profile.
      * @param velocity specifies cruise velocity in the unit of rps.
      * @param acceleration specifies acceleration in the unit of rot per sec^2.
      * @param deceleration specifies deceleration in the unit of rot per sec^2.
@@ -730,13 +732,18 @@ public abstract class TrcMotor implements TrcMotorController, TrcExclusiveSubsys
      */
     @Override
     public void enableMotionProfile(
-        double velocity, double acceleration, double deceleration, double jerk, double tolerance)
+        boolean useSoftwarePid, double velocity, double acceleration, double deceleration, double jerk,
+        double tolerance)
     {
+        if (!useSoftwarePid)
+        {
+            throw new UnsupportedOperationException("Motor does not support native Motion Profile.");
+        }
         motionProfile = new MotionProfile(velocity, acceleration, deceleration, jerk, tolerance);
     }   //enableMotionProfile
 
     /**
-     * This method disables motion profile support.
+     * This method disables software motion profile support.
      */
     @Override
     public void disableMotionProfile()

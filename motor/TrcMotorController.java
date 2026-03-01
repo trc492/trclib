@@ -379,6 +379,8 @@ public interface TrcMotorController
     /**
      * This method enables motion profile support.
      *
+     * @param useSoftwarePid specifies true to use software PID motion profile, false to use native motor motion
+     *        profile.
      * @param velocity specifies cruise velocity in the unit of rps.
      * @param acceleration specifies acceleration in the unit of rot per sec^2.
      * @param deceleration specifies deceleration in the unit of rot per sec^2.
@@ -386,7 +388,8 @@ public interface TrcMotorController
      * @param tolerance specifies close-loop tolerance in unit of rot.
      */
     void enableMotionProfile(
-        double velocity, double acceleration, double deceleration, double jerk, double tolerance);
+        boolean useSoftwarePid, double velocity, double acceleration, double deceleration, double jerk,
+        double tolerance);
 
     /**
      * This method disables motion profile support.
