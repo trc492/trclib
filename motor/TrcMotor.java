@@ -3315,12 +3315,12 @@ public abstract class TrcMotor implements TrcMotorController, TrcExclusiveSubsys
                 if (taskParams.currControlMode != ControlMode.Power)
                 {
                     // Closed-loop control modes.
+                    expired = taskParams.timeout > 0.0 && TrcTimer.getCurrentTime() >= taskParams.timeout;
                     if (taskParams.softwarePidCtrl != null)
                     {
                         // Do Software PID control.
                         onTarget = taskParams.softwarePidCtrl.isOnTarget(taskParams.softwarePidTolerance);
                         stalled = taskParams.softwarePidCtrl.isStalled();
-                        expired = taskParams.timeout != 0.0 && TrcTimer.getCurrentTime() >= taskParams.timeout;
 
                         if (!taskParams.holdTarget && (onTarget || expired || stalled))
                         {

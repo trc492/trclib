@@ -401,8 +401,9 @@ public class TrcShooter implements TrcExclusiveSubsystem
                     shooterState.shooterReadyEvent.signal();
                     shooterState.shooterReadyEvent = null;
                     tracer.traceInfo(
-                        instanceName, "%s is ready: rpm1=%f/%f, rpm2=%f/%f, tilt=%f/%f, pan=%f/%f",
+                        instanceName, "%s is %s: rpm1=%f/%f, rpm2=%f/%f, tilt=%f/%f, pan=%f/%f",
                         instanceName,
+                        timedOut? "TimedOut": "Ready",
                         getShooterMotor1RPM(), getShooterMotor1TargetRPM(),
                         getShooterMotor2RPM(), getShooterMotor2TargetRPM(),
                         getTiltAngle(), getTiltAngleTarget(),
