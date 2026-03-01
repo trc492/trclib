@@ -180,6 +180,7 @@ public class TrcShooter implements TrcExclusiveSubsystem
     {
         private boolean active = false;
         private TrcEvent shooterReadyEvent = null;
+        private double shooterReadyTimeout = 0.0;
         private TrcEvent shooter1OnTargetEvent = null;
         private TrcEvent shooter2OnTargetEvent = null;
         private TrcEvent tiltOnTargetEvent = null;
@@ -387,21 +388,26 @@ public class TrcShooter implements TrcExclusiveSubsystem
 
         synchronized (shooterState)
         {
-            if (shooterState.shooterReadyEvent != null &&
-                (shooterMotor1 == null || shooterMotor1.isVelocityOnTarget()) &&
-                (shooterMotor2 == null || shooterMotor2.isVelocityOnTarget()) &&
-                (panMotor == null || panMotor.isPositionOnTarget()) &&
-                (tiltMotor == null || tiltMotor.isPositionOnTarget()))
+            if (shooterState.shooterReadyEvent != null)
             {
-                shooterState.shooterReadyEvent.signal();
-                shooterState.shooterReadyEvent = null;
-                tracer.traceInfo(
-                    instanceName, "%s is ready: rpm1=%f/%f, rpm2=%f/%f, tilt=%f/%f, pan=%f/%f",
-                    instanceName,
-                    getShooterMotor1RPM(), getShooterMotor1TargetRPM(),
-                    getShooterMotor2RPM(), getShooterMotor2TargetRPM(),
-                    getTiltAngle(), getTiltAngleTarget(),
-                    getPanAngle(), getPanAngleTarget());
+                boolean timedOut = shooterState.shooterReadyTimeout > 0.0 &&
+                                   TrcTimer.getCurrentTime() > shooterState.shooterReadyTimeout;
+                if (timedOut ||
+                    (shooterMotor1 == null || shooterMotor1.isVelocityOnTarget()) &&
+                    (shooterMotor2 == null || shooterMotor2.isVelocityOnTarget()) &&
+                    (panMotor == null || panMotor.isPositionOnTarget()) &&
+                    (tiltMotor == null || tiltMotor.isPositionOnTarget()))
+                {
+                    shooterState.shooterReadyEvent.signal();
+                    shooterState.shooterReadyEvent = null;
+                    tracer.traceInfo(
+                        instanceName, "%s is ready: rpm1=%f/%f, rpm2=%f/%f, tilt=%f/%f, pan=%f/%f",
+                        instanceName,
+                        getShooterMotor1RPM(), getShooterMotor1TargetRPM(),
+                        getShooterMotor2RPM(), getShooterMotor2TargetRPM(),
+                        getTiltAngle(), getTiltAngleTarget(),
+                        getPanAngle(), getPanAngleTarget());
+                }
             }
         }
     }   //goalTrackingTask
@@ -596,12 +602,14 @@ public class TrcShooter implements TrcExclusiveSubsystem
      * This method waits for the shooter finished aiming the target and will signal the given event.
      *
      * @param event specifies the event to signal when aiming is on-target.
+     * @param timeout specifies timeout in seconds.
      */
-    public void waitForShooterReady(TrcEvent event)
+    public void waitForShooterReady(TrcEvent event, double timeout)
     {
         synchronized (shooterState)
         {
             shooterState.shooterReadyEvent = event;
+            shooterState.shooterReadyTimeout = timeout > 0.0? TrcTimer.getCurrentTime() + timeout: 0.0;
         }
     }   //waitForShooterReady
 
