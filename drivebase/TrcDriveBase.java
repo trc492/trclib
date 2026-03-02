@@ -59,6 +59,23 @@ public abstract class TrcDriveBase implements TrcExclusiveSubsystem
 {
     private final String moduleName = getClass().getSimpleName();
 
+    public enum MotorIndex
+    {
+        FrontLeft(0),
+        FrontRight(1),
+        BackLeft(2),
+        BackRight(3),
+        CenterLeft(4),
+        CenterRight(5);
+
+        public final int value;
+
+        MotorIndex(int value)
+        {
+            this.value = value;
+        }
+    }   //enum MotorIndex
+
     /**
      * This class contains tunable parameters of the DriveBase.
      */
@@ -428,8 +445,8 @@ public abstract class TrcDriveBase implements TrcExclusiveSubsystem
     private static final double DEF_SENSITIVITY = 0.5;
 
     public final TrcDbgTrace tracer;
-    private final TrcMotor[] motors;
     protected final TrcGyro gyro;
+    protected final TrcMotor[] motors;
     protected final Odometry odometry;
     private final MotorsState motorsState;
     private final TrcTimer driveTimer;
@@ -470,14 +487,14 @@ public abstract class TrcDriveBase implements TrcExclusiveSubsystem
     /**
      * Constructor: Create an instance of the object.
      *
-     * @param motors specifies the array of motors in the drive base.
      * @param gyro   specifies the gyro. If none, it can be set to null.
+     * @param motors specifies the array of motors in the drive base.
      */
-    public TrcDriveBase(TrcMotor[] motors, TrcGyro gyro)
+    public TrcDriveBase(TrcGyro gyro, TrcMotor... motors)
     {
         this.tracer = new TrcDbgTrace();
-        this.motors = motors;
         this.gyro = gyro;
+        this.motors = motors;
 
         odometry = new Odometry();
         motorsState = new MotorsState();
@@ -506,7 +523,7 @@ public abstract class TrcDriveBase implements TrcExclusiveSubsystem
      */
     public TrcDriveBase(TrcMotor... motors)
     {
-        this(motors, null);
+        this(null, motors);
     }   //TrcDriveBase
 
     /**

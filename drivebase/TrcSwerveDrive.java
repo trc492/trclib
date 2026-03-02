@@ -68,55 +68,58 @@ public class TrcSwerveDrive extends TrcSimpleDrive
         }   //setSteerMotorPidParams
     }   //class SwerveParams
 
-    private final TrcSwerveModule lfModule, rfModule, lbModule, rbModule;
+    protected final TrcSwerveModule[] swerveModules;
     private final double wheelBaseWidth, wheelBaseLength, wheelBaseDiagonal;
     private final TrcHashMap<TrcMotor, TrcSwerveModule> driveMotorToModuleMap = new TrcHashMap<>();
 
     /**
      * Constructor: Create an instance of the 4-wheel swerve drive base.
      *
-     * @param lfModule specifies the left front swerve module of the drive base.
-     * @param lbModule specifies the left back swerve module of the drive base.
-     * @param rfModule specifies the right front swerve module of the drive base.
-     * @param rbModule specifies the right back swerve module of the drive base.
      * @param gyro specifies the gyro. If none, it can be set to null.
      * @param wheelBaseWidth specifies the width of the wheel base in inches.
      * @param wheelBaseLength specifies the length of the wheel base in inches.
+     * @param flModule specifies the front left swerve module of the drive base.
+     * @param frModule specifies the front right swerve module of the drive base.
+     * @param blModule specifies the back left swerve module of the drive base.
+     * @param brModule specifies the back right swerve module of the drive base.
      */
     public TrcSwerveDrive(
-        TrcSwerveModule lfModule, TrcSwerveModule lbModule, TrcSwerveModule rfModule, TrcSwerveModule rbModule,
-        TrcGyro gyro, double wheelBaseWidth, double wheelBaseLength)
+        TrcGyro gyro, double wheelBaseWidth, double wheelBaseLength,
+        TrcSwerveModule flModule, TrcSwerveModule frModule, TrcSwerveModule blModule, TrcSwerveModule brModule)
     {
-        super(lfModule.driveMotor, lbModule.driveMotor, rfModule.driveMotor, rbModule.driveMotor, gyro);
+        super(gyro, flModule.driveMotor, frModule.driveMotor, blModule.driveMotor, brModule.driveMotor);
 
-        this.lfModule = lfModule;
-        this.rfModule = rfModule;
-        this.lbModule = lbModule;
-        this.rbModule = rbModule;
         this.wheelBaseWidth = wheelBaseWidth;
         this.wheelBaseLength = wheelBaseLength;
         this.wheelBaseDiagonal = TrcUtil.magnitude(wheelBaseWidth, wheelBaseLength);
-        driveMotorToModuleMap.add(lfModule.driveMotor, lfModule);
-        driveMotorToModuleMap.add(rfModule.driveMotor, rfModule);
-        driveMotorToModuleMap.add(lbModule.driveMotor, lbModule);
-        driveMotorToModuleMap.add(rbModule.driveMotor, rbModule);
+ 
+        swerveModules = new TrcSwerveModule[4];
+        swerveModules[MotorIndex.FrontLeft.value] = flModule;
+        swerveModules[MotorIndex.FrontRight.value] = frModule;
+        swerveModules[MotorIndex.BackLeft.value] = blModule;
+        swerveModules[MotorIndex.BackRight.value] = brModule;
+
+        driveMotorToModuleMap.add(flModule.driveMotor, flModule);
+        driveMotorToModuleMap.add(frModule.driveMotor, frModule);
+        driveMotorToModuleMap.add(blModule.driveMotor, blModule);
+        driveMotorToModuleMap.add(brModule.driveMotor, brModule);
     }   //TrcSwerveDrive
 
     /**
      * Constructor: Create an instance of the 4-wheel swerve drive base.
      *
-     * @param lfModule specifies the left front swerve module of the drive base.
-     * @param lbModule specifies the left back swerve module of the drive base.
-     * @param rfModule specifies the right front swerve module of the drive base.
-     * @param rbModule specifies the right back swerve module of the drive base.
      * @param wheelBaseWidth  specifies the width of the wheel base in inches.
      * @param wheelBaseLength specifies the length of the wheel base in inches.
+     * @param flModule specifies the front left swerve module of the drive base.
+     * @param frModule specifies the front right swerve module of the drive base.
+     * @param blModule specifies the back left swerve module of the drive base.
+     * @param brModule specifies the back right swerve module of the drive base.
      */
     public TrcSwerveDrive(
-        TrcSwerveModule lfModule, TrcSwerveModule lbModule, TrcSwerveModule rfModule, TrcSwerveModule rbModule,
-        double wheelBaseWidth, double wheelBaseLength)
+        double wheelBaseWidth, double wheelBaseLength,
+        TrcSwerveModule flModule, TrcSwerveModule frModule, TrcSwerveModule blModule, TrcSwerveModule brModule)
     {
-        this(lfModule, lbModule, rfModule, rbModule, null, wheelBaseWidth, wheelBaseLength);
+        this(null, wheelBaseWidth, wheelBaseLength, flModule, frModule, blModule, brModule);
     }   //TrcSwerveDrive
 
     /**
@@ -124,10 +127,10 @@ public class TrcSwerveDrive extends TrcSimpleDrive
      */
     public void zeroCalibrateSteering()
     {
-        lfModule.zeroCalibrateSteering();
-        rfModule.zeroCalibrateSteering();
-        lbModule.zeroCalibrateSteering();
-        rbModule.zeroCalibrateSteering();
+        swerveModules[MotorIndex.FrontLeft.value].zeroCalibrateSteering();
+        swerveModules[MotorIndex.FrontRight.value].zeroCalibrateSteering();
+        swerveModules[MotorIndex.BackLeft.value].zeroCalibrateSteering();
+        swerveModules[MotorIndex.BackRight.value].zeroCalibrateSteering();
     }   //zeroCalibrateSteering
 
     /**
@@ -193,6 +196,17 @@ public class TrcSwerveDrive extends TrcSimpleDrive
     }   //setOdometryScales
 
     /**
+     * This method stops all drive motors.
+     */
+    private void stopDriveMotors()
+    {
+        for (TrcSwerveModule module: swerveModules)
+        {
+            module.driveMotor.setPower(0.0);
+        }
+    }   //stopDriveMotors
+
+    /**
      * This method sets the steering angle of all four wheels.
      *
      * @param owner    specifies the ID string of the caller for checking ownership, can be null if caller is not
@@ -209,10 +223,10 @@ public class TrcSwerveDrive extends TrcSimpleDrive
             ", optimize=" + optimize);
         if (validateOwnership(owner))
         {
-            lfModule.setSteerAngle(angle, optimize);
-            rfModule.setSteerAngle(angle, optimize);
-            lbModule.setSteerAngle(angle, optimize);
-            rbModule.setSteerAngle(angle, optimize);
+            swerveModules[MotorIndex.FrontLeft.value].setSteerAngle(angle, optimize);
+            swerveModules[MotorIndex.FrontRight.value].setSteerAngle(angle, optimize);
+            swerveModules[MotorIndex.BackLeft.value].setSteerAngle(angle, optimize);
+            swerveModules[MotorIndex.FrontRight.value].setSteerAngle(angle, optimize);
         }
     }   //setSteerAngle
 
@@ -250,12 +264,11 @@ public class TrcSwerveDrive extends TrcSimpleDrive
             throw new IllegalArgumentException("Invalid velocities parameter: " + Arrays.deepToString(velocities));
         }
 
-        TrcSwerveModule[] modules = {lfModule, rfModule, lbModule, rbModule};
-        for (int i = 0; i < velocities.length; i++)
+        for (int i = 0; i < swerveModules.length; i++)
         {
             // Set angles before speed so angle optimization takes effect
-            modules[i].setSteerAngle(velocities[i][1]);
-            modules[i].driveMotor.setVelocity(velocities[i][0]);
+            swerveModules[i].setSteerAngle(velocities[i][1]);
+            swerveModules[i].driveMotor.setVelocity(velocities[i][0]);
         }
     }   //setModuleVelocities
 
@@ -360,15 +373,7 @@ public class TrcSwerveDrive extends TrcSimpleDrive
         {
             if (xPower == 0.0 && yPower == 0.0 && turnPower == 0.0)
             {
-                lfModule.driveMotor.setPower(0.0);
-                rfModule.driveMotor.setPower(0.0);
-                lbModule.driveMotor.setPower(0.0);
-                rbModule.driveMotor.setPower(0.0);
-
-                // lfModule.setSteerAngle(lfModule.getSteerAngle());
-                // rfModule.setSteerAngle(rfModule.getSteerAngle());
-                // lbModule.setSteerAngle(lbModule.getSteerAngle());
-                // rbModule.setSteerAngle(rbModule.getSteerAngle());
+                stopDriveMotors();
             }
             else
             {
@@ -416,59 +421,65 @@ public class TrcSwerveDrive extends TrcSimpleDrive
                 // The white paper goes in order rf, lf, lb, rb. We like to do lf, rf, lb, rb.
                 // Note: atan2(y, x) in java will take care of x being zero.
                 //       It will return pi/2 for positive y and -pi/2 for negative y.
-                double[] steerAngles = new double[4];
-                steerAngles[0] = Math.toDegrees(Math.atan2(b, d));
-                steerAngles[1] = Math.toDegrees(Math.atan2(b, c));
-                steerAngles[2] = Math.toDegrees(Math.atan2(a, d));
-                steerAngles[3] = Math.toDegrees(Math.atan2(a, c));
+                double[] steerAngles = new double[swerveModules.length];
+                steerAngles[MotorIndex.FrontLeft.value] = Math.toDegrees(Math.atan2(b, d));
+                steerAngles[MotorIndex.FrontRight.value] = Math.toDegrees(Math.atan2(b, c));
+                steerAngles[MotorIndex.BackLeft.value] = Math.toDegrees(Math.atan2(a, d));
+                steerAngles[MotorIndex.BackRight.value] = Math.toDegrees(Math.atan2(a, c));
 
                 // The white paper goes in order rf, lf, lb, rb. We like to do lf, rf, lb, rb.
-                double[] drivePowers = new double[4];
-                drivePowers[0] = TrcUtil.magnitude(b, d);
-                drivePowers[1] = TrcUtil.magnitude(b, c);
-                drivePowers[2] = TrcUtil.magnitude(a, d);
-                drivePowers[3] = TrcUtil.magnitude(a, c);
+                double[] drivePowers = new double[swerveModules.length];
+                drivePowers[MotorIndex.FrontLeft.value] = TrcUtil.magnitude(b, d);
+                drivePowers[MotorIndex.FrontRight.value] = TrcUtil.magnitude(b, c);
+                drivePowers[MotorIndex.BackLeft.value] = TrcUtil.magnitude(a, d);
+                drivePowers[MotorIndex.BackRight.value] = TrcUtil.magnitude(a, c);
 
                 TrcUtil.normalizeInPlace(drivePowers);
                 if (motorPowerMapper != null)
                 {
-                    drivePowers[0] = motorPowerMapper.translateMotorPower(
-                        drivePowers[0], lfModule.driveMotor.getVelocity());
-                    drivePowers[1] = motorPowerMapper.translateMotorPower(
-                        drivePowers[1], rfModule.driveMotor.getVelocity());
-                    drivePowers[2] = motorPowerMapper.translateMotorPower(
-                        drivePowers[2], lbModule.driveMotor.getVelocity());
-                    drivePowers[3] = motorPowerMapper.translateMotorPower(
-                        drivePowers[3], rbModule.driveMotor.getVelocity());
+                    for (int i = 0; i < swerveModules.length; i++)
+                    {
+                        drivePowers[i] = motorPowerMapper.translateMotorPower(
+                            drivePowers[i], swerveModules[i].driveMotor.getVelocity());
+                    }
                 }
 
-                lfModule.setSteerAngle(steerAngles[0]);
-                rfModule.setSteerAngle(steerAngles[1]);
-                lbModule.setSteerAngle(steerAngles[2]);
-                rbModule.setSteerAngle(steerAngles[3]);
+                for (int i = 0; i < swerveModules.length; i++)
+                {
+                    swerveModules[i].setSteerAngle(steerAngles[i]);
+                }
                 tracer.traceDebug(
                     moduleName,
-                    "lfAngle=" + steerAngles[0] + "/" + (lfModule.getSteerAngle() % 360.0) +
-                    ", rfAngle=" + steerAngles[1] + "/" + (rfModule.getSteerAngle() % 360.0) +
-                    ", lbAngle=" + steerAngles[2] + "/" + (lbModule.getSteerAngle() % 360.0) +
-                    ", rbAngle=" + steerAngles[3] + "/" + (rbModule.getSteerAngle() % 360.0));
+                    "flAngle=" + steerAngles[MotorIndex.FrontLeft.value] +
+                    "/" + (swerveModules[MotorIndex.FrontLeft.value].getSteerAngle() % 360.0) +
+                    ", frAngle=" + steerAngles[MotorIndex.FrontRight.value] +
+                    "/" + (swerveModules[MotorIndex.FrontRight.value].getSteerAngle() % 360.0) +
+                    ", blAngle=" + steerAngles[MotorIndex.BackLeft.value] +
+                    "/" + (swerveModules[MotorIndex.BackLeft.value].getSteerAngle() % 360.0) +
+                    ", brAngle=" + steerAngles[MotorIndex.BackRight.value] +
+                    "/" + (swerveModules[MotorIndex.BackRight.value].getSteerAngle() % 360.0));
 
-                lfModule.setPower(drivePowers[0]);
-                rfModule.setPower(drivePowers[1]);
-                lbModule.setPower(drivePowers[2]);
-                rbModule.setPower(drivePowers[3]);
-                tracer.traceDebug(
-                    moduleName,
-                    "lfPower=" + drivePowers[0] +
-                    ", rfPower=" + drivePowers[1] +
-                    ", lbPower=" + drivePowers[2] +
-                    ", rbPower=" + drivePowers[3]);
+                boolean allStopped = true;
+                for (int i = 0; i < swerveModules.length; i++)
+                {
+                    swerveModules[i].setPower(drivePowers[i]);
+                    if (drivePowers[i] != 0.0)
+                    {
+                        allStopped = false;
+                    }
+                }
 
-                if (drivePowers[0] == 0.0 && drivePowers[1] == 0.0 && drivePowers[2] == 0.0 && drivePowers[3] == 0.0)
+                if (allStopped)
                 {
                     // reset stall start time to zero if drive base is stopped.
                     stallStartTime = 0.0;
                 }
+                tracer.traceDebug(
+                    moduleName,
+                    "flPower=" + drivePowers[MotorIndex.FrontLeft.value] +
+                    ", frPower=" + drivePowers[MotorIndex.FrontRight.value] +
+                    ", blPower=" + drivePowers[MotorIndex.BackLeft.value] +
+                    ", brPower=" + drivePowers[MotorIndex.FrontRight.value]);
             }
             setDriveTime(owner, driveTime, event);
         }
@@ -484,14 +495,11 @@ public class TrcSwerveDrive extends TrcSimpleDrive
     {
         if (validateOwnership(owner))
         {
-            lfModule.driveMotor.setPower(0.0);
-            rfModule.driveMotor.setPower(0.0);
-            lbModule.driveMotor.setPower(0.0);
-            rbModule.driveMotor.setPower(0.0);
-            lfModule.setSteerAngle(-45.0);
-            rfModule.setSteerAngle(45.0);
-            lbModule.setSteerAngle(45.0);
-            rbModule.setSteerAngle(-45.0);
+            stopDriveMotors();
+            swerveModules[MotorIndex.FrontLeft.value].setSteerAngle(-45.0);
+            swerveModules[MotorIndex.FrontRight.value].setSteerAngle(45.0);
+            swerveModules[MotorIndex.BackLeft.value].setSteerAngle(45.0);
+            swerveModules[MotorIndex.BackRight.value].setSteerAngle(-45.0);
         }
     }   //setXMode
 

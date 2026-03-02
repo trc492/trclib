@@ -40,28 +40,28 @@ public class TrcMecanumDrive extends TrcSimpleDrive
     /**
      * Constructor: Create an instance of the 4-wheel mecanum drive base.
      *
-     * @param lfMotor specifies the left front motor of the drive base.
-     * @param lbMotor specifies the left back motor of the drive base.
-     * @param rfMotor specifies the right front motor of the drive base.
-     * @param rbMotor specifies the right back motor of the drive base.
      * @param gyro specifies the gyro. If none, it can be set to null.
+     * @param flMotor specifies the front left motor of the drive base.
+     * @param frMotor specifies the front right motor of the drive base.
+     * @param blMotor specifies the back left motor of the drive base.
+     * @param brMotor specifies the back right motor of the drive base.
      */
-    public TrcMecanumDrive(TrcMotor lfMotor, TrcMotor lbMotor, TrcMotor rfMotor, TrcMotor rbMotor, TrcGyro gyro)
+    public TrcMecanumDrive(TrcGyro gyro, TrcMotor flMotor, TrcMotor frMotor, TrcMotor blMotor, TrcMotor brMotor)
     {
-        super(lfMotor, lbMotor, rfMotor, rbMotor, gyro);
+        super(gyro, flMotor, frMotor, blMotor, brMotor);
     }   //TrcMecanumDrive
 
     /**
      * Constructor: Create an instance of the 4-wheel mecanum drive base.
      *
-     * @param lfMotor specifies the left front motor of the drive base.
-     * @param lbMotor specifies the left back motor of the drive base.
-     * @param rfMotor specifies the right front motor of the drive base.
-     * @param rbMotor specifies the right back motor of the drive base.
+     * @param flMotor specifies the front left motor of the drive base.
+     * @param frMotor specifies the front right motor of the drive base.
+     * @param blMotor specifies the back left motor of the drive base.
+     * @param brMotor specifies the back right motor of the drive base.
      */
-    public TrcMecanumDrive(TrcMotor lfMotor, TrcMotor lbMotor, TrcMotor rfMotor, TrcMotor rbMotor)
+    public TrcMecanumDrive(TrcMotor flMotor, TrcMotor frMotor, TrcMotor blMotor, TrcMotor brMotor)
     {
-        super(lfMotor, lbMotor, rfMotor, rbMotor, null);
+        super(null, frMotor, frMotor, blMotor, brMotor);
     }   //TrcMecanumDrive
 
     /**
@@ -141,45 +141,50 @@ public class TrcMecanumDrive extends TrcSimpleDrive
             }
 
             double[] wheelPowers = new double[4];
-            wheelPowers[MotorType.LEFT_FRONT.value] = x1 + y1 + turnPower;
-            wheelPowers[MotorType.RIGHT_FRONT.value] = -x1 + y1 - turnPower;
-            wheelPowers[MotorType.LEFT_BACK.value] = -x1 + y1 + turnPower;
-            wheelPowers[MotorType.RIGHT_BACK.value] = x1 + y1 - turnPower;
+            wheelPowers[MotorIndex.FrontLeft.value] = x1 + y1 + turnPower;
+            wheelPowers[MotorIndex.FrontRight.value] = -x1 + y1 - turnPower;
+            wheelPowers[MotorIndex.BackLeft.value] = -x1 + y1 + turnPower;
+            wheelPowers[MotorIndex.BackRight.value] = x1 + y1 - turnPower;
             TrcUtil.normalizeInPlace(wheelPowers);
 
+            TrcMotor motor;
             double wheelPower;
             boolean wheelsPowered = false;
 
-            wheelPower = wheelPowers[MotorType.LEFT_FRONT.value];
+            motor = motors[MotorIndex.FrontLeft.value];
+            wheelPower = wheelPowers[MotorIndex.FrontLeft.value];
             if (motorPowerMapper != null)
             {
-                wheelPower = motorPowerMapper.translateMotorPower(wheelPower, lfMotor.getVelocity());
+                wheelPower = motorPowerMapper.translateMotorPower(wheelPower, motor.getVelocity());
             }
-            lfMotor.setPower(wheelPower);
+            motor.setPower(wheelPower);
             if (wheelPower != 0.0) wheelsPowered = true;
 
-            wheelPower = wheelPowers[MotorType.RIGHT_FRONT.value];
+            motor = motors[MotorIndex.FrontRight.value];
+            wheelPower = wheelPowers[MotorIndex.FrontRight.value];
             if (motorPowerMapper != null)
             {
-                wheelPower = motorPowerMapper.translateMotorPower(wheelPower, rfMotor.getVelocity());
+                wheelPower = motorPowerMapper.translateMotorPower(wheelPower, motor.getVelocity());
             }
-            rfMotor.setPower(wheelPower);
+            motor.setPower(wheelPower);
             if (wheelPower != 0.0) wheelsPowered = true;
 
-            wheelPower = wheelPowers[MotorType.LEFT_BACK.value];
+            motor = motors[MotorIndex.BackLeft.value];
+            wheelPower = wheelPowers[MotorIndex.BackLeft.value];
             if (motorPowerMapper != null)
             {
-                wheelPower = motorPowerMapper.translateMotorPower(wheelPower, lbMotor.getVelocity());
+                wheelPower = motorPowerMapper.translateMotorPower(wheelPower, motor.getVelocity());
             }
-            lbMotor.setPower(wheelPower);
+            motor.setPower(wheelPower);
             if (wheelPower != 0.0) wheelsPowered = true;
 
-            wheelPower = wheelPowers[MotorType.RIGHT_BACK.value];
+            motor = motors[MotorIndex.BackRight.value];
+            wheelPower = wheelPowers[MotorIndex.BackRight.value];
             if (motorPowerMapper != null)
             {
-                wheelPower = motorPowerMapper.translateMotorPower(wheelPower, rbMotor.getVelocity());
+                wheelPower = motorPowerMapper.translateMotorPower(wheelPower, motor.getVelocity());
             }
-            rbMotor.setPower(wheelPower);
+            motor.setPower(wheelPower);
             if (wheelPower != 0.0) wheelsPowered = true;
 
             setDriveTime(owner, driveTime, event);
@@ -209,20 +214,20 @@ public class TrcMecanumDrive extends TrcSimpleDrive
         Odometry delta = super.getOdometryDelta(prevOdometries, currOdometries);
 
         delta.position.x = xScale * TrcUtil.average(
-            currOdometries[MotorType.LEFT_FRONT.value].currPos
-            - prevOdometries[MotorType.LEFT_FRONT.value].currPos,
-            currOdometries[MotorType.RIGHT_BACK.value].currPos
-            - prevOdometries[MotorType.RIGHT_BACK.value].currPos,
-            -(currOdometries[MotorType.RIGHT_FRONT.value].currPos
-                - prevOdometries[MotorType.RIGHT_FRONT.value].currPos),
-            -(currOdometries[MotorType.LEFT_BACK.value].currPos
-                - prevOdometries[MotorType.LEFT_BACK.value].currPos));
+            currOdometries[MotorIndex.FrontLeft.value].currPos
+            - prevOdometries[MotorIndex.FrontLeft.value].currPos,
+            currOdometries[MotorIndex.BackRight.value].currPos
+            - prevOdometries[MotorIndex.BackRight.value].currPos,
+            -(currOdometries[MotorIndex.FrontRight.value].currPos
+                - prevOdometries[MotorIndex.FrontRight.value].currPos),
+            -(currOdometries[MotorIndex.BackLeft.value].currPos
+                - prevOdometries[MotorIndex.BackLeft.value].currPos));
 
         delta.velocity.x = xScale * TrcUtil.average(
-            currOdometries[MotorType.LEFT_FRONT.value].velocity,
-            currOdometries[MotorType.RIGHT_BACK.value].velocity,
-            -currOdometries[MotorType.RIGHT_FRONT.value].velocity,
-            -currOdometries[MotorType.LEFT_BACK.value].velocity);
+            currOdometries[MotorIndex.FrontLeft.value].velocity,
+            currOdometries[MotorIndex.BackRight.value].velocity,
+            -currOdometries[MotorIndex.FrontRight.value].velocity,
+            -currOdometries[MotorIndex.BackLeft.value].velocity);
 
         if (Math.abs(delta.velocity.x) > stallVelThreshold)
         {

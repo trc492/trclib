@@ -38,141 +38,96 @@ public class TrcSimpleDrive extends TrcDriveBase
 {
     private final String moduleName = getClass().getSimpleName();
 
-    public enum MotorType
-    {
-        LEFT_FRONT(0),
-        RIGHT_FRONT(1),
-        LEFT_BACK(2),
-        RIGHT_BACK(3),
-        LEFT_CENTER(4),
-        RIGHT_CENTER(5);
-
-        public final int value;
-
-        MotorType(int value)
-        {
-            this.value = value;
-        }
-    }   //enum MotorType
-
-    protected final TrcMotor lfMotor;
-    protected final TrcMotor rfMotor;
-    protected final TrcMotor lbMotor;
-    protected final TrcMotor rbMotor;
-    protected final TrcMotor lcMotor;
-    protected final TrcMotor rcMotor;
-
     /**
      * Constructor: Create an instance of a 6-wheel drive base.
      *
-     * @param lfMotor specifies the left front motor of the drive base.
-     * @param lcMotor specifies the left center motor of a 6-wheel drive base.
-     * @param lbMotor specifies the left back motor of the drive base.
-     * @param rfMotor specifies the right front motor of the drive base.
-     * @param rcMotor specifies the right center motor of a 6-wheel drive base.
-     * @param rbMotor specifies the right back motor of the drive base.
      * @param gyro specifies the gyro. If none, it can be set to null.
+     * @param flMotor specifies the front left motor of the drive base.
+     * @param frMotor specifies the front right motor of the drive base.
+     * @param blMotor specifies the back left motor of the drive base.
+     * @param brMotor specifies the back right motor of the drive base.
+     * @param clMotor specifies the center left motor of a 6-wheel drive base.
+     * @param crMotor specifies the center right motor of a 6-wheel drive base.
      */
     public TrcSimpleDrive(
-        TrcMotor lfMotor, TrcMotor lcMotor, TrcMotor lbMotor, TrcMotor rfMotor, TrcMotor rcMotor, TrcMotor rbMotor,
-        TrcGyro gyro)
+        TrcGyro gyro, TrcMotor flMotor, TrcMotor frMotor, TrcMotor blMotor, TrcMotor brMotor,
+        TrcMotor clMotor, TrcMotor crMotor)
     {
-        super(new TrcMotor[] {lfMotor, rfMotor, lbMotor, rbMotor, lcMotor, rcMotor}, gyro);
+        super(gyro, flMotor, frMotor, blMotor, brMotor, clMotor, crMotor);
 
-        if (lfMotor == null || rfMotor == null ||
-            lbMotor == null || rbMotor == null ||
-            lcMotor == null || rcMotor == null)
+        if (flMotor == null || frMotor == null ||
+            blMotor == null || brMotor == null ||
+            clMotor == null || crMotor == null)
         {
             throw new IllegalArgumentException("All 6 motors must not be null.");
         }
-
-        this.lfMotor = lfMotor;
-        this.rfMotor = rfMotor;
-        this.lbMotor = lbMotor;
-        this.rbMotor = rbMotor;
-        this.lcMotor = lcMotor;
-        this.rcMotor = rcMotor;
     }   //TrcSimpleDrive
 
     /**
      * Constructor: Create an instance of a 6-wheel drive base.
      *
-     * @param lfMotor specifies the left front motor of the drive base.
-     * @param lcMotor specifies the left center motor of a 6-wheel drive base.
-     * @param lbMotor specifies the left back motor of the drive base.
-     * @param rfMotor specifies the right front motor of the drive base.
-     * @param rcMotor specifies the right center motor of a 6-wheel drive base.
-     * @param rbMotor specifies the right back motor of the drive base.
+     * @param flMotor specifies the front left motor of the drive base.
+     * @param frMotor specifies the front right motor of the drive base.
+     * @param blMotor specifies the back left motor of the drive base.
+     * @param brMotor specifies the back right motor of the drive base.
+     * @param clMotor specifies the center left motor of a 6-wheel drive base.
+     * @param crMotor specifies the center right motor of a 6-wheel drive base.
      */
     public TrcSimpleDrive(
-        TrcMotor lfMotor, TrcMotor lcMotor, TrcMotor lbMotor, TrcMotor rfMotor, TrcMotor rcMotor, TrcMotor rbMotor)
+        TrcMotor flMotor, TrcMotor frMotor, TrcMotor blMotor, TrcMotor brMotor, TrcMotor clMotor, TrcMotor crMotor)
     {
-        this(lfMotor, lcMotor, lbMotor, rfMotor, rcMotor, rbMotor, null);
+        this(null, flMotor, frMotor, blMotor, brMotor, clMotor, crMotor);
     }   //TrcSimpleDrive
 
     /**
      * Constructor: Create an instance of a 4-wheel drive base.
      *
-     * @param lfMotor specifies the left front motor of the drive base.
-     * @param lbMotor specifies the left back motor of the drive base.
-     * @param rfMotor specifies the right front motor of the drive base.
-     * @param rbMotor specifies the right back motor of the drive base.
      * @param gyro specifies the gyro. If none, it can be set to null.
+     * @param flMotor specifies the front left motor of the drive base.
+     * @param frMotor specifies the front right motor of the drive base.
+     * @param blMotor specifies the back left motor of the drive base.
+     * @param brMotor specifies the back right motor of the drive base.
      */
     public TrcSimpleDrive(
-        TrcMotor lfMotor, TrcMotor lbMotor, TrcMotor rfMotor, TrcMotor rbMotor, TrcGyro gyro)
+        TrcGyro gyro, TrcMotor flMotor, TrcMotor frMotor, TrcMotor blMotor, TrcMotor brMotor)
     {
-        super(new TrcMotor[] {lfMotor, rfMotor, lbMotor, rbMotor}, gyro);
+        super(gyro, flMotor, frMotor, blMotor, brMotor);
 
-        if (lfMotor == null || rfMotor == null || lbMotor == null || rbMotor == null)
+        if (flMotor == null || frMotor == null || blMotor == null || brMotor == null)
         {
             throw new IllegalArgumentException("All 4 motors must not be null.");
         }
-
-        this.lfMotor = lfMotor;
-        this.rfMotor = rfMotor;
-        this.lbMotor = lbMotor;
-        this.rbMotor = rbMotor;
-        this.lcMotor = null;
-        this.rcMotor = null;
     }   //TrcSimpleDrive
 
     /**
      * Constructor: Create an instance of a 4-wheel drive base.
      *
-     * @param lfMotor specifies the left front motor of the drive base.
-     * @param lbMotor specifies the left back motor of the drive base.
-     * @param rfMotor specifies the right front motor of the drive base.
-     * @param rbMotor specifies the right back motor of the drive base.
+     * @param flMotor specifies the front left motor of the drive base.
+     * @param frMotor specifies the front right motor of the drive base.
+     * @param blMotor specifies the back left motor of the drive base.
+     * @param brMotor specifies the back right motor of the drive base.
      */
     public TrcSimpleDrive(
-        TrcMotor lfMotor, TrcMotor lbMotor, TrcMotor rfMotor, TrcMotor rbMotor)
+        TrcMotor flMotor, TrcMotor frMotor, TrcMotor blMotor, TrcMotor brMotor)
     {
-        this(lfMotor, lbMotor, rfMotor, rbMotor, null);
+        this(null, flMotor, frMotor, blMotor, brMotor);
     }   //TrcSimpleDrive
 
     /**
      * Constructor: Create an instance of a 2-wheel drive base.
      *
+     * @param gyro specifies the gyro. If none, it can be set to null.
      * @param leftMotor specifies the left motor of the drive base.
      * @param rightMotor specifies the right motor of the drive base.
-     * @param gyro specifies the gyro. If none, it can be set to null.
      */
-    public TrcSimpleDrive(TrcMotor leftMotor, TrcMotor rightMotor, TrcGyro gyro)
+    public TrcSimpleDrive(TrcGyro gyro, TrcMotor leftMotor, TrcMotor rightMotor)
     {
-        super(new TrcMotor[] {leftMotor, rightMotor}, gyro);
+        super(gyro, leftMotor, rightMotor);
 
         if (leftMotor == null || rightMotor == null)
         {
             throw new IllegalArgumentException("All 2 motors must not be null.");
         }
-
-        this.lfMotor = leftMotor;
-        this.rfMotor = rightMotor;
-        this.lbMotor = null;
-        this.rbMotor = null;
-        this.lcMotor = null;
-        this.rcMotor = null;
     }   //TrcSimpleDrive
 
     /**
@@ -183,7 +138,7 @@ public class TrcSimpleDrive extends TrcDriveBase
      */
     public TrcSimpleDrive(TrcMotor leftMotor, TrcMotor rightMotor)
     {
-        this(leftMotor, rightMotor, null);
+        this(null, leftMotor, rightMotor);
     }   //TrcSimpleDrive
 
     // CodeReview: Please explain what is this method for? Nobody is calling it. Why divide yScale by wheel base width?
@@ -200,12 +155,12 @@ public class TrcSimpleDrive extends TrcDriveBase
     /**
      * This method inverts direction of a given motor in the drive train.
      *
-     * @param motorType specifies the motor in the drive train.
+     * @param motorIndex specifies the motor index in the drive train.
      * @param inverted specifies true if inverting motor direction.
      */
-    public void setInvertedMotor(MotorType motorType, boolean inverted)
+    public void setInvertedMotor(MotorIndex motorIndex, boolean inverted)
     {
-        setInvertedMotor(motorType.value, inverted);
+        setInvertedMotor(motorIndex.value, inverted);
     }   //setInvertedMotor
 
     /**
@@ -272,65 +227,72 @@ public class TrcSimpleDrive extends TrcDriveBase
             }
 
             double wheelPower;
+            TrcMotor motor;
 
-            if (lfMotor != null)
+            motor = motors[MotorIndex.FrontLeft.value];
+            if (motor != null)
             {
                 wheelPower = leftPower;
                 if (motorPowerMapper != null)
                 {
-                    wheelPower = motorPowerMapper.translateMotorPower(wheelPower, lfMotor.getVelocity());
+                    wheelPower = motorPowerMapper.translateMotorPower(wheelPower, motor.getVelocity());
                 }
-                lfMotor.setPower(wheelPower);
+                motor.setPower(wheelPower);
             }
 
-            if (rfMotor != null)
+            motor = motors[MotorIndex.FrontRight.value];
+            if (motor != null)
             {
                 wheelPower = rightPower;
                 if (motorPowerMapper != null)
                 {
-                    wheelPower = motorPowerMapper.translateMotorPower(wheelPower, rfMotor.getVelocity());
+                    wheelPower = motorPowerMapper.translateMotorPower(wheelPower, motor.getVelocity());
                 }
-                rfMotor.setPower(wheelPower);
+                motor.setPower(wheelPower);
             }
 
-            if (lbMotor != null)
+            motor = motors[MotorIndex.BackLeft.value];
+            if (motor != null)
             {
                 wheelPower = leftPower;
                 if (motorPowerMapper != null)
                 {
-                    wheelPower = motorPowerMapper.translateMotorPower(wheelPower, lbMotor.getVelocity());
+                    wheelPower = motorPowerMapper.translateMotorPower(wheelPower, motor.getVelocity());
                 }
-                lbMotor.setPower(wheelPower);
+                motor.setPower(wheelPower);
             }
 
-            if (rbMotor != null)
+            motor = motors[MotorIndex.BackRight.value];
+            if (motor != null)
             {
                 wheelPower = rightPower;
                 if (motorPowerMapper != null)
                 {
-                    wheelPower = motorPowerMapper.translateMotorPower(wheelPower, rbMotor.getVelocity());
+                    wheelPower = motorPowerMapper.translateMotorPower(wheelPower, motor.getVelocity());
                 }
-                rbMotor.setPower(wheelPower);
+                motor.setPower(wheelPower);
             }
 
-            if (lcMotor != null)
+            motor = motors[MotorIndex.CenterLeft.value];
+            if (motor != null)
             {
                 wheelPower = leftPower;
                 if (motorPowerMapper != null)
                 {
-                    wheelPower = motorPowerMapper.translateMotorPower(wheelPower, lcMotor.getVelocity());
+                    wheelPower = motorPowerMapper.translateMotorPower(wheelPower, motor.getVelocity());
                 }
-                lcMotor.setPower(wheelPower);
+                motor.setPower(wheelPower);
             }
 
-            if (rcMotor != null)
+            motor = motors[MotorIndex.CenterRight.value];
+            if (motor != null)
             {
                 wheelPower = rightPower;
                 if (motorPowerMapper != null)
                 {
-                    wheelPower = motorPowerMapper.translateMotorPower(wheelPower, rcMotor.getVelocity());
+                    wheelPower = motorPowerMapper.translateMotorPower(wheelPower, motor.getVelocity());
                 }
-                rcMotor.setPower(wheelPower);
+                motor.setPower(wheelPower);
             }
             setDriveTime(owner, driveTime, event);
         }
