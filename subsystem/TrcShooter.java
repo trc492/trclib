@@ -400,6 +400,7 @@ public class TrcShooter implements TrcExclusiveSubsystem
                 {
                     shooterState.shooterReadyEvent.signal();
                     shooterState.shooterReadyEvent = null;
+                    shooterState.shooterReadyTimeout = 0.0;
                     tracer.traceInfo(
                         instanceName, "%s is %s: rpm1=%f/%f, rpm2=%f/%f, tilt=%f/%f, pan=%f/%f",
                         instanceName,
