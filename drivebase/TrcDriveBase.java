@@ -107,7 +107,6 @@ public abstract class TrcDriveBase implements TrcExclusiveSubsystem
         public Double profiledMaxDriveVelocity = null;
         public Double profiledMaxDriveAcceleration = null;
         public Double profiledMaxDriveDeceleration = null;
-        public Double profiledMaxTurnRate = null;
 
         /**
          * This method sets parameters for drive motor velocity control.
@@ -220,24 +219,21 @@ public abstract class TrcDriveBase implements TrcExclusiveSubsystem
         }   //setVelocityPidParams
 
         /**
-         * This method sets the characteristics of the drive base. This is used in PurePursuit drive for motion
-         * profile drive.
+         * This method sets the motion profile parameters of the drive base. This is used in PurePursuit drive
+         * for motion profile drive.
          *
          * @param maxVelocity specifies the drive base maximum profiled velocity.
          * @param maxAcceleration specifies the drive base maximum profiled acceleration.
          * @param maxDeceleration specifies the drive base maximum profiled deceleration.
-         * @param maxTurnRate specifies the drive base maximum turn rate.
          * @return this object for chaining.
          */
-        public BaseParams setDriveCharacteristics(
-            double maxVelocity, double maxAcceleration, double maxDeceleration, double maxTurnRate)
+        public BaseParams setMotionProfileParams(double maxVelocity, double maxAcceleration, double maxDeceleration)
         {
             this.profiledMaxDriveVelocity = maxVelocity;
             this.profiledMaxDriveAcceleration = maxAcceleration;
             this.profiledMaxDriveDeceleration = maxDeceleration;
-            this.profiledMaxTurnRate = maxTurnRate;
             return this;
-        }   //setDriveCharacteristics
+        }   //setMotionProfileParams
     }   //class BaseParams
 
     //
