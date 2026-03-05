@@ -328,6 +328,7 @@ public class TrcShooter implements TrcExclusiveSubsystem
     public void cancel(String owner)
     {
         tracer.traceInfo(instanceName, "owner=" + owner);
+        disableGoalTracking();
         if (validateOwnership(owner))
         {
             finish(false);

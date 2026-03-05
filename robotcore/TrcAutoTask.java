@@ -22,6 +22,8 @@
 
 package trclib.robotcore;
 
+import java.util.ArrayList;
+
 /**
  * This class implements an auto task. It is intended to be extended by a specific auto task that will implement
  * the abstract methods performing the task.
@@ -69,6 +71,7 @@ public abstract class TrcAutoTask<T>
         String owner, Object params, T state, TrcTaskMgr.TaskType taskType, TrcRobot.RunMode runMode,
         boolean slowPeriodicLoop);
 
+    private static final ArrayList<TrcAutoTask<?>> autoTaskList = new ArrayList<>();
     public final TrcDbgTrace tracer;
     private final String instanceName;
     private final TrcTaskMgr.TaskType taskType;
@@ -94,6 +97,11 @@ public abstract class TrcAutoTask<T>
         autoTaskObj = TrcTaskMgr.createTask(instanceName, this::autoTask);
         sm = new TrcStateMachine<>(instanceName);
         currOwner = null;
+
+        synchronized (autoTaskList)
+        {
+            autoTaskList.add(this);
+        }
     }   //TrcAutoTask
 
     /**
@@ -106,6 +114,20 @@ public abstract class TrcAutoTask<T>
     {
         return instanceName;
     }   //toString
+
+    /**
+     * This method cancels all Auto tasks. This should be called in robot stopMode.
+     */
+    public static void cancelAllTasks()
+    {
+        synchronized (autoTaskList)
+        {
+            for (TrcAutoTask<?> autoTask: autoTaskList)
+            {
+                autoTask.cancel();
+            }
+        }
+    }   //clearAllTasks
 
     /**
      * This method cancels an in progress auto task operation if any.
