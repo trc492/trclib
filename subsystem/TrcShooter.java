@@ -524,6 +524,7 @@ public class TrcShooter implements TrcExclusiveSubsystem
             double sin = Math.sin(headingRad);
             double vxRobot =  fieldVel.x * cos + fieldVel.y * sin;
             double vyRobot = -fieldVel.x * sin + fieldVel.y * cos;
+            TrcPose2D originalTargetPose = aimInfo.targetPose;
 
             state.lastTofError = Double.NaN;
             maxIterations = Math.min(maxIterations, 5);
@@ -538,20 +539,12 @@ public class TrcShooter implements TrcExclusiveSubsystem
                 double tof = TrcUtil.clipRange(currAimInfo.timeOfFlight, 0.05, 2.0);
                 // omega is CW-positive.
                 state.lastCompensation = new TrcPose2D(-vxRobot * tof, -vyRobot * tof, -omega * tof);
-                // Don't do safety clamp on first iteration.
-                // Subsequent compensation is expected small, so clamp it for safety.
-                if (i > 0)
-                {
-                    state.lastCompensation.x = TrcUtil.clipRange(state.lastCompensation.x, -1.0, 1.0);
-                    state.lastCompensation.y = TrcUtil.clipRange(state.lastCompensation.y, -1.0, 1.0);
-                    state.lastCompensation.angle = TrcUtil.clipRange(state.lastCompensation.angle, -45, 45);
-                }
-                TrcPose2D adjustedPose = currAimInfo.targetPose.addRelativePose(state.lastCompensation);
+                TrcPose2D adjustedPose = originalTargetPose.addRelativePose(state.lastCompensation);
                 // Assumption: getAimInfo will not return null.
                 adjustedAimInfo = aimInfoSource.getAimInfo(adjustedPose);
 
                 // Detect early exit.
-                double tofError = adjustedAimInfo.timeOfFlight - tof;
+                double tofError = adjustedAimInfo.timeOfFlight - currAimInfo.timeOfFlight;
                 double absTofError = Math.abs(tofError);
                 if (absTofError <= tofErrorThreshold)
                 {
