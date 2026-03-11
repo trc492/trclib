@@ -475,6 +475,51 @@ public class TrcShooter implements TrcExclusiveSubsystem
     }   //disableGoalTracking
 
     /**
+     * This method checks if the target pan angle crosses the hardstop. If so, it will adjust the pan angle so the
+     * turret will turn the other way avoid crossing over the hard stop.
+     *
+     * @param targetPanAngle specifies the target pan angle.
+     * @param minPanAngle specifies the lower limit of pan angle.
+     * @param maxPanAngle specifies the upper limit of pan angle.
+     */
+    public double adjustPanAngleToAvoidCrossover(double targetPanAngle, double minPanAngle, double maxPanAngle)
+    {
+        // Check for crossing over hardstop.
+        if (targetPanAngle < minPanAngle)
+        {
+            if (targetPanAngle + 360.0 > maxPanAngle)
+            {
+                tracer.traceDebug(instanceName, "Crossing hardstop CCW to dead zone at %f", targetPanAngle);
+                // We landed inside the dead zone, just stay at the edge of it.
+                targetPanAngle = minPanAngle;
+            }
+            else
+            {
+                targetPanAngle += 360.0;
+                tracer.traceDebug(
+                    instanceName, "Crossing hardstop CCW, spin it the other way to %f", targetPanAngle);
+            }
+        }
+        else if (targetPanAngle > maxPanAngle)
+        {
+            if (targetPanAngle - 360.0 < minPanAngle)
+            {
+                tracer.traceDebug(instanceName, "Crossing hardstop CW to dead zone at %f", targetPanAngle);
+                // We landed inside the dead zone, just stay at the edge of it.
+                targetPanAngle = maxPanAngle;
+            }
+            else
+            {
+                targetPanAngle -= 360.0;
+                tracer.traceDebug(
+                    instanceName, "Crossing hardstop CW, spin it the other way to %f", targetPanAngle);
+            }
+        }
+
+        return targetPanAngle;
+    }   //adjustPanAngleToAvoidCrossover
+
+    /**
      * This method enables power mode on the shooter motors. In power mode, it will do open-loop control of the
      * flywheel using percentage power of targetRPM/maxRPM. This is a failsafe mode in case the flywheel encoder
      * has malfunctioned.
