@@ -45,7 +45,7 @@ import trclib.timer.TrcTimer;
  */
 public class TrcShooter implements TrcExclusiveSubsystem
 {
-    private static final boolean COMPENSATE_ROBOT_ROTATION = false;
+    private static final boolean COMPENSATE_ROBOT_ROTATION = true;
 
     /**
      * This interface must be implemented by the caller to provide a method for shooting the object.
@@ -80,47 +80,62 @@ public class TrcShooter implements TrcExclusiveSubsystem
 
     public static class AimInfo
     {
-        public TrcPose2D targetPose;
         public Double flywheel1RPM;
         public Double flywheel2RPM;
         public Double panAngle;
         public Double tiltAngle;
-        public Double timeOfFlight;
 
-        public AimInfo(
-            TrcPose2D targetPose, Double flywheel1RPM, Double flywheel2RPM, Double panAngle, Double tiltAngle,
-            Double timeOfFlight)
+        public AimInfo(Double flywheel1RPM, Double flywheel2RPM, Double panAngle, Double tiltAngle)
         {
-            this.targetPose = targetPose;
             this.flywheel1RPM = flywheel1RPM;
             this.flywheel2RPM = flywheel2RPM;
             this.panAngle = panAngle;
             this.tiltAngle = tiltAngle;
-            this.timeOfFlight = timeOfFlight;
         }   //AimInfo
 
         @Override
         public AimInfo clone()
         {
-            return new AimInfo(targetPose, flywheel1RPM, flywheel2RPM, panAngle, tiltAngle, timeOfFlight);
+            return new AimInfo(flywheel1RPM, flywheel2RPM, panAngle, tiltAngle);
         }   //clone
 
         @Override
         public String toString()
         {
-            return "(TargetPose=" + targetPose +
-                   ", RPM1=" + flywheel1RPM +
+            return "(RPM1=" + flywheel1RPM +
                    ", RPM2=" + flywheel2RPM +
                    ", pan=" + panAngle +
-                   ", tilt=" + tiltAngle +
-                   ", ToF=" + timeOfFlight + ")";
+                   ", tilt=" + tiltAngle + ")";
         }   //toString
     }   //class AimInfo
 
     public interface AimInfoSource
     {
-        AimInfo getAimInfo(TrcPose2D targetPose);
+        AimInfo getAimInfo();
     }   //interface AimInfoSource
+
+    public static class TargetInfo
+    {
+        public TrcPose2D targetPose;
+        public double tof;
+
+        public TargetInfo(TrcPose2D targetPose, double tof)
+        {
+            this.targetPose = targetPose;
+            this.tof = tof;
+        }   //TargetInfo
+
+        @Override
+        public String toString()
+        {
+            return "(targetPose=" + targetPose + ", tof=" + tof + ")";
+        }   //toString
+    }   //class TargetInfo
+
+    public interface TargetInfoSource
+    {
+        TargetInfo getTargetInfo(TrcPose2D targetPose);
+    }   //interface TargetInfoSource
 
     public static class AimConvergenceState
     {
@@ -366,7 +381,7 @@ public class TrcShooter implements TrcExclusiveSubsystem
     {
         // If goalTrackingTask is running, aimInfoSource should not be null.
         GoalTrackingParams trackingParams = goalTrackingParams.get();
-        AimInfo aimInfo = aimInfoSource.getAimInfo(null);
+        AimInfo aimInfo = aimInfoSource.getAimInfo();
 
         if (aimInfo != null)
         {
@@ -496,35 +511,35 @@ public class TrcShooter implements TrcExclusiveSubsystem
     }   //isShooterPowerModeEnabled
 
     /**
-     * This method compensates the AimInfo by the motion of the robot.
+     * This method compensates the TargetInfo by the motion of the robot.
      *
      * @param driveBase specifies the drive base object.
-     * @param aimInfoSource specifies the method to call to recompute AimInfo by target pose.
-     * @param aimInfo specifies the original AimInfo.
-     * @param tofErrorThreshold specifies the time-of-flight error threshold to terminate iterations.
+     * @param targetInfoSource specifies the method to call to recompute TargetInfo by current target pose.
+     * @param targetInfo specifies the original TargetInfo.
+     * @param tofErrorThreshold specifies the TimeOfFlight error threshold to terminate iterations.
      * @param maxIterations specifies the maximum number of iterations.
-     * @return compensated Aim Info.
+     * @return compensated Target Info.
      */
-    public AimInfo compensateRobotMotion(
-        TrcDriveBase driveBase, AimInfoSource aimInfoSource, AimInfo aimInfo, double tofErrorThreshold,
+    public TargetInfo compensateRobotMotion(
+        TrcDriveBase driveBase, TargetInfoSource targetInfoSource,  TargetInfo targetInfo, double tofErrorThreshold,
         int maxIterations)
     {
-        AimInfo adjustedAimInfo = aimInfo;
+        TargetInfo compensatedInfo = targetInfo;
         TrcPose2D fieldVel = driveBase.getFieldVelocity();
         double omega = COMPENSATE_ROBOT_ROTATION? driveBase.getTurnRate(): 0.0;
         AimConvergenceState state = new AimConvergenceState();
-        state.startTof = aimInfo.timeOfFlight;
+        state.startTof = targetInfo.tof;
         // Only compensate if robot is moving linearly or rotating
         if (Math.hypot(fieldVel.x, fieldVel.y) > 0.01 || Math.abs(omega) > 1.0)
         {
-            AimInfo currAimInfo = aimInfo;
+            TargetInfo currTargetInfo = targetInfo;
             // Rotate field velocity into robot frame (CW-positive convention)
             double headingRad = Math.toRadians(driveBase.getHeading());
             double cos = Math.cos(headingRad);
             double sin = Math.sin(headingRad);
             double vxRobot =  fieldVel.x * cos + fieldVel.y * sin;
             double vyRobot = -fieldVel.x * sin + fieldVel.y * cos;
-            TrcPose2D originalTargetPose = aimInfo.targetPose;
+            TrcPose2D originalTargetPose = targetInfo.targetPose;
 
             state.lastTofError = Double.NaN;
             maxIterations = Math.min(maxIterations, 5);
@@ -536,15 +551,15 @@ public class TrcShooter implements TrcExclusiveSubsystem
                 // double yawComp = TrcUtil.clipRange(rawYawComp, -yawLimit, yawLimit);
 
                 // Clamp ToF only for motion prediction safety, not for convergence logic
-                double tof = TrcUtil.clipRange(currAimInfo.timeOfFlight, 0.05, 2.0);
+                double tof = TrcUtil.clipRange(currTargetInfo.tof, 0.05, 2.0);
                 // omega is CW-positive.
                 state.lastCompensation = new TrcPose2D(-vxRobot * tof, -vyRobot * tof, -omega * tof);
                 TrcPose2D adjustedPose = originalTargetPose.addRelativePose(state.lastCompensation);
                 // Assumption: getAimInfo will not return null.
-                adjustedAimInfo = aimInfoSource.getAimInfo(adjustedPose);
+                compensatedInfo = targetInfoSource.getTargetInfo(adjustedPose);
 
                 // Detect early exit.
-                double tofError = adjustedAimInfo.timeOfFlight - currAimInfo.timeOfFlight;
+                double tofError = compensatedInfo.tof - currTargetInfo.tof;
                 double absTofError = Math.abs(tofError);
                 if (absTofError <= tofErrorThreshold)
                 {
@@ -562,7 +577,7 @@ public class TrcShooter implements TrcExclusiveSubsystem
                         state.exitReason = AimConvergenceState.ExitReason.OSCILLATING;
                     }
                 }
-                state.lastTof = adjustedAimInfo.timeOfFlight;
+                state.lastTof = compensatedInfo.tof;
                 state.lastTofError = tofError;
 
                 double compensationMag = Math.hypot(state.lastCompensation.x, state.lastCompensation.y);
@@ -577,7 +592,7 @@ public class TrcShooter implements TrcExclusiveSubsystem
                     // Early exit.
                     break;
                 }
-                currAimInfo = adjustedAimInfo;
+                currTargetInfo = compensatedInfo;
             }
 
             if (state.exitReason == null)
@@ -591,7 +606,7 @@ public class TrcShooter implements TrcExclusiveSubsystem
         }
 
         tracer.traceDebug(instanceName, "AimConvergenceState=%s", state);
-        return adjustedAimInfo;
+        return compensatedInfo;
     }   // compensateRobotMotion
 
     /**
