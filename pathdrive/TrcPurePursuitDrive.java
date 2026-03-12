@@ -128,6 +128,9 @@ public class TrcPurePursuitDrive
     private volatile boolean incrementalTurn;
     private TargetHeadingOffset targetHeadingOffset = null;
     private volatile boolean stalled = false;
+    private Double maxVelocity = null;
+    private Double maxAcceleration = null;
+    private Double maxDeceleration = null;
 
     private String owner = null;
     private TrcPath path;
@@ -286,6 +289,14 @@ public class TrcPurePursuitDrive
     {
         return turnPidCtrl;
     }   //getTurnPidCtrl
+
+    public synchronized void setMotionProfileParameters(
+        Double maxVelocity, Double maxAcceleration, Double maxDeceleration)
+    {
+        this.maxVelocity = maxVelocity;
+        this.maxAcceleration = maxAcceleration;
+        this.maxDeceleration = maxDeceleration;
+    }   //setMotionProfileParameters
 
     /**
      * This method enables/disables SQUID mode of the PID controllers.
@@ -671,15 +682,15 @@ public class TrcPurePursuitDrive
      * the path must start at (0,0). Heading is absolute and position is relative in the starting robot reference frame.
      *
      * @param owner specifies the ID string of the caller requesting exclusive access.
-     * @param path The path to follow. Must start at (0,0).
      * @param event When finished, signal this event.
      * @param timeout Number of seconds after which to cancel this operation. 0.0 for no timeout.
      * @param maxVel specifies the maximum velocity if applying trapezoid velocity profile, null if not.
      * @param maxAccel specifies the maximum acceleration if applying trapezoid velocity profile, null if not.
      * @param maxDecel specifies the maximum deceleration if applying trapezoid velocity profile, null if not.
+     * @param path The path to follow. Must start at (0,0).
      */
     public synchronized void start(
-        String owner, TrcPath path, TrcEvent event, double timeout, Double maxVel, Double maxAccel, Double maxDecel)
+        String owner, TrcEvent event, double timeout, Double maxVel, Double maxAccel, Double maxDecel, TrcPath path)
     {
         if (path == null || path.getSize() == 0)
         {
@@ -756,45 +767,45 @@ public class TrcPurePursuitDrive
      * Start following the supplied path using a pure pursuit controller. The velocity must always be positive, and
      * the path must start at (0,0). Heading is absolute and position is relative in the starting robot reference frame.
      *
-     * @param path The path to follow. Must start at (0,0).
      * @param event When finished, signal this event.
      * @param timeout Number of seconds after which to cancel this operation. 0.0 for no timeout.
      * @param maxVel specifies the maximum velocity if applying trapezoid velocity profile, null if not.
      * @param maxAccel specifies the maximum acceleration if applying trapezoid velocity profile, null if not.
      * @param maxDecel specifies the maximum deceleration if applying trapezoid velocity profile, null if not.
+     * @param path The path to follow. Must start at (0,0).
      */
-    public void start(TrcPath path, TrcEvent event, double timeout, Double maxVel, Double maxAccel, Double maxDecel)
+    public void start(TrcEvent event, double timeout, Double maxVel, Double maxAccel, Double maxDecel, TrcPath path)
     {
-        start(null, path, event, timeout, maxVel, maxAccel, maxDecel);
+        start(null, event, timeout, maxVel, maxAccel, maxDecel, path);
     }   //start
 
     /**
      * Start following the supplied path using a pure pursuit controller. The velocity must always be positive, and
      * the path must start at (0,0). Heading is absolute and position is relative in the starting robot reference frame.
      *
-     * @param path The path to follow. Must start at (0,0).
      * @param event When finished, signal this event.
      * @param maxVel specifies the maximum velocity if applying trapezoid velocity profile, null if not.
      * @param maxAccel specifies the maximum acceleration if applying trapezoid velocity profile, null if not.
      * @param maxDecel specifies the maximum deceleration if applying trapezoid velocity profile, null if not.
+     * @param path The path to follow. Must start at (0,0).
      */
-    public void start(TrcPath path, TrcEvent event, Double maxVel, Double maxAccel, Double maxDecel)
+    public void start(TrcEvent event, Double maxVel, Double maxAccel, Double maxDecel, TrcPath path)
     {
-        start(null, path, event, 0.0, maxVel, maxAccel, maxDecel);
+        start(null, event, 0.0, maxVel, maxAccel, maxDecel, path);
     }   //start
 
     /**
      * Start following the supplied path using a pure pursuit controller. The velocity must always be positive, and
      * the path must start at (0,0). Heading is absolute and position is relative in the starting robot reference frame.
      *
-     * @param path The path to follow. Must start at (0,0).
      * @param maxVel specifies the maximum velocity if applying trapezoid velocity profile, null if not.
      * @param maxAccel specifies the maximum acceleration if applying trapezoid velocity profile, null if not.
      * @param maxDecel specifies the maximum deceleration if applying trapezoid velocity profile, null if not.
+     * @param path The path to follow. Must start at (0,0).
      */
-    public void start(TrcPath path, Double maxVel, Double maxAccel, Double maxDecel)
+    public void start(Double maxVel, Double maxAccel, Double maxDecel, TrcPath path)
     {
-        start(null, path, null, 0.0, maxVel, maxAccel, maxDecel);
+        start(null, null, 0.0, maxVel, maxAccel, maxDecel, path);
     }   //start
 
     /**
@@ -802,38 +813,38 @@ public class TrcPurePursuitDrive
      * the path must start at (0,0). Heading is absolute and position is relative in the starting robot reference frame.
      *
      * @param owner specifies the ID string of the caller requesting exclusive access.
-     * @param path The path to follow. Must start at (0,0).
      * @param event When finished, signal this event.
      * @param timeout Number of seconds after which to cancel this operation. 0.0 for no timeout.
+     * @param path The path to follow. Must start at (0,0).
      */
-    public void start(String owner, TrcPath path, TrcEvent event, double timeout)
+    public void start(String owner, TrcEvent event, double timeout, TrcPath path)
     {
-        start(owner, path, event, timeout, null, null, null);
+        start(owner, event, timeout, maxVelocity, maxAcceleration, maxDeceleration, path);
     }   //start
 
     /**
      * Start following the supplied path using a pure pursuit controller. The velocity must always be positive, and
      * the path must start at (0,0). Heading is absolute and position is relative in the starting robot reference frame.
      *
-     * @param path The path to follow. Must start at (0,0).
      * @param event When finished, signal this event.
      * @param timeout Number of seconds after which to cancel this operation. 0.0 for no timeout.
+     * @param path The path to follow. Must start at (0,0).
      */
-    public void start(TrcPath path, TrcEvent event, double timeout)
+    public void start(TrcEvent event, double timeout, TrcPath path)
     {
-        start(null, path, event, timeout, null, null, null);
+        start(null, event, timeout, maxVelocity, maxAcceleration, maxDeceleration, path);
     }   //start
 
     /**
      * Start following the supplied path using a pure pursuit controller. The velocity must always be positive, and
      * the path must start at (0,0). Heading is absolute and position is relative in the starting robot reference frame.
      *
-     * @param path The path to follow. Must start at (0,0).
      * @param event When finished, signal this event.
+     * @param path The path to follow. Must start at (0,0).
      */
-    public void start(TrcPath path, TrcEvent event)
+    public void start(TrcEvent event, TrcPath path)
     {
-        start(null, path, event, 0.0, null, null, null);
+        start(null, event, 0.0, maxVelocity, maxAcceleration, maxDeceleration, path);
     }   //start
 
     /**
@@ -844,7 +855,7 @@ public class TrcPurePursuitDrive
      */
     public void start(TrcPath path)
     {
-        start(null, path, null, 0.0, null, null, null);
+        start(null, null, 0.0, maxVelocity, maxAcceleration, maxDeceleration, path);
     }   //start
 
     /**
@@ -871,7 +882,7 @@ public class TrcPurePursuitDrive
             pathBuilder.append(pose);
         }
 
-        start(owner, pathBuilder.toRelativeStartPath(), event, timeout, maxVel, maxAccel, maxDecel);
+        start(owner, event, timeout, maxVel, maxAccel, maxDecel, pathBuilder.toRelativeStartPath());
     }   //start
 
     /**
@@ -961,7 +972,7 @@ public class TrcPurePursuitDrive
     public void start(
         String owner, TrcEvent event, double timeout, boolean incrementalPath, TrcPose2D... poses)
     {
-        start(owner, event, timeout, incrementalPath, null, null, null, poses);
+        start(owner, event, timeout, incrementalPath, maxVelocity, maxAcceleration, maxDeceleration, poses);
     }   //start
 
     /**
@@ -976,7 +987,7 @@ public class TrcPurePursuitDrive
     public void start(
         TrcEvent event, double timeout, boolean incrementalPath, TrcPose2D... poses)
     {
-        start(null, event, timeout, incrementalPath, null, null, null, poses);
+        start(null, event, timeout, incrementalPath, maxVelocity, maxAcceleration, maxDeceleration, poses);
     }   //start
 
     /**
@@ -990,7 +1001,7 @@ public class TrcPurePursuitDrive
     public void start(
         TrcEvent event, boolean incrementalPath, TrcPose2D... poses)
     {
-        start(null, event, 0.0, incrementalPath, null, null, null, poses);
+        start(null, event, 0.0, incrementalPath, maxVelocity, maxAcceleration, maxDeceleration, poses);
     }   //start
 
     /**
@@ -1002,7 +1013,7 @@ public class TrcPurePursuitDrive
      */
     public void start(boolean incrementalPath, TrcPose2D... poses)
     {
-        start(null, null, 0.0, incrementalPath, null, null, null, poses);
+        start(null, null, 0.0, incrementalPath, maxVelocity, maxAcceleration, maxDeceleration, poses);
     }   //start
 
     /**

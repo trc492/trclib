@@ -317,7 +317,7 @@ public class TrcGridDrive
             TrcPath path = pathBuilder.toRelativeStartPath();
             tracer.traceDebug(moduleName, "EndPoint=" + endPoint + ", DrivePath=" + path);
             callbackEvent.setCallback(this::driveDone, null);
-            purePursuitDrive.start(moduleName, path, callbackEvent, 0.0);
+            purePursuitDrive.start(moduleName, callbackEvent, 0.0, path);
         }
     }   //driveToEndPoint
 
@@ -511,7 +511,7 @@ public class TrcGridDrive
             TrcPath path = pathBuilder.toRelativeStartPath();
             tracer.traceVerbose(moduleName, "GridDrivePath=" + path);
             callbackEvent.setCallback(this::driveDone, null);
-            purePursuitDrive.start(moduleName, path, callbackEvent, 0.0);
+            purePursuitDrive.start(moduleName, callbackEvent, 0.0, path);
         }
     }   //startGridDrive
 

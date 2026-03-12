@@ -89,37 +89,39 @@ public class CmdPurePursuitDrive implements TrcRobot.RobotCommand
     /**
      * This method starts the Pure Pursuit drive with the specified drive path.
      *
-     * @param path specifies the drive path with waypoints.
      * @param timeout specifies the maximum time allowed for this operation.
      * @param maxVel specifies the maximum velocity if applying trapezoid velocity profile, null if not.
      * @param maxAccel specifies the maximum acceleration if applying trapezoid velocity profile, null if not.
+     * @param maxDecel specifies the maximum deceleration if applying trapezoid velocity profile, null if not.
+     * @param path specifies the drive path with waypoints.
      */
-    public void start(TrcPath path, double timeout, Double maxVel, Double maxAccel)
+    public void start(double timeout, Double maxVel, Double maxAccel, Double maxDecel, TrcPath path)
     {
-        purePursuitDrive.start(path, event, timeout, maxVel, maxAccel);
+        purePursuitDrive.start(event, timeout, maxVel, maxAccel, maxDecel, path);
     }   //start
 
     /**
      * This method starts the Pure Pursuit drive with the specified drive path.
      *
-     * @param path specifies the drive path with waypoints.
      * @param maxVel specifies the maximum velocity if applying trapezoid velocity profile, null if not.
      * @param maxAccel specifies the maximum acceleration if applying trapezoid velocity profile, null if not.
+     * @param maxDecel specifies the maximum deceleration if applying trapezoid velocity profile, null if not.
+     * @param path specifies the drive path with waypoints.
      */
-    public void start(TrcPath path, Double maxVel, Double maxAccel)
+    public void start(Double maxVel, Double maxAccel, Double maxDecel, TrcPath path)
     {
-        purePursuitDrive.start(path, event, 0.0, maxVel, maxAccel);
+        purePursuitDrive.start(event, 0.0, maxVel, maxAccel, maxDecel, path);
     }   //start
 
     /**
      * This method starts the Pure Pursuit drive with the specified drive path.
      *
-     * @param path specifies the drive path with waypoints.
      * @param timeout specifies the maximum time allowed for this operation.
+     * @param path specifies the drive path with waypoints.
      */
-    public void start(TrcPath path, double timeout)
+    public void start(double timeout, TrcPath path)
     {
-        purePursuitDrive.start(path, event, timeout, null, null);
+        purePursuitDrive.start(event, timeout, path);
     }   //start
 
     /**
@@ -129,7 +131,7 @@ public class CmdPurePursuitDrive implements TrcRobot.RobotCommand
      */
     public void start(TrcPath path)
     {
-        purePursuitDrive.start(path, event, 0.0, null, null);
+        purePursuitDrive.start(event, 0.0, path);
     }   //start
 
     /**
@@ -170,23 +172,6 @@ public class CmdPurePursuitDrive implements TrcRobot.RobotCommand
     }   //start
 
     /**
-     * This method starts the Pure Pursuit drive with the specified poses read either from the built-in resources
-     * or from a file.
-     *
-     * @param timeout specifies the maximum time allowed for this operation.
-     * @param incrementalPath specifies true if appending point is relative to the previous point in the path,
-     *        false if appending point is in the same reference frame as startingPose.
-     * @param path specifies the file system path or resource name.
-     * @param loadFromResources specifies true if the data is from attached resources, false if from file system.
-     */
-    public void start(
-        double timeout, boolean incrementalPath, String path, boolean loadFromResources)
-    {
-        purePursuitDrive.start(
-            event, timeout, incrementalPath, null, null, null, path, loadFromResources);
-    }   //start
-
-    /**
      * This method starts the Pure Pursuit drive with the specified poses in the drive path.
      *
      * @param incrementalPath specifies true if appending point is relative to the previous point in the path,
@@ -212,7 +197,7 @@ public class CmdPurePursuitDrive implements TrcRobot.RobotCommand
      */
     public void start(double timeout, boolean incrementalPath, TrcPose2D... poses)
     {
-        purePursuitDrive.start(event, timeout, incrementalPath, null, null, null, poses);
+        purePursuitDrive.start(event, timeout, incrementalPath, poses);
     }   //start
 
     /**
@@ -224,7 +209,7 @@ public class CmdPurePursuitDrive implements TrcRobot.RobotCommand
      */
     public void start(boolean incrementalPath, TrcPose2D... poses)
     {
-        purePursuitDrive.start(event, 0.0, incrementalPath, null, null, null, poses);
+        purePursuitDrive.start(event, 0.0, incrementalPath, poses);
     }   //start
 
     //
