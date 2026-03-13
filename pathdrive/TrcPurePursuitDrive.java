@@ -1208,7 +1208,12 @@ public class TrcPurePursuitDrive
                 }
 
                 stop();
-                waypointEventHandler = null;
+                if (waypointEventHandler != null)
+                {
+                    // Do waypoint callback for the end point.
+                    waypointEventHandler.waypointEvent(-1, targetPoint);
+                    waypointEventHandler = null;
+                }
 
                 if (onFinishedEvent != null)
                 {
