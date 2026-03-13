@@ -97,7 +97,7 @@ public class CmdPurePursuitDrive implements TrcRobot.RobotCommand
      */
     public void start(double timeout, Double maxVel, Double maxAccel, Double maxDecel, TrcPath path)
     {
-        purePursuitDrive.start(event, timeout, maxVel, maxAccel, maxDecel, path);
+        purePursuitDrive.start(event, timeout, maxVel, maxAccel, maxDecel, null, path);
     }   //start
 
     /**
@@ -110,7 +110,7 @@ public class CmdPurePursuitDrive implements TrcRobot.RobotCommand
      */
     public void start(Double maxVel, Double maxAccel, Double maxDecel, TrcPath path)
     {
-        purePursuitDrive.start(event, 0.0, maxVel, maxAccel, maxDecel, path);
+        purePursuitDrive.start(event, 0.0, maxVel, maxAccel, maxDecel, null, path);
     }   //start
 
     /**
@@ -147,7 +147,7 @@ public class CmdPurePursuitDrive implements TrcRobot.RobotCommand
     public void start(
         double timeout, boolean incrementalPath, Double maxVel, Double maxAccel, Double maxDecel, TrcPose2D... poses)
     {
-        purePursuitDrive.start(event, timeout, incrementalPath, maxVel, maxAccel, maxDecel, poses);
+        purePursuitDrive.start(event, timeout, incrementalPath, maxVel, maxAccel, maxDecel, null, poses);
     }   //start
 
     /**
@@ -168,7 +168,7 @@ public class CmdPurePursuitDrive implements TrcRobot.RobotCommand
         String path, boolean loadFromResources)
     {
         purePursuitDrive.start(
-            event, timeout, incrementalPath, maxVel, maxAccel, maxDecel, path, loadFromResources);
+            event, timeout, incrementalPath, maxVel, maxAccel, maxDecel, null, path, loadFromResources);
     }   //start
 
     /**
@@ -184,7 +184,7 @@ public class CmdPurePursuitDrive implements TrcRobot.RobotCommand
     public void start(
         boolean incrementalPath, Double maxVel, Double maxAccel, Double maxDecel, TrcPose2D... poses)
     {
-        purePursuitDrive.start(event, 0.0, incrementalPath, maxVel, maxAccel, maxDecel, poses);
+        purePursuitDrive.start(event, 0.0, incrementalPath, maxVel, maxAccel, maxDecel, null, poses);
     }   //start
 
     /**
@@ -197,7 +197,7 @@ public class CmdPurePursuitDrive implements TrcRobot.RobotCommand
      */
     public void start(double timeout, boolean incrementalPath, TrcPose2D... poses)
     {
-        purePursuitDrive.start(event, timeout, incrementalPath, poses);
+        purePursuitDrive.start(event, timeout, incrementalPath, null, poses);
     }   //start
 
     /**
@@ -209,7 +209,7 @@ public class CmdPurePursuitDrive implements TrcRobot.RobotCommand
      */
     public void start(boolean incrementalPath, TrcPose2D... poses)
     {
-        purePursuitDrive.start(event, 0.0, incrementalPath, poses);
+        purePursuitDrive.start(event, 0.0, incrementalPath, null, poses);
     }   //start
 
     //

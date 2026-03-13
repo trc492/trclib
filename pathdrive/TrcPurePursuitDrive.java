@@ -665,19 +665,6 @@ public class TrcPurePursuitDrive
     }   //getPathRobotVelocity
 
     /**
-     * This method sets the waypoint event handler that gets called when the robot crosses each waypoint. This allows
-     * the caller to perform actions when each waypoint is reached. Waypoint handler is cleared when the start method
-     * is called. In other words, this method should only be called after the start method is called and the Waypoint
-     * event handler is only valid for the path started by the start method.
-     *
-     * @param handler specifies the waypoint event handler, can be null to clear the event handler.
-     */
-    public synchronized void setWaypointEventHandler(WaypointEventHandler handler)
-    {
-        this.waypointEventHandler = handler;
-    }   //setWaypointEventHandler
-
-    /**
      * Start following the supplied path using a pure pursuit controller. The velocity must always be positive, and
      * the path must start at (0,0). Heading is absolute and position is relative in the starting robot reference frame.
      *
@@ -687,10 +674,12 @@ public class TrcPurePursuitDrive
      * @param maxVel specifies the maximum velocity if applying trapezoid velocity profile, null if not.
      * @param maxAccel specifies the maximum acceleration if applying trapezoid velocity profile, null if not.
      * @param maxDecel specifies the maximum deceleration if applying trapezoid velocity profile, null if not.
+     * @param waypointCallback specifies the method to call when reaching a waypoint, can be null if not provided.
      * @param path The path to follow. Must start at (0,0).
      */
     public synchronized void start(
-        String owner, TrcEvent event, double timeout, Double maxVel, Double maxAccel, Double maxDecel, TrcPath path)
+        String owner, TrcEvent event, double timeout, Double maxVel, Double maxAccel, Double maxDecel,
+        WaypointEventHandler waypointCallback, TrcPath path)
     {
         if (path == null || path.getSize() == 0)
         {
@@ -712,6 +701,7 @@ public class TrcPurePursuitDrive
             {
                 onFinishedEvent.clear();
             }
+            this.waypointEventHandler = waypointCallback;
             // Label waypoints with corresponding path indexes.
             TrcWaypoint[] waypoints = path.getAllWaypoints();
             for (int i = 0; i < waypoints.length; i++)
@@ -758,6 +748,11 @@ public class TrcPurePursuitDrive
             turnPidCtrl.startStallDetection();
             velPidCtrl.reset();
             this.path = newPath;
+            if (waypointEventHandler != null)
+            {
+                // Do waypoint callback for the start waypoint.
+                waypointEventHandler.waypointEvent(0, null);
+            }
             driveTaskObj.registerTask(TrcTaskMgr.TaskType.POST_PERIODIC_TASK);
             tracer.traceInfo(instanceName, "Path=" + newPath.toAbsolute(referencePose));
         }
@@ -772,11 +767,14 @@ public class TrcPurePursuitDrive
      * @param maxVel specifies the maximum velocity if applying trapezoid velocity profile, null if not.
      * @param maxAccel specifies the maximum acceleration if applying trapezoid velocity profile, null if not.
      * @param maxDecel specifies the maximum deceleration if applying trapezoid velocity profile, null if not.
+     * @param waypointCallback specifies the method to call when reaching a waypoint, can be null if not provided.
      * @param path The path to follow. Must start at (0,0).
      */
-    public void start(TrcEvent event, double timeout, Double maxVel, Double maxAccel, Double maxDecel, TrcPath path)
+    public void start(
+        TrcEvent event, double timeout, Double maxVel, Double maxAccel, Double maxDecel,
+        WaypointEventHandler waypointCallback, TrcPath path)
     {
-        start(null, event, timeout, maxVel, maxAccel, maxDecel, path);
+        start(null, event, timeout, maxVel, maxAccel, maxDecel, waypointCallback, path);
     }   //start
 
     /**
@@ -787,11 +785,14 @@ public class TrcPurePursuitDrive
      * @param maxVel specifies the maximum velocity if applying trapezoid velocity profile, null if not.
      * @param maxAccel specifies the maximum acceleration if applying trapezoid velocity profile, null if not.
      * @param maxDecel specifies the maximum deceleration if applying trapezoid velocity profile, null if not.
+     * @param waypointCallback specifies the method to call when reaching a waypoint, can be null if not provided.
      * @param path The path to follow. Must start at (0,0).
      */
-    public void start(TrcEvent event, Double maxVel, Double maxAccel, Double maxDecel, TrcPath path)
+    public void start(
+        TrcEvent event, Double maxVel, Double maxAccel, Double maxDecel, WaypointEventHandler waypointCallback,
+        TrcPath path)
     {
-        start(null, event, 0.0, maxVel, maxAccel, maxDecel, path);
+        start(null, event, 0.0, maxVel, maxAccel, maxDecel, waypointCallback, path);
     }   //start
 
     /**
@@ -801,11 +802,13 @@ public class TrcPurePursuitDrive
      * @param maxVel specifies the maximum velocity if applying trapezoid velocity profile, null if not.
      * @param maxAccel specifies the maximum acceleration if applying trapezoid velocity profile, null if not.
      * @param maxDecel specifies the maximum deceleration if applying trapezoid velocity profile, null if not.
+     * @param waypointCallback specifies the method to call when reaching a waypoint, can be null if not provided.
      * @param path The path to follow. Must start at (0,0).
      */
-    public void start(Double maxVel, Double maxAccel, Double maxDecel, TrcPath path)
+    public void start(
+        Double maxVel, Double maxAccel, Double maxDecel, WaypointEventHandler waypointCallback, TrcPath path)
     {
-        start(null, null, 0.0, maxVel, maxAccel, maxDecel, path);
+        start(null, null, 0.0, maxVel, maxAccel, maxDecel, waypointCallback, path);
     }   //start
 
     /**
@@ -819,7 +822,7 @@ public class TrcPurePursuitDrive
      */
     public void start(String owner, TrcEvent event, double timeout, TrcPath path)
     {
-        start(owner, event, timeout, maxVelocity, maxAcceleration, maxDeceleration, path);
+        start(owner, event, timeout, maxVelocity, maxAcceleration, maxDeceleration, null, path);
     }   //start
 
     /**
@@ -832,7 +835,7 @@ public class TrcPurePursuitDrive
      */
     public void start(TrcEvent event, double timeout, TrcPath path)
     {
-        start(null, event, timeout, maxVelocity, maxAcceleration, maxDeceleration, path);
+        start(null, event, timeout, maxVelocity, maxAcceleration, maxDeceleration, null, path);
     }   //start
 
     /**
@@ -844,7 +847,7 @@ public class TrcPurePursuitDrive
      */
     public void start(TrcEvent event, TrcPath path)
     {
-        start(null, event, 0.0, maxVelocity, maxAcceleration, maxDeceleration, path);
+        start(null, event, 0.0, maxVelocity, maxAcceleration, maxDeceleration, null, path);
     }   //start
 
     /**
@@ -855,7 +858,7 @@ public class TrcPurePursuitDrive
      */
     public void start(TrcPath path)
     {
-        start(null, null, 0.0, maxVelocity, maxAcceleration, maxDeceleration, path);
+        start(null, null, 0.0, maxVelocity, maxAcceleration, maxDeceleration, null, path);
     }   //start
 
     /**
@@ -869,11 +872,12 @@ public class TrcPurePursuitDrive
      * @param maxVel specifies the maximum velocity if applying trapezoid velocity profile, null if not.
      * @param maxAccel specifies the maximum acceleration if applying trapezoid velocity profile, null if not.
      * @param maxDecel specifies the maximum deceleration if applying trapezoid velocity profile, null if not.
+     * @param waypointCallback specifies the method to call when reaching a waypoint, can be null if not provided.
      * @param poses specifies an array of waypoint poses in the drive path.
      */
     public void start(
         String owner, TrcEvent event, double timeout, boolean incrementalPath, Double maxVel, Double maxAccel,
-        Double maxDecel, TrcPose2D... poses)
+        Double maxDecel, WaypointEventHandler waypointCallback, TrcPose2D... poses)
     {
         TrcPathBuilder pathBuilder = new TrcPathBuilder(driveBase.getFieldPosition(), incrementalPath);
 
@@ -882,7 +886,7 @@ public class TrcPurePursuitDrive
             pathBuilder.append(pose);
         }
 
-        start(owner, event, timeout, maxVel, maxAccel, maxDecel, pathBuilder.toRelativeStartPath());
+        start(owner, event, timeout, maxVel, maxAccel, maxDecel, waypointCallback, pathBuilder.toRelativeStartPath());
     }   //start
 
     /**
@@ -895,13 +899,14 @@ public class TrcPurePursuitDrive
      * @param maxVel specifies the maximum velocity if applying trapezoid velocity profile, null if not.
      * @param maxDecel specifies the maximum deceleration if applying trapezoid velocity profile, null if not.
      * @param maxAccel specifies the maximum acceleration if applying trapezoid velocity profile, null if not.
+     * @param waypointCallback specifies the method to call when reaching a waypoint, can be null if not provided.
      * @param poses specifies an array of waypoint poses in the drive path.
      */
     public void start(
         TrcEvent event, double timeout, boolean incrementalPath, Double maxVel, Double maxAccel, Double maxDecel,
-        TrcPose2D... poses)
+        WaypointEventHandler waypointCallback, TrcPose2D... poses)
     {
-        start(null, event, timeout, incrementalPath, maxVel, maxAccel, maxDecel, poses);
+        start(null, event, timeout, incrementalPath, maxVel, maxAccel, maxDecel, waypointCallback, poses);
     }   //start
 
     /**
@@ -915,14 +920,15 @@ public class TrcPurePursuitDrive
      * @param maxVel specifies the maximum velocity if applying trapezoid velocity profile, null if not.
      * @param maxAccel specifies the maximum acceleration if applying trapezoid velocity profile, null if not.
      * @param maxDecel specifies the maximum deceleration if applying trapezoid velocity profile, null if not.
+     * @param waypointCallback specifies the method to call when reaching a waypoint, can be null if not provided.
      * @param path specifies the file system path or resource name.
      * @param loadFromResources specifies true if the data is from attached resources, false if from file system.
      */
     public void start(
         TrcEvent event, double timeout, boolean incrementalPath, Double maxVel, Double maxAccel, Double maxDecel,
-        String path, boolean loadFromResources)
+        WaypointEventHandler waypointCallback, String path, boolean loadFromResources)
     {
-        start(null, event, timeout, incrementalPath, maxVel, maxAccel, maxDecel,
+        start(null, event, timeout, incrementalPath, maxVel, maxAccel, maxDecel, waypointCallback,
               TrcPose2D.loadPosesFromCsv(path, loadFromResources));
     }   //start
 
@@ -935,12 +941,14 @@ public class TrcPurePursuitDrive
      * @param maxVel specifies the maximum velocity if applying trapezoid velocity profile, null if not.
      * @param maxAccel specifies the maximum acceleration if applying trapezoid velocity profile, null if not.
      * @param maxDecel specifies the maximum deceleration if applying trapezoid velocity profile, null if not.
+     * @param waypointCallback specifies the method to call when reaching a waypoint, can be null if not provided.
      * @param poses specifies an array of waypoint poses in the drive path.
      */
     public void start(
-        TrcEvent event, boolean incrementalPath, Double maxVel, Double maxAccel, Double maxDecel, TrcPose2D... poses)
+        TrcEvent event, boolean incrementalPath, Double maxVel, Double maxAccel, Double maxDecel,
+        WaypointEventHandler waypointCallback, TrcPose2D... poses)
     {
-        start(null, event, 0.0, incrementalPath, maxVel, maxAccel, maxDecel, poses);
+        start(null, event, 0.0, incrementalPath, maxVel, maxAccel, maxDecel, waypointCallback, poses);
     }   //start
 
     /**
@@ -951,12 +959,14 @@ public class TrcPurePursuitDrive
      * @param maxVel specifies the maximum velocity if applying trapezoid velocity profile, null if not.
      * @param maxAccel specifies the maximum acceleration if applying trapezoid velocity profile, null if not.
      * @param maxDecel specifies the maximum deceleration if applying trapezoid velocity profile, null if not.
+     * @param waypointCallback specifies the method to call when reaching a waypoint, can be null if not provided.
      * @param poses specifies an array of waypoint poses in the drive path.
      */
     public void start(
-        boolean incrementalPath, Double maxVel, Double maxAccel, Double maxDecel, TrcPose2D... poses)
+        boolean incrementalPath, Double maxVel, Double maxAccel, Double maxDecel,
+        WaypointEventHandler waypointCallback, TrcPose2D... poses)
     {
-        start(null, null, 0.0, incrementalPath, maxVel, maxAccel, maxDecel, poses);
+        start(null, null, 0.0, incrementalPath, maxVel, maxAccel, maxDecel, waypointCallback, poses);
     }   //start
 
     /**
@@ -967,12 +977,15 @@ public class TrcPurePursuitDrive
      * @param timeout specifies the maximum time allowed for this operation, 0.0 for no timeout.
      * @param incrementalPath specifies true if appending point is relative to the previous point in the path,
      *        false if appending point is in the same reference frame as startingPose.
+     * @param waypointCallback specifies the method to call when reaching a waypoint, can be null if not provided.
      * @param poses specifies an array of waypoint poses in the drive path.
      */
     public void start(
-        String owner, TrcEvent event, double timeout, boolean incrementalPath, TrcPose2D... poses)
+        String owner, TrcEvent event, double timeout, boolean incrementalPath, WaypointEventHandler waypointCallback,
+        TrcPose2D... poses)
     {
-        start(owner, event, timeout, incrementalPath, maxVelocity, maxAcceleration, maxDeceleration, poses);
+        start(owner, event, timeout, incrementalPath, maxVelocity, maxAcceleration, maxDeceleration, waypointCallback,
+              poses);
     }   //start
 
     /**
@@ -982,12 +995,15 @@ public class TrcPurePursuitDrive
      * @param timeout specifies the maximum time allowed for this operation, 0.0 for no timeout.
      * @param incrementalPath specifies true if appending point is relative to the previous point in the path,
      *        false if appending point is in the same reference frame as startingPose.
+     * @param waypointCallback specifies the method to call when reaching a waypoint, can be null if not provided.
      * @param poses specifies an array of waypoint poses in the drive path.
      */
     public void start(
-        TrcEvent event, double timeout, boolean incrementalPath, TrcPose2D... poses)
+        TrcEvent event, double timeout, boolean incrementalPath, WaypointEventHandler waypointCallback,
+        TrcPose2D... poses)
     {
-        start(null, event, timeout, incrementalPath, maxVelocity, maxAcceleration, maxDeceleration, poses);
+        start(null, event, timeout, incrementalPath, maxVelocity, maxAcceleration, maxDeceleration, waypointCallback,
+              poses);
     }   //start
 
     /**
@@ -996,12 +1012,14 @@ public class TrcPurePursuitDrive
      * @param event When finished, signal this event.
      * @param incrementalPath specifies true if appending point is relative to the previous point in the path,
      *        false if appending point is in the same reference frame as startingPose.
+     * @param waypointCallback specifies the method to call when reaching a waypoint, can be null if not provided.
      * @param poses specifies an array of waypoint poses in the drive path.
      */
     public void start(
-        TrcEvent event, boolean incrementalPath, TrcPose2D... poses)
+        TrcEvent event, boolean incrementalPath, WaypointEventHandler waypointCallback, TrcPose2D... poses)
     {
-        start(null, event, 0.0, incrementalPath, maxVelocity, maxAcceleration, maxDeceleration, poses);
+        start(null, event, 0.0, incrementalPath, maxVelocity, maxAcceleration, maxDeceleration, waypointCallback,
+              poses);
     }   //start
 
     /**
@@ -1009,11 +1027,13 @@ public class TrcPurePursuitDrive
      *
      * @param incrementalPath specifies true if appending point is relative to the previous point in the path,
      *        false if appending point is in the same reference frame as startingPose.
+     * @param waypointCallback specifies the method to call when reaching a waypoint, can be null if not provided.
      * @param poses specifies an array of waypoint poses in the drive path.
      */
-    public void start(boolean incrementalPath, TrcPose2D... poses)
+    public void start(boolean incrementalPath, WaypointEventHandler waypointCallback, TrcPose2D... poses)
     {
-        start(null, null, 0.0, incrementalPath, maxVelocity, maxAcceleration, maxDeceleration, poses);
+        start(null, null, 0.0, incrementalPath, maxVelocity, maxAcceleration, maxDeceleration, waypointCallback,
+              poses);
     }   //start
 
     /**
@@ -1188,6 +1208,7 @@ public class TrcPurePursuitDrive
                 }
 
                 stop();
+                waypointEventHandler = null;
 
                 if (onFinishedEvent != null)
                 {
