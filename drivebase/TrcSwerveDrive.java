@@ -198,7 +198,7 @@ public class TrcSwerveDrive extends TrcSimpleDrive
     /**
      * This method stops all drive motors.
      */
-    private void stopDriveMotors()
+    protected void stopDriveMotors()
     {
         for (TrcSwerveModule module: swerveModules)
         {
