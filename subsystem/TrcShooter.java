@@ -45,7 +45,7 @@ import trclib.timer.TrcTimer;
  */
 public class TrcShooter implements TrcExclusiveSubsystem
 {
-    private static final boolean COMPENSATE_ROBOT_ROTATION = true;
+    private static final boolean COMPENSATE_ROBOT_ROTATION = false;
 
     /**
      * This interface must be implemented by the caller to provide a method for shooting the object.
@@ -162,7 +162,7 @@ public class TrcShooter implements TrcExclusiveSubsystem
             return "exitReason=" + exitReason +
                    "\niterations=" + iterations +
                    "\nstartTof=" + startTof +
-                   "\nflastTof=" + lastTof +
+                   "\nlastTof=" + lastTof +
                    "\nlastTofError=" + lastTofError +
                    "\nlastCompensation=" + lastCompensation +
                    "\nmaxCompensationMag=" + maxCompensationMag + ")";
@@ -579,15 +579,19 @@ public class TrcShooter implements TrcExclusiveSubsystem
         {
             TargetInfo currTargetInfo = targetInfo;
             // Rotate field velocity into robot frame (CW-positive convention)
-            double headingRad = Math.toRadians(driveBase.getHeading());
+            double headingDeg = driveBase.getHeading();
+            double headingRad = Math.toRadians(headingDeg);
             double cos = Math.cos(headingRad);
             double sin = Math.sin(headingRad);
             double vxRobot =  fieldVel.x * cos + fieldVel.y * sin;
             double vyRobot = -fieldVel.x * sin + fieldVel.y * cos;
             TrcPose2D originalTargetPose = targetInfo.targetPose;
 
+            tracer.traceDebug(
+                instanceName, "fieldVel=%s, heading=%f, vx=%f, vy=%f", fieldVel, headingDeg, vxRobot, vyRobot);
             state.lastTofError = Double.NaN;
-            maxIterations = Math.min(maxIterations, 5);
+            // maxIterations = Math.min(maxIterations, 5);
+            maxIterations = Math.min(maxIterations, 10);
             for (int i = 0; i < maxIterations; i++)
             {
                 // double rawYawComp = omega * tof;
@@ -596,7 +600,8 @@ public class TrcShooter implements TrcExclusiveSubsystem
                 // double yawComp = TrcUtil.clipRange(rawYawComp, -yawLimit, yawLimit);
 
                 // Clamp ToF only for motion prediction safety, not for convergence logic
-                double tof = TrcUtil.clipRange(currTargetInfo.tof, 0.05, 2.0);
+                // double tof = TrcUtil.clipRange(currTargetInfo.tof, 0.05, 2.0);
+                double tof = currTargetInfo.tof;
                 // omega is CW-positive.
                 state.lastCompensation = new TrcPose2D(-vxRobot * tof, -vyRobot * tof, -omega * tof);
                 TrcPose2D adjustedPose = originalTargetPose.addRelativePose(state.lastCompensation);
