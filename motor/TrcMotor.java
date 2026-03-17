@@ -2400,6 +2400,7 @@ public abstract class TrcMotor implements TrcMotorController, TrcExclusiveSubsys
     {
         if (validateOwnership(owner))
         {
+            power = TrcUtil.clipRange(power, powerLimit);
             // If power is negative, set the target to minPos. If power is positive, set the target to maxPos. We
             // only set a new target if the target has changed. (i.e. either the motor changes direction, starting
             // or stopping).
