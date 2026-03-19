@@ -575,7 +575,6 @@ public class TrcShooter implements TrcExclusiveSubsystem
         TargetInfo compensatedInfo = targetInfo;
         TrcPose2D fieldVel = driveBase.getFieldVelocity();
         double omegaDeg = COMPENSATE_ROBOT_ROTATION? driveBase.getTurnRate(): 0.0;
-        double omega = Math.toRadians(omegaDeg);
         AimConvergenceState state = new AimConvergenceState();
         state.startTof = targetInfo.tof;
         // Only compensate if robot is moving linearly or rotating
@@ -583,8 +582,17 @@ public class TrcShooter implements TrcExclusiveSubsystem
         {
             TargetInfo currTargetInfo = targetInfo;
             TrcPose2D originalTargetPose = targetInfo.targetPose;
+            double headingDeg = driveBase.getHeading();
+            double headingRad = Math.toRadians(headingDeg);
+            double cos = Math.cos(headingRad);
+            double sin = Math.sin(headingRad);
+            // Field → Robot frame
+            double vxRobot = fieldVel.x * cos - fieldVel.y * sin;
+            double vyRobot = fieldVel.x * sin + fieldVel.y * cos;
 
-            tracer.traceDebug(instanceName, "fieldVel=%s, omegaDeg=%f", fieldVel, omegaDeg);
+            tracer.traceDebug(
+                instanceName, "fieldVel=%s, omegaDeg=%f, heading=%f, vxRobot=%f, vyRobot=%f",
+                fieldVel, omegaDeg, headingDeg, vxRobot, vyRobot);
             state.lastTofError = Double.NaN;
             // maxIterations = Math.min(maxIterations, 5);
             maxIterations = Math.min(maxIterations, 10);
@@ -593,27 +601,9 @@ public class TrcShooter implements TrcExclusiveSubsystem
                 // Clamp ToF only for motion prediction safety, not for convergence logic
                 // double tof = TrcUtil.clipRange(currTargetInfo.tof, 0.05, 2.0);
                 double tof = currTargetInfo.tof + shooterExitDelay;
-                // Calculate compensation in field frame.
-                double dtheta = omega * tof;
-                double dx, dy;
-                if (Math.abs(omega) < 1e-3)
-                {
-                    dx = fieldVel.x * tof;
-                    dy = fieldVel.y * tof;
-                }
-                else
-                {
-                    double sin = Math.sin(dtheta);
-                    double cos = Math.cos(dtheta);
 
-                    dx = (fieldVel.x * sin + fieldVel.y * (1 - cos)) / omega;
-                    dy = (fieldVel.y * sin - fieldVel.x * (1 - cos)) / omega;
-                }
-                state.lastCompensation = new TrcPose2D(-dx, -dy, -dtheta);
-                TrcPose2D adjustedPose = new TrcPose2D(
-                    originalTargetPose.x + state.lastCompensation.x,
-                    originalTargetPose.y + state.lastCompensation.y,
-                    originalTargetPose.angle + state.lastCompensation.angle);
+                state.lastCompensation = new TrcPose2D(-vxRobot * tof, -vyRobot * tof, -omegaDeg * tof);
+                TrcPose2D adjustedPose = originalTargetPose.addRelativePose(state.lastCompensation);
                 // Assumption: getAimInfo will not return null.
                 compensatedInfo = targetInfoSource.getTargetInfo(adjustedPose);
 
