@@ -749,18 +749,17 @@ public abstract class TrcDriveBase implements TrcExclusiveSubsystem
     }   //getFieldPosition
 
     /**
-     * This method returns the robot velocity in reference to the field origin. By default, the field origin is the
-     * robot's starting position.
+     * This method returns the robot velocity in reference to the robot frame.
      *
-     * @return a copy of the robot velocity relative to the field origin.
+     * @return a copy of the robot velocity relative to the robot frame.
      */
-    public TrcPose2D getFieldVelocity()
+    public TrcPose2D getRobotVelocity()
     {
         synchronized (odometry)
         {
             return odometry.velocity.clone();
         }
-    }   //getFieldVelocity
+    }   //getRobotVelocity
 
     /**
      * This method returns the robot acceleration from odometry.
@@ -887,7 +886,7 @@ public abstract class TrcDriveBase implements TrcExclusiveSubsystem
         synchronized (odometry)
         {
             return referenceOdometry == null ?
-                    getFieldVelocity() :
+                    getRobotVelocity() :
                     getVelocityRelativeTo(referenceOdometry.velocity, referenceOdometry.position.angle);
         }
     }   //getRelativeVelocity
