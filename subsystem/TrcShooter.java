@@ -46,7 +46,7 @@ import trclib.timer.TrcTimer;
 public class TrcShooter implements TrcExclusiveSubsystem
 {
     private static final boolean COMPENSATE_ROBOT_ROTATION = false;
-    private static final boolean COMPENSATE_EXIT_VELOCITY = true;
+    private static final boolean COMPENSATE_EXIT_VELOCITY = false;
 
     /**
      * This interface must be implemented by the caller to provide a method for shooting the object.
