@@ -596,7 +596,10 @@ public class TrcShooter implements TrcExclusiveSubsystem
 
                 // --- APPLY MOTION COMPENSATION ---
                 state.lastCompensation = new TrcPose2D(-robotVel.x * tof, -robotVel.y * tof, -omegaDeg * tof);
-                TrcPose2D adjustedPose = originalTargetPose.addRelativePose(state.lastCompensation);
+                TrcPose2D adjustedPose = new TrcPose2D(
+                    originalTargetPose.x + state.lastCompensation.x,
+                    originalTargetPose.y + state.lastCompensation.y,
+                    originalTargetPose.angle + state.lastCompensation.angle);
                 compensatedInfo = targetInfoSource.getTargetInfo(adjustedPose);
                 // --- DISTANCE ---
                 double distance = Math.hypot(adjustedPose.x, adjustedPose.y);
