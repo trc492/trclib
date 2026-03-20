@@ -46,6 +46,7 @@ import trclib.timer.TrcTimer;
 public class TrcShooter implements TrcExclusiveSubsystem
 {
     private static final boolean COMPENSATE_ROBOT_ROTATION = false;
+    private static final boolean COMPENSATE_EXIT_VELOCITY = true;
 
     /**
      * This interface must be implemented by the caller to provide a method for shooting the object.
@@ -594,44 +595,53 @@ public class TrcShooter implements TrcExclusiveSubsystem
             {
                 double tof = currTargetInfo.tof + shooterExitDelay;
 
-                // --- APPLY MOTION COMPENSATION ---
+                // Apply motion compensation.
                 state.lastCompensation = new TrcPose2D(-robotVel.x * tof, -robotVel.y * tof, -omegaDeg * tof);
                 TrcPose2D adjustedPose = new TrcPose2D(
                     originalTargetPose.x + state.lastCompensation.x,
                     originalTargetPose.y + state.lastCompensation.y,
                     originalTargetPose.angle + state.lastCompensation.angle);
                 compensatedInfo = targetInfoSource.getTargetInfo(adjustedPose);
-                // --- DISTANCE ---
-                double distance = Math.hypot(adjustedPose.x, adjustedPose.y);
-                if (distance < 1e-6)
-                {
-                    state.exitReason = AimConvergenceState.ExitReason.STAGNATED;
-                    break;
-                }
-                // --- DIRECTION UNIT VECTOR ---
-                double dirX = adjustedPose.x / distance;
-                double dirY = adjustedPose.y / distance;
-                // --- ROBOT RADIAL VELOCITY ---
-                double vRadial = robotVel.x * dirX + robotVel.y * dirY;
-                // --- SHOOTER EXIT VELOCITY ---
-                double vExit = getExitVelocity(
-                    compensatedInfo.aimInfo.flywheel1RPM, compensatedInfo.aimInfo.tiltAngle);
-                // --- DECOMPOSE SHOOTER VELOCITY ---
-                double theta = Math.toRadians(90.0 - compensatedInfo.aimInfo.tiltAngle);
-                double vx = vExit * Math.sin(theta);
-                double vy = vExit * Math.cos(theta);
-                // --- PROJECT SHOOTER VELOCITY INTO RADIAL DIRECTION ---
-                double vShooterRadial = vx * dirX + vy * dirY;
-                // --- CLAMP ROBOT INFLUENCE ONLY ---
-                double maxAdjustment = 0.5 * Math.abs(vShooterRadial);
-                vRadial = TrcUtil.clipRange(vRadial, -maxAdjustment, maxAdjustment);
-                // --- EFFECTIVE VELOCITY ---
-                double vEffective = vShooterRadial + vRadial;
-                vEffective = Math.max(vEffective, 0.1);
-                // --- UPDATED TOF ---
-                double adjustedTof = distance / vEffective;
 
-                // --- CONVERGENCE CHECK ---
+                double adjustedTof;
+                if (COMPENSATE_EXIT_VELOCITY)
+                {
+                    // --- DISTANCE ---
+                    double distance = Math.hypot(adjustedPose.x, adjustedPose.y);
+                    if (distance < 1e-6)
+                    {
+                        state.exitReason = AimConvergenceState.ExitReason.STAGNATED;
+                        break;
+                    }
+                    // --- DIRECTION UNIT VECTOR ---
+                    double dirX = adjustedPose.x / distance;
+                    double dirY = adjustedPose.y / distance;
+                    // --- ROBOT RADIAL VELOCITY ---
+                    double vRadial = robotVel.x * dirX + robotVel.y * dirY;
+                    // --- SHOOTER EXIT VELOCITY ---
+                    double vExit = getExitVelocity(
+                        compensatedInfo.aimInfo.flywheel1RPM, compensatedInfo.aimInfo.tiltAngle);
+                    // --- DECOMPOSE SHOOTER VELOCITY ---
+                    double theta = Math.toRadians(90.0 - compensatedInfo.aimInfo.tiltAngle);
+                    double vx = vExit * Math.sin(theta);
+                    double vy = vExit * Math.cos(theta);
+                    // --- PROJECT SHOOTER VELOCITY INTO RADIAL DIRECTION ---
+                    double vShooterRadial = vx * dirX + vy * dirY;
+                    // --- CLAMP ROBOT INFLUENCE ONLY ---
+                    double maxAdjustment = 0.5 * Math.abs(vShooterRadial);
+                    vRadial = TrcUtil.clipRange(vRadial, -maxAdjustment, maxAdjustment);
+                    // --- EFFECTIVE VELOCITY ---
+                    double vEffective = vShooterRadial + vRadial;
+                    vEffective = Math.max(vEffective, 0.1);
+                    // --- UPDATED TOF ---
+                    adjustedTof = distance / vEffective;
+                }
+                else
+                {
+                    adjustedTof = compensatedInfo.tof;
+                }
+
+                // Convergence check.
                 double tofError = adjustedTof - currTargetInfo.tof;
                 double absTofError = Math.abs(tofError);
                 if (absTofError <= tofErrorThreshold)
@@ -668,7 +678,7 @@ public class TrcShooter implements TrcExclusiveSubsystem
                 {
                     break;
                 }
-                // --- UPDATE ITERATION STATE ---
+                // Update iteration state.
                 currTargetInfo = new TargetInfo(compensatedInfo.targetPose, compensatedInfo.aimInfo, adjustedTof);
             }
 
