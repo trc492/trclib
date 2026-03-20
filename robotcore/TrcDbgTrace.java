@@ -820,7 +820,7 @@ public class TrcDbgTrace
                 if (ppDrive != null && ppDrive.isActive())
                 {
                     TrcPose2D robotPose = driveBase.getFieldPosition();
-                    TrcPose2D robotVel = driveBase.getFieldVelocity();
+                    TrcPose2D robotVel = driveBase.getRobotVelocity();
                     TrcPose2D targetPose = ppDrive.getTargetFieldPosition();
                     msg.append(" RobotPose=")
                        .append(robotPose)
