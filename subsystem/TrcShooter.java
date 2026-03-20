@@ -583,12 +583,14 @@ public class TrcShooter implements TrcExclusiveSubsystem
             TargetInfo currTargetInfo = targetInfo;
             TrcPose2D originalTargetPose = targetInfo.targetPose;
             double headingDeg = driveBase.getHeading();
-            double headingRad = Math.toRadians(headingDeg);
-            double cos = Math.cos(headingRad);
-            double sin = Math.sin(headingRad);
+            // double headingRad = Math.toRadians(headingDeg);
+            // double cos = Math.cos(headingRad);
+            // double sin = Math.sin(headingRad);
             // Field → Robot frame
-            double vxRobot = fieldVel.x; //fieldVel.x * cos - fieldVel.y * sin;
-            double vyRobot = fieldVel.y; //fieldVel.x * sin + fieldVel.y * cos;
+            // double vxRobot = fieldVel.x * cos - fieldVel.y * sin;
+            // double vyRobot = fieldVel.x * sin + fieldVel.y * cos;
+            double vxRobot = fieldVel.x;
+            double vyRobot = fieldVel.x;
 
             tracer.traceDebug(
                 instanceName, "fieldVel=%s, omegaDeg=%f, heading=%f, vxRobot=%f, vyRobot=%f",
