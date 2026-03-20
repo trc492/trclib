@@ -571,7 +571,7 @@ public class TrcShooter implements TrcExclusiveSubsystem
      * @return compensated Target Info.
      */
     public TargetInfo compensateRobotMotion(
-        TrcDriveBase driveBase, TargetInfoSource targetInfoSource,  TargetInfo targetInfo, double tofErrorThreshold,
+        TrcDriveBase driveBase, TargetInfoSource targetInfoSource, TargetInfo targetInfo, double tofErrorThreshold,
         int maxIterations, double shooterExitDelay)
     {
         TargetInfo compensatedInfo = targetInfo;
@@ -584,47 +584,51 @@ public class TrcShooter implements TrcExclusiveSubsystem
         {
             TargetInfo currTargetInfo = targetInfo;
             TrcPose2D originalTargetPose = targetInfo.targetPose;
-            double headingDeg = driveBase.getHeading();
 
-            tracer.traceDebug(instanceName, "robotVel=%s, omegaDeg=%f, heading=%f", robotVel, omegaDeg, headingDeg);
+            tracer.traceDebug(instanceName, "robotVel=%s, omegaDeg=%f", robotVel, omegaDeg);
+
             state.lastTofError = Double.NaN;
-            // maxIterations = Math.min(maxIterations, 5);
             maxIterations = Math.min(maxIterations, 10);
+
             for (int i = 0; i < maxIterations; i++)
             {
-                // Clamp ToF only for motion prediction safety, not for convergence logic
-                // double tof = TrcUtil.clipRange(currTargetInfo.tof, 0.05, 2.0);
                 double tof = currTargetInfo.tof + shooterExitDelay;
 
+                // --- APPLY MOTION COMPENSATION ---
                 state.lastCompensation = new TrcPose2D(-robotVel.x * tof, -robotVel.y * tof, -omegaDeg * tof);
                 TrcPose2D adjustedPose = originalTargetPose.addRelativePose(state.lastCompensation);
-                // Assumption: getAimInfo will not return null.
                 compensatedInfo = targetInfoSource.getTargetInfo(adjustedPose);
-                // Compute adjusted distance
+                // --- DISTANCE ---
                 double distance = Math.hypot(adjustedPose.x, adjustedPose.y);
                 if (distance < 1e-6)
                 {
                     state.exitReason = AimConvergenceState.ExitReason.STAGNATED;
                     break;
                 }
-
-                // Radial velocity (robot motion along shot direction)
-                double vRadial = (robotVel.x * adjustedPose.x + robotVel.y * adjustedPose.y) / distance;
-                // Estimate shooter exit velocity from model
-                // double totalTof = compensatedInfo.tof + shooterExitDelay;
-                // double vExit = distance / totalTof;
+                // --- DIRECTION UNIT VECTOR ---
+                double dirX = adjustedPose.x / distance;
+                double dirY = adjustedPose.y / distance;
+                // --- ROBOT RADIAL VELOCITY ---
+                double vRadial = robotVel.x * dirX + robotVel.y * dirY;
+                // --- SHOOTER EXIT VELOCITY ---
                 double vExit = getExitVelocity(
                     compensatedInfo.aimInfo.flywheel1RPM, compensatedInfo.aimInfo.tiltAngle);
-                // Clamp radial influence for stability
-                double maxAdjustment = 0.5 * vExit;
+                // --- DECOMPOSE SHOOTER VELOCITY ---
+                double theta = Math.toRadians(90.0 - compensatedInfo.aimInfo.tiltAngle);
+                double vx = vExit * Math.sin(theta);
+                double vy = vExit * Math.cos(theta);
+                // --- PROJECT SHOOTER VELOCITY INTO RADIAL DIRECTION ---
+                double vShooterRadial = vx * dirX + vy * dirY;
+                // --- CLAMP ROBOT INFLUENCE ONLY ---
+                double maxAdjustment = 0.5 * Math.abs(vShooterRadial);
                 vRadial = TrcUtil.clipRange(vRadial, -maxAdjustment, maxAdjustment);
-                // Effective velocity
-                double vEffective = vExit + vRadial;
+                // --- EFFECTIVE VELOCITY ---
+                double vEffective = vShooterRadial + vRadial;
                 vEffective = Math.max(vEffective, 0.1);
-                // Adjusted TOF used for convergence
+                // --- UPDATED TOF ---
                 double adjustedTof = distance / vEffective;
 
-                // Convergence check
+                // --- CONVERGENCE CHECK ---
                 double tofError = adjustedTof - currTargetInfo.tof;
                 double absTofError = Math.abs(tofError);
                 if (absTofError <= tofErrorThreshold)
@@ -659,10 +663,9 @@ public class TrcShooter implements TrcExclusiveSubsystem
                 state.iterations = i + 1;
                 if (state.exitReason != null)
                 {
-                    // Early exit.
                     break;
                 }
-                // Update iteration state WITHOUT corrupting model output.
+                // --- UPDATE ITERATION STATE ---
                 currTargetInfo = new TargetInfo(compensatedInfo.targetPose, compensatedInfo.aimInfo, adjustedTof);
             }
 
@@ -678,7 +681,7 @@ public class TrcShooter implements TrcExclusiveSubsystem
 
         tracer.traceDebug(instanceName, "AimConvergenceState=%s", state);
         return compensatedInfo;
-    }   // compensateRobotMotion
+    }   //compensatedRobotMotion
 
     public TargetInfo compensateRobotMotionWithDrag(
         TrcDriveBase driveBase,
