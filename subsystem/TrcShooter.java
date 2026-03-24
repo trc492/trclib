@@ -696,71 +696,87 @@ public class TrcShooter implements TrcExclusiveSubsystem
         return compensatedInfo;
     }   //compensatedRobotMotion
 
+    /**
+     * This method compensates the TargetInfo by the motion of the robot with drag.
+     *
+     * @param driveBase specifies the drive base object.
+     * @param targetInfoSource specifies the method to call to recompute TargetInfo by current target pose.
+     * @param targetInfo specifies the original TargetInfo.
+     * @param dragCoeff specifies the drag coefficient.
+     * @param tofErrorThreshold specifies the TimeOfFlight error threshold to terminate iterations.
+     * @param maxIterations specifies the maximum number of iterations.
+     * @param shooterExitDelay specifies the delay in seconds between when this method is called and the ball
+     *        exits the shooter. TOF only accounts after the ball exits the shooter.
+     * @return compensated Target Info.
+     */
     public TargetInfo compensateRobotMotionWithDrag(
         TrcDriveBase driveBase,
         TargetInfoSource targetInfoSource,
         TargetInfo targetInfo,
-        double errorThreshold,
+        double dragCoeff,
+        double tofErrorThreshold,
         int maxIterations,
         double shooterExitDelay)
     {
-        TargetInfo curr = targetInfo;
-
-        // Robot velocity (MUST be in robot frame)
+        TargetInfo compensatedInfo = targetInfo;
         TrcPose2D robotVel = driveBase.getRobotVelocity();
+        double omegaDeg = COMPENSATE_ROBOT_ROTATION ? driveBase.getTurnRate() : 0.0;
+        TrcPose2D targetPose = targetInfo.targetPose;
+        // double k = 0.015;   // drag coefficient (tune)
+        // Initial guess
+        double tof = targetInfo.tof;
+        TrcPose2D adjustedPose = targetPose;
 
-        // Drag coefficient (TUNE THIS ONCE)
-        // Typical range: 0.02 – 0.05
-        final double DRAG_K = 0.03;
-
+        maxIterations = Math.min(maxIterations, 10);
         for (int i = 0; i < maxIterations; i++)
         {
-            TrcPose2D targetPose = curr.targetPose;
+            double totalTime = tof + shooterExitDelay;
+            // --- Predict robot motion ---
+            double dx = robotVel.x * totalTime;
+            double dy = robotVel.y * totalTime;
+            double dtheta = omegaDeg * totalTime;
 
-            double distance = Math.hypot(targetPose.x, targetPose.y);
+            adjustedPose = new TrcPose2D(
+                targetPose.x - dx,
+                targetPose.y - dy,
+                targetPose.angle - dtheta
+            );
+            // --- Recompute shot solution ---
+            compensatedInfo = targetInfoSource.getTargetInfo(adjustedPose);
+            double distance = Math.hypot(adjustedPose.x, adjustedPose.y);
 
-            // Shooter model
-            double vExit = getExitVelocity(
-                curr.aimInfo.flywheel1RPM,
-                curr.aimInfo.tiltAngle);
-
-            // Hood angle: 0 = vertical
-            double theta = Math.toRadians(90.0 - curr.aimInfo.tiltAngle);
-
-            // Velocity components
+            double adjustedTof;
+            double dirX = adjustedPose.x / distance;
+            double dirY = adjustedPose.y / distance;
+            double hoodDeg = compensatedInfo.aimInfo.tiltAngle;
+            double vExit = getExitVelocity(compensatedInfo.aimInfo.flywheel1RPM, hoodDeg);
+            double theta = Math.toRadians(90.0 - hoodDeg);
             double vx = vExit * Math.sin(theta);
-            // double vy = vExit * Math.cos(theta);
+            double vy = vExit * Math.cos(theta);
+            double v0 = vx * dirX + vy * dirY;
 
-            // Include robot motion (robot frame assumption)
-            double vxTotal = vx + robotVel.x;
+            if (dragCoeff < 1e-6)
+            {
+                adjustedTof = distance / Math.max(v0, 1.0);
+            }
+            else
+            {
+                double ratio = 1.0 - (distance * dragCoeff / Math.max(v0, 1e-6));
+                ratio = Math.max(ratio, 1e-6);
+                adjustedTof = -Math.log(ratio) / dragCoeff;
+            }
 
-            // --- TOF ESTIMATE (empirical baseline) ---
-            double tof = distance / Math.max(Math.abs(vxTotal), 1e-3);
-
-            // --- DRAG MODEL (empirical decay) ---
-            double dragFactor = 1.0 - DRAG_K * tof;
-            dragFactor = Math.max(dragFactor, 0.5); // stability clamp
-
-            double vxWithDrag = vxTotal * dragFactor;
-
-            // --- PREDICTION ---
-            double predictedDistance = vxWithDrag * tof;
-
-            double error = distance - predictedDistance;
-
-            if (Math.abs(error) < errorThreshold)
+            // --- Convergence check (simple & stable) ---
+            if (Math.abs(adjustedTof - tof) < tofErrorThreshold)
             {
                 break;
             }
 
-            // --- TOF UPDATE (stable correction) ---
-            double adjustedTof = tof + error / Math.max(vxWithDrag, 1e-3);
-
-            curr = new TargetInfo(targetPose, curr.aimInfo, adjustedTof);
+            tof = adjustedTof;
         }
 
-        return curr;
-    }
+        return compensatedInfo;
+    }   //compensateRobotMotionWithDrag
 
     /**
      * This method computes the exit velocity from the given flywheel RPM and tiltAngle.
