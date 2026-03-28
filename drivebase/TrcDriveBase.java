@@ -465,6 +465,7 @@ public abstract class TrcDriveBase implements TrcExclusiveSubsystem
 
     // GyroAssist driving.
     private TrcPidController gyroAssistPidCtrl = null;
+    private Double lockedHeading = null;
     private Double gyroAssistHeading = null;
     private boolean robotTurning = false;
 
@@ -1265,14 +1266,31 @@ public abstract class TrcDriveBase implements TrcExclusiveSubsystem
     }   //setSensitivity
 
     /**
-     * This method enables/disables gyro assist drive.
+     * This method enables GyroAssist driving by maintaining the robot heading to the specified absolute locked
+     * heading or the current robot heading whenever the robot stops turning.
      *
-     * @param turnPidCtrl specifies the turn PID controller to enable GyroAssist, null to disable.
+     * @param turnPidCtrl specifies the turn PID controller to use for PID controlling robot heading.
+     * @param lockedHeading specifies the absoluted locked heading, null if not provided in which case the robot
+     *        heading will be locked at the heading whenever robot stops turning.
      */
-    public void setGyroAssistEnabled(TrcPidController turnPidCtrl)
+    public void enableGyroAssist(TrcPidController turnPidCtrl, Double lockedHeading)
     {
         this.gyroAssistPidCtrl = turnPidCtrl;
-    }   //setGyroAssistEnabled
+        this.lockedHeading = lockedHeading;
+        this.gyroAssistHeading = null;
+        this.robotTurning = false;
+    }   //enableGyroAssist
+
+    /**
+     * This method disables GyroAssist driving.
+     */
+    public void disableGyroAssist()
+    {
+        this.gyroAssistPidCtrl = null;
+        this.lockedHeading = null;
+        this.gyroAssistHeading = null;
+        this.robotTurning = false;
+    }   //disableGyroAssist
 
     /**
      * This method checks if Gyro Assist is enabled.
@@ -1300,18 +1318,25 @@ public abstract class TrcDriveBase implements TrcExclusiveSubsystem
             {
                 // Robot is turning, do not need to apply GyroAssist power.
                 robotTurning = true;
+                if (lockedHeading != null)
+                {
+                    // We are in lockedHeading mode. If we are turning the robot, we cancel.
+                    disableGyroAssist();
+                    tracer.traceInfo(moduleName, "Robot is turning, cancel LockedHeading mode.");
+                }
             }
             else
             {
                 // The robot is going straight.
                 if (robotTurning || gyroAssistHeading == null)
                 {
-                    // Robot just stopped turning or this is the first call, save the current robot heading.
+                    // Robot just stopped turning or this is the first call, use the current robot heading or
+                    // the lockedHeading as the heading the robot should turn to.
                     // Set the current robot heading as the PID target to maintain this heading.
-                    gyroAssistHeading = getHeading();
+                    gyroAssistHeading = lockedHeading != null? lockedHeading: getHeading();
                     gyroAssistPidCtrl.setTarget(gyroAssistHeading);
                     robotTurning = false;
-                    tracer.traceDebug(moduleName, "Maintain robot heading at " + gyroAssistHeading);
+                    tracer.traceInfo(moduleName, "Maintain robot heading at " + gyroAssistHeading);
                 }
                 // Robot is going straight, use turnPid controller to calculate GyroAssist power.
                 gyroAssistPower = gyroAssistPidCtrl.calculate();
