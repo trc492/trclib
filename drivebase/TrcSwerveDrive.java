@@ -349,15 +349,14 @@ public class TrcSwerveDrive extends TrcSimpleDrive
      * @param xPower    specifies the x power.
      * @param yPower    specifies the y power.
      * @param turnPower specifies the rotating power.
-     * @param inverted  specifies true to invert control (i.e. robot front becomes robot back).
      * @param gyroAngle specifies the gyro angle to maintain for field relative drive. DO NOT use this with inverted.
      * @param driveTime specifies the amount of time in seconds after which the drive base will stop.
      * @param event     specifies the event to signal when driveTime has expired, can be null if not provided.
      */
     @Override
     public void holonomicDrive(
-        String owner, double xPower, double yPower, double turnPower, boolean inverted, Double gyroAngle,
-        double driveTime, TrcEvent event)
+        String owner, double xPower, double yPower, double turnPower, Double gyroAngle, double driveTime,
+        TrcEvent event)
     {
         tracer.traceDebug(
             moduleName,
@@ -365,7 +364,6 @@ public class TrcSwerveDrive extends TrcSimpleDrive
             ", x=" + xPower +
             ", y=" + yPower +
             ", turn=" + turnPower +
-            ", inverted=" + inverted +
             ", gyroAngle=" + gyroAngle +
             ", driveTime=" + driveTime +
             ", event=" + event);
@@ -381,20 +379,8 @@ public class TrcSwerveDrive extends TrcSimpleDrive
                 yPower = TrcUtil.clipRange(yPower);
                 turnPower = TrcUtil.clipRange(turnPower);
 
-                if (inverted)
-                {
-                    xPower = -xPower;
-                    yPower = -yPower;
-                }
-
                 if (gyroAngle != null)
                 {
-                    if (inverted)
-                    {
-                        tracer.traceWarn(
-                            moduleName, "You should not be using inverted and field reference frame at the same time!");
-                    }
-
                     double gyroRadians = Math.toRadians(gyroAngle);
                     double temp = yPower * Math.cos(gyroRadians) + xPower * Math.sin(gyroRadians);
                     xPower = -yPower * Math.sin(gyroRadians) + xPower * Math.cos(gyroRadians);

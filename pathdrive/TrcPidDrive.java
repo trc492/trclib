@@ -1441,7 +1441,7 @@ public class TrcPidDrive
         if (maintainHeading && driveBase.supportsHolonomicDrive())
         {
             startNanoTime = TrcTimer.getNanoTime();
-            driveBase.holonomicDrive(owner, manualX, manualY, turnPower, false, 0.0);
+            driveBase.holonomicDrive(owner, manualX, manualY, turnPower, 0.0);
             pidDriveTaskProfiler.recordProfilePointElapsedTime("MaintainningHeading", startNanoTime, true);
         }
         else if (expired || stalled || onTarget)
