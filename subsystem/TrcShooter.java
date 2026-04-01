@@ -563,7 +563,8 @@ public class TrcShooter implements TrcExclusiveSubsystem
     }   //isShooterPowerModeEnabled
 
     private static final boolean COMPENSATE_ROBOT_ROTATION = true;
-    private static final boolean COMPENSATE_EXIT_VELOCITY = true;
+    private static final boolean COMPENSATE_EXIT_VELOCITY = false;
+    private static final double ROTATION_COMP_GAIN        = 0.2;
     /**
      * This method compensates the TargetInfo by the motion of the robot.
      *
@@ -600,11 +601,11 @@ public class TrcShooter implements TrcExclusiveSubsystem
                 double totalTime = tof + shooterExitDelay;
                 double dx = robotVel.x * totalTime;
                 double dy = robotVel.y * totalTime;
-                double dthetaDeg = omegaDeg * totalTime;
+                double dthetaDeg = ROTATION_COMP_GAIN * omegaDeg * totalTime;
                 double dthetaRad = Math.toRadians(dthetaDeg);
                 // Rotate point (origX, origY) by -dtheta (counter the robot's rotation)
-                double cosTheta = Math.cos(-dthetaRad);
-                double sinTheta = Math.sin(-dthetaRad);
+                double cosTheta = Math.cos(dthetaRad);
+                double sinTheta = Math.sin(dthetaRad);
                 double rotatedX = origTargetPose.x * cosTheta - origTargetPose.y * sinTheta;
                 double rotatedY = origTargetPose.x * sinTheta + origTargetPose.y * cosTheta;
                 // Compute motion-compensated target.
