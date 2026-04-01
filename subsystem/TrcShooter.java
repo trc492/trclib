@@ -562,13 +562,12 @@ public class TrcShooter implements TrcExclusiveSubsystem
         return maxShooter1MaxRPM != null;
     }   //isShooterPowerModeEnabled
 
-    private static final boolean COMPENSATE_ROBOT_ROTATION = true;
-    private static final boolean COMPENSATE_EXIT_VELOCITY = false;
-    private static final double ROTATION_COMP_GAIN        = 0.2;
     /**
      * This method compensates the TargetInfo by the motion of the robot.
      *
      * @param driveBase specifies the drive base object.
+     * @param turretOffsetX specifies the X offset of the turret from robot center.
+     * @param turretOffsetY specifies the Y offset of the turret from robot center.
      * @param targetInfoSource specifies the method to call to recompute TargetInfo by current target pose.
      * @param targetInfo specifies the original TargetInfo.
      * @param dragCoeff specifies the drag coefficient.
@@ -578,9 +577,13 @@ public class TrcShooter implements TrcExclusiveSubsystem
      *        exits the shooter. TOF only accounts after the ball exits the shooter.
      * @return compensated Target Info.
      */
+    private static final boolean COMPENSATE_ROBOT_ROTATION = true;
+    private static final boolean COMPENSATE_TURRET_OFFSET = true;
+    private static final boolean COMPENSATE_EXIT_VELOCITY = false;
+    private static final double ROTATION_COMP_GAIN = COMPENSATE_TURRET_OFFSET? 1.0: 0.2;
     public TargetInfo compensateRobotMotion(
-        TrcDriveBase driveBase, TargetInfoSource targetInfoSource, TargetInfo targetInfo, double dragCoeff,
-        double tofErrorThreshold, int maxIterations, double shooterExitDelay)
+        TrcDriveBase driveBase, double turretOffsetX, double turretOffsetY, TargetInfoSource targetInfoSource,
+        TargetInfo targetInfo, double dragCoeff, double tofErrorThreshold, int maxIterations, double shooterExitDelay)
     {
         TargetInfo compensatedInfo = targetInfo;
         TrcPose2D robotVel = driveBase.getRobotVelocity();
@@ -599,52 +602,70 @@ public class TrcShooter implements TrcExclusiveSubsystem
             for (int i = 0; i < maxIterations; i++)
             {
                 double totalTime = tof + shooterExitDelay;
-                double dx = robotVel.x * totalTime;
-                double dy = robotVel.y * totalTime;
-                double dthetaDeg = ROTATION_COMP_GAIN * omegaDeg * totalTime;
-                double dthetaRad = Math.toRadians(dthetaDeg);
-                // Rotate point (origX, origY) by -dtheta (counter the robot's rotation)
-                double cosTheta = Math.cos(dthetaRad);
-                double sinTheta = Math.sin(dthetaRad);
-                double rotatedX = origTargetPose.x * cosTheta - origTargetPose.y * sinTheta;
-                double rotatedY = origTargetPose.x * sinTheta + origTargetPose.y * cosTheta;
-                // Compute motion-compensated target.
-                TrcPose2D adjustedPose = new TrcPose2D(rotatedX - dx, rotatedY - dy, 0.0);
+                TrcPose2D compensation = new TrcPose2D(
+                    -robotVel.x * totalTime, -robotVel.y * totalTime,
+                    ROTATION_COMP_GAIN * omegaDeg * totalTime);
+                // double dx = robotVel.x * totalTime;
+                // double dy = robotVel.y * totalTime;
+                // double dthetaDeg = ROTATION_COMP_GAIN * omegaDeg * totalTime;
+                // double dthetaRad = Math.toRadians(dthetaDeg);
+                // // Rotate point (origX, origY) by -dtheta (counter the robot's rotation)
+                // double cosTheta = Math.cos(dthetaRad);
+                // double sinTheta = Math.sin(dthetaRad);
+                // double rotatedX = origTargetPose.x * cosTheta - origTargetPose.y * sinTheta;
+                // double rotatedY = origTargetPose.x * sinTheta + origTargetPose.y * cosTheta;
+                // // Compute motion-compensated target.
+                // TrcPose2D adjustedPose = new TrcPose2D(rotatedX - dx, rotatedY - dy, 0.0);
+                TrcPose2D adjustedPose = origTargetPose.addRelativePose(compensation);
                 compensatedInfo = targetInfoSource.getTargetInfo(adjustedPose);
-                state.lastCompensation = new TrcPose2D(-dx, -dy, -dthetaDeg);
+                state.lastCompensation = compensation;
 
                 double adjustedTof;
-                double vEffective;
                 double distance = Math.hypot(adjustedPose.x, adjustedPose.y);
-                if (COMPENSATE_EXIT_VELOCITY)
+
+                if (COMPENSATE_TURRET_OFFSET)
                 {
                     double dirX = adjustedPose.x / distance;
                     double dirY = adjustedPose.y / distance;
-                    state.vRobotRadial = robotVel.x * dirX + robotVel.y * dirY;
+                    // Tangential velocity due to robot rotation at the turret location
+                    double omegaRadPerSec = Math.toRadians(omegaDeg);
+                    double vTangX =  omegaRadPerSec * turretOffsetY;     // forward offset → +X on CW
+                    double vTangY = -omegaRadPerSec * turretOffsetX;     // right offset   → -Y on CW
+                    double effectiveVx = robotVel.x + vTangX;
+                    double effectiveVy = robotVel.y + vTangY;
+                    state.vRobotRadial = effectiveVx * dirX + effectiveVy * dirY;
+                }
+                else
+                {
+                    state.vRobotRadial = 0.0;
+                }
+
+                if (COMPENSATE_EXIT_VELOCITY)
+                {
                     double hoodDeg = compensatedInfo.aimInfo.tiltAngle;
                     double vExit = getExitVelocity(compensatedInfo.aimInfo.flywheel1RPM, hoodDeg);
                     // 0° hood = vertical.
                     double launchAngleRad = Math.toRadians(90.0 - hoodDeg);
                     // horizontal component toward target
                     state.vShooterRadial = vExit * Math.cos(launchAngleRad);
-                    // Effective closing speed = shooter contribution + robot contribution
-                    vEffective = state.vShooterRadial + state.vRobotRadial;
-                    // Clamp to prevent negative or near-zero speed (physics sanity)
-                    // m/s — tune to your minimum viable shot speed
-                    vEffective = Math.max(vEffective, 0.5);
                 }
                 else
                 {
-                    vEffective = distance / compensatedInfo.tof;
+                    // Fallback: use average speed implied by the table
+                    state.vShooterRadial = distance / compensatedInfo.tof;
                 }
+                // Effective closing speed = shooter contribution + robot contribution
+                state.vEffective = state.vShooterRadial + state.vRobotRadial;
+                // Clamp to prevent negative or near-zero speed (physics sanity)
+                state.vEffective = Math.max(state.vEffective, 0.5);
 
                 if (dragCoeff < 1e-6)
                 {
-                    adjustedTof = distance / vEffective;
+                    adjustedTof = distance / state.vEffective;
                 }
                 else
                 {
-                    double ratio = 1.0 - (distance * dragCoeff / vEffective);
+                    double ratio = 1.0 - (distance * dragCoeff / state.vEffective);
                     ratio = Math.max(ratio, 1e-6);
                     adjustedTof = -Math.log(ratio) / dragCoeff;
                 }
