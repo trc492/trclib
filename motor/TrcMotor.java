@@ -1275,11 +1275,18 @@ public abstract class TrcMotor implements TrcMotorController, TrcExclusiveSubsys
         else
         {
             // Motor controller position sensor is not scaled, we will do scaling here.
-            currPos = (getMotorPosition() - sensorZeroOffset)*sensorScale;
+            double motorPos = getMotorPosition();
+
+            currPos = (motorPos - sensorZeroOffset)*sensorScale;
             if (zeroAdjust)
             {
                 currPos = currPos - zeroPosition + sensorOffset;
             }
+
+            // if (instanceName.equals("Shooter.TurretMotor"))
+            // tracer.traceErr(
+            //     instanceName, "motorPos=%f, zeroOffset=%f, scale=%f, posOffset=%f",
+            //     motorPos, sensorZeroOffset, sensorScale, sensorOffset);
         }
         if (motorGetPositionElapsedTimer != null) motorGetPositionElapsedTimer.recordEndTime();
 
