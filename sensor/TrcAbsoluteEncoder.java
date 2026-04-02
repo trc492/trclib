@@ -57,9 +57,11 @@ public class TrcAbsoluteEncoder extends TrcWrapValueConverter implements TrcEnco
 
     /**
      * This method resets the encoder revolution counter.
+     *
+     * @param position specifies the motor position in rotations (not used).
      */
     @Override
-    public void reset()
+    public void reset(double position)
     {
         super.resetConverter();
     }   //reset

@@ -578,6 +578,7 @@ public class TrcShooter implements TrcExclusiveSubsystem
      * @return compensated Target Info.
      */
     private static final boolean COMPENSATE_ROBOT_ROTATION = true;
+    private static final boolean USE_ADD_RELATIVE_POSE = false;
     private static final boolean COMPENSATE_TURRET_OFFSET = false;
     private static final boolean COMPENSATE_EXIT_VELOCITY = false;
     private static final double ROTATION_COMP_GAIN = COMPENSATE_TURRET_OFFSET? 1.0: 0.2;
@@ -593,7 +594,6 @@ public class TrcShooter implements TrcExclusiveSubsystem
         // Only compensate if robot is moving linearly or rotating
         if (Math.hypot(robotVel.x, robotVel.y) > 0.01 || Math.abs(omegaDeg) > 1.0)
         {
-            tracer.traceDebug(instanceName, "robotVel=%s, omegaDeg=%f", robotVel, omegaDeg);
             TrcPose2D origTargetPose = targetInfo.targetPose;
             double tof = targetInfo.tof;
 
@@ -602,21 +602,31 @@ public class TrcShooter implements TrcExclusiveSubsystem
             for (int i = 0; i < maxIterations; i++)
             {
                 double totalTime = tof + shooterExitDelay;
-                TrcPose2D compensation = new TrcPose2D(
-                    -robotVel.x * totalTime, -robotVel.y * totalTime,
-                    ROTATION_COMP_GAIN * omegaDeg * totalTime);
                 double dx = robotVel.x * totalTime;
                 double dy = robotVel.y * totalTime;
                 double dthetaDeg = ROTATION_COMP_GAIN * omegaDeg * totalTime;
-                double dthetaRad = Math.toRadians(dthetaDeg);
-                // Rotate point (origX, origY) by -dtheta (counter the robot's rotation)
-                double cosTheta = Math.cos(dthetaRad);
-                double sinTheta = Math.sin(dthetaRad);
-                double rotatedX = origTargetPose.x * cosTheta - origTargetPose.y * sinTheta;
-                double rotatedY = origTargetPose.x * sinTheta + origTargetPose.y * cosTheta;
-                // Compute motion-compensated target.
-                TrcPose2D adjustedPose = new TrcPose2D(rotatedX - dx, rotatedY - dy, 0.0);
-                //TrcPose2D adjustedPose = origTargetPose.addRelativePose(compensation);
+                TrcPose2D compensation = new TrcPose2D(-dx, -dy, -dthetaDeg);
+                TrcPose2D adjustedPose;
+
+                if (USE_ADD_RELATIVE_POSE)
+                {
+                    adjustedPose = origTargetPose.addRelativePose(compensation);
+                }
+                else
+                {
+                    // Rotate point (origX, origY) by -dtheta (counter the robot's rotation)
+                    double dthetaRad = Math.toRadians(dthetaDeg);
+                    double cosTheta = Math.cos(dthetaRad);
+                    double sinTheta = Math.sin(dthetaRad);
+                    double rotatedX = origTargetPose.x * cosTheta - origTargetPose.y * sinTheta;
+                    double rotatedY = origTargetPose.x * sinTheta + origTargetPose.y * cosTheta;
+                    // Compute motion-compensated target.
+                    adjustedPose = new TrcPose2D(rotatedX - dx, rotatedY - dy, 0.0);
+                    tracer.traceErr(
+                        instanceName, "compensation=%s, adjustPose=%s, addRelativePose=%s",
+                        compensation, adjustedPose, origTargetPose.addRelativePose(compensation));
+                }
+
                 compensatedInfo = targetInfoSource.getTargetInfo(adjustedPose);
                 state.lastCompensation = compensation;
 
@@ -719,7 +729,8 @@ public class TrcShooter implements TrcExclusiveSubsystem
             state.exitReason = AimConvergenceState.ExitReason.SKIPPED_NO_MOTION;
         }
 
-        tracer.traceDebug(instanceName, "AimConvergenceState=%s", state);
+        tracer.traceDebug(
+            instanceName, "robotVel=%s, omegaDeg=%f\nAimConvergenceState=%s", robotVel, omegaDeg, state);
         return compensatedInfo;
     }   //compensatedRobotMotion
 

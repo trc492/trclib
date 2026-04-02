@@ -29,9 +29,11 @@ package trclib.sensor;
 public interface TrcEncoder
 {
     /**
-     * This method resets the encoder position.
+     * This method resets the encoder position to the given position.
+     *
+     * @param position specifies the encoder position to be reset to.
      */
-    void reset();
+    void reset(double position);
 
     /**
      * This method reads the raw encoder position in encoder units (generally encoder counts).

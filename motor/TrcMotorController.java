@@ -189,9 +189,11 @@ public interface TrcMotorController
     boolean isMotorPositionSensorInverted();
 
     /**
-     * This method resets the motor position sensor, typically an encoder.
+     * This method resets the motor position sensor, typically an encoder to the given position.
+     *
+     * @param position specifies the motor position in rotations.
      */
-    void resetMotorPosition();
+    void resetMotorPosition(double position);
 
     /**
      * This method inverts the spinning direction of the motor.

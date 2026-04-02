@@ -1283,10 +1283,9 @@ public abstract class TrcMotor implements TrcMotorController, TrcExclusiveSubsys
                 currPos = currPos - zeroPosition + sensorOffset;
             }
 
-            // if (instanceName.equals("Shooter.TurretMotor"))
-            // tracer.traceErr(
-            //     instanceName, "motorPos=%f, zeroOffset=%f, scale=%f, posOffset=%f",
-            //     motorPos, sensorZeroOffset, sensorScale, sensorOffset);
+            tracer.traceDebug(
+                instanceName, "motorPos=%f, zeroOffset=%f, scale=%f, posOffset=%f, zeroPos=%f",
+                motorPos, sensorZeroOffset, sensorScale, sensorOffset, zeroPosition);
         }
         if (motorGetPositionElapsedTimer != null) motorGetPositionElapsedTimer.recordEndTime();
 
@@ -1294,24 +1293,25 @@ public abstract class TrcMotor implements TrcMotorController, TrcExclusiveSubsys
     }   //getControllerPosition
 
     /**
-     * This method resets the motor position sensor if provided, typically an encoder. Otherwise, it resets the
-     * one on the motor controller if it supports one. If hardware is false, it simulates the reset by reading
-     * the current position as the zero position.
+     * This method resets the motor position sensor to the given position if provided, typically an encoder.
+     * Otherwise, it resets the one on the motor controller if it supports one. If hardware is false, it simulates
+     * the reset by reading the current position as the zero position.
      *
+     * @param position specifies the motor position in rotations.
      * @param hardware specifies true for resetting hardware position, false for resetting software position.
      */
-    public void resetPosition(boolean hardware)
+    public void resetPosition(double position, boolean hardware)
     {
         if (encoder != null)
         {
             // External encoder doesn't support soft reset.
-            encoder.reset();
+            encoder.reset(position);
         }
         else
         {
             if (hardware)
             {
-                resetMotorPosition();
+                resetMotorPosition(position);
             }
             zeroPosition = getControllerPosition(false);
         }
@@ -1320,10 +1320,12 @@ public abstract class TrcMotor implements TrcMotorController, TrcExclusiveSubsys
     /**
      * This method resets the motor position sensor, typically an encoder. This method emulates a reset for a
      * potentiometer by doing a soft reset.
+     *
+     * @param position specifies the motor position in rotations.
      */
-    public void resetPosition()
+    public void resetPosition(double position)
     {
-        resetPosition(false);
+        resetPosition(position, false);
     }   //resetPosition
 
     /**
@@ -3253,7 +3255,7 @@ public abstract class TrcMotor implements TrcMotorController, TrcExclusiveSubsys
             }
 
             setControllerMotorPower(0.0, true, true);
-            resetPosition(false);
+            resetPosition(0.0, false);
             taskParams.stalled = false;
             taskParams.zeroCalTimeout = null;
         }
@@ -3622,7 +3624,7 @@ public abstract class TrcMotor implements TrcMotorController, TrcExclusiveSubsys
 
             tracer.traceDebug(instanceName, "trigger=%s, active=%s", digitalTrigger, active);
             tracer.traceInfo(instanceName, "Reset position on digital trigger! (BeforePos=" + getPosition() + ")");
-            resetPosition(false);
+            resetPosition(0.0, false);
 
             if (triggerCallbackEvent != null)
             {
@@ -4103,7 +4105,7 @@ public abstract class TrcMotor implements TrcMotorController, TrcExclusiveSubsys
     @Override
     public void resetOdometry(boolean resetHardware)
     {
-        resetPosition(resetHardware);
+        resetPosition(0.0, resetHardware);
         synchronized (odometry)
         {
             odometry.prevTimestamp = odometry.currTimestamp = TrcTimer.getCurrentTime();
