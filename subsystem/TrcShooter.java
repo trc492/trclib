@@ -578,7 +578,6 @@ public class TrcShooter implements TrcExclusiveSubsystem
      * @return compensated Target Info.
      */
     private static final boolean COMPENSATE_ROBOT_ROTATION = true;
-    private static final boolean USE_ADD_RELATIVE_POSE = false;
     private static final boolean COMPENSATE_TURRET_OFFSET = false;
     private static final boolean COMPENSATE_EXIT_VELOCITY = false;
     private static final double ROTATION_COMP_GAIN = COMPENSATE_TURRET_OFFSET? 1.0: 0.2;
@@ -608,24 +607,14 @@ public class TrcShooter implements TrcExclusiveSubsystem
                 TrcPose2D compensation = new TrcPose2D(-dx, -dy, -dthetaDeg);
                 TrcPose2D adjustedPose;
 
-                if (USE_ADD_RELATIVE_POSE)
-                {
-                    adjustedPose = origTargetPose.addRelativePose(compensation);
-                }
-                else
-                {
-                    // Rotate point (origX, origY) by -dtheta (counter the robot's rotation)
-                    double dthetaRad = Math.toRadians(dthetaDeg);
-                    double cosTheta = Math.cos(dthetaRad);
-                    double sinTheta = Math.sin(dthetaRad);
-                    double rotatedX = origTargetPose.x * cosTheta - origTargetPose.y * sinTheta;
-                    double rotatedY = origTargetPose.x * sinTheta + origTargetPose.y * cosTheta;
-                    // Compute motion-compensated target.
-                    adjustedPose = new TrcPose2D(rotatedX - dx, rotatedY - dy, 0.0);
-                    tracer.traceErr(
-                        instanceName, "compensation=%s, adjustPose=%s, addRelativePose=%s",
-                        compensation, adjustedPose, origTargetPose.addRelativePose(compensation));
-                }
+                // Rotate point (origX, origY) by -dtheta (counter the robot's rotation)
+                double dthetaRad = Math.toRadians(dthetaDeg);
+                double cosTheta = Math.cos(dthetaRad);
+                double sinTheta = Math.sin(dthetaRad);
+                double rotatedX = origTargetPose.x * cosTheta - origTargetPose.y * sinTheta;
+                double rotatedY = origTargetPose.x * sinTheta + origTargetPose.y * cosTheta;
+                // Compute motion-compensated target.
+                adjustedPose = new TrcPose2D(rotatedX - dx, rotatedY - dy, 0.0);
 
                 compensatedInfo = targetInfoSource.getTargetInfo(adjustedPose);
                 state.lastCompensation = compensation;
