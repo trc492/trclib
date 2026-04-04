@@ -26,7 +26,10 @@ import java.io.BufferedWriter;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.PrintWriter;
-import java.util.Arrays;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.nio.file.StandardCopyOption;
 import java.util.concurrent.LinkedBlockingQueue;
 
 import trclib.timer.TrcTimer;
@@ -40,6 +43,7 @@ public class TrcTraceLogger
     private PrintWriter traceLog = null;
     private volatile Thread loggerThread = null;
     private volatile boolean enabled = false;
+    private String newLogName = null;
     private double totalNanoTime = 0.0;
     private int totalMessages = 0;
 
@@ -53,6 +57,18 @@ public class TrcTraceLogger
         this.tracer = new TrcDbgTrace();
         this.traceLogName = traceLogName;
         msgQueue = new LinkedBlockingQueue<>();
+        // Open the log file for append and create the logger thread.
+        try
+        {
+            traceLog = new PrintWriter(new BufferedWriter(new FileWriter(traceLogName, true)));
+        }
+        catch (IOException e)
+        {
+            e.printStackTrace();
+            throw new RuntimeException("Failed to open trace log file " + traceLogName);
+        }
+        loggerThread = new Thread(this::loggerTask, traceLogName);
+        loggerThread.start();
     }   //TrcTraceLogger
 
     /**
@@ -67,53 +83,25 @@ public class TrcTraceLogger
     }   //toString
 
     /**
+     * This method closes the trace logger and renames the log file.
+     *
+     * @param newLogName specifies the new log file name. If provided, the log file will be renamed to the new name.
+     */
+    public synchronized void closeLogger(String newLogName)
+    {
+        // If the new log name is the same as the current log name, we don't need to rename it.
+        this.newLogName = !traceLogName.equals(newLogName)? newLogName: null;
+        loggerThread.interrupt();
+    }   //closeLogger
+
+    /**
      * This method enables/disables the trace logger thread.
      *
      * @param enabled specifies true to enable logger thread, false to disable.
      */
     public synchronized void setEnabled(boolean enabled)
     {
-double[] timestamps = new double[3];
-timestamps[0] = TrcTimer.getModeElapsedTime();
-        if (loggerThread == null && enabled)
-        {
-            //
-            // Trace logger was not enabled, somebody wants to enable it.
-            // Open the log file for append and create the logger thread.
-            //
-            try
-            {
-                traceLog = new PrintWriter(new BufferedWriter(new FileWriter(traceLogName, true)));
-            }
-            catch (IOException e)
-            {
-                e.printStackTrace();
-                throw new RuntimeException("Failed to open trace log file " + traceLogName);
-            }
-timestamps[1] = TrcTimer.getModeElapsedTime();
-            loggerThread = new Thread(this::loggerTask, traceLogName);
-            loggerThread.start();
-            this.enabled = true;
-timestamps[2] = TrcTimer.getModeElapsedTime();
-        }
-        else if (loggerThread != null && !enabled)
-        {
-            //
-            // Trace logger was enabled, somebody wants to disable it.
-            //
-            if (this.enabled)
-            {
-                //
-                // Make sure the trace logger is indeed enabled. The message queue may not be empty. So we need to
-                // signal termination but allow the logger thread to empty the queue before exiting.
-                // If trace logger is already disabled and the loggerThread is still active, it means the thread is
-                // busy emptying its queue. So we don't need to double signal termination.
-                //
-                this.enabled = false;
-                loggerThread.interrupt();
-            }
-        }
-TrcDbgTrace.getGlobalTracer().traceInfo("Tracer", "TracerTimestamps=" + Arrays.toString(timestamps));
+        this.enabled = enabled;
     }   //setEnabled
 
     /**
@@ -135,7 +123,7 @@ TrcDbgTrace.getGlobalTracer().traceInfo("Tracer", "TracerTimestamps=" + Arrays.t
     {
         boolean success = false;
 
-        if (isEnabled())
+        if (enabled)
         {
             success = msgQueue.add(msg);
         }
@@ -167,16 +155,31 @@ TrcDbgTrace.getGlobalTracer().traceInfo("Tracer", "TracerTimestamps=" + Arrays.t
     }   //writeMessage
 
     /**
-     * This method closes the trace log file.
+     * This method closes the trace log file and renames it if a new log name is provided.
+     * It is called when the logger thread is terminating.
      */
-    private void closeTraceLog()
+    private void closeLogFile()
     {
         if (traceLog != null)
         {
             traceLog.close();
             traceLog = null;
+            if (newLogName != null)
+            {
+                Path source = Paths.get(traceLogName);
+                Path target = Paths.get(newLogName);
+
+                try
+                {
+                    Files.move(source, target, StandardCopyOption.REPLACE_EXISTING);
+                }
+                catch (IOException e)
+                {
+                    e.printStackTrace();
+                }
+            }
         }
-    }   //closeTraceLog
+    }   //closeLogFile
 
     /**
      * This method is called when the logger thread is started. It processes all messages in the message queue when
@@ -213,7 +216,7 @@ TrcDbgTrace.getGlobalTracer().traceInfo("Tracer", "TracerTimestamps=" + Arrays.t
         }
         tracer.traceDebug(traceLogName, "Closing Trace Log");
 
-        closeTraceLog();
+        closeLogFile();
         loggerThread = null;
     }   //loggerTask
 

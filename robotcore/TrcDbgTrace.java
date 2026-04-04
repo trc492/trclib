@@ -156,7 +156,7 @@ public class TrcDbgTrace
      * @param traceLogName specifies the full trace log file path name.
      * @return true if log file is successfully opened, false if it failed.
      */
-    public static boolean openTraceLog(String traceLogName)
+    private static boolean openTraceLog(String traceLogName)
     {
         boolean success = false;
 
@@ -203,12 +203,14 @@ public class TrcDbgTrace
 
     /**
      * This method closes the trace log file.
+     *
+     * @param fileName specifies the filename to rename the log to, can be null if not renaming.
      */
-    public static void closeTraceLog()
+    public static void closeTraceLog(String fileName)
     {
         if (traceLogger != null)
         {
-            traceLogger.setEnabled(false);
+            traceLogger.closeLogger(fileName);
             traceLogger = null;
         }
     }   //closeTraceLog
