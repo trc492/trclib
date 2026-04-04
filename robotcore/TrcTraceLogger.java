@@ -91,6 +91,7 @@ public class TrcTraceLogger
     {
         // If the new log name is the same as the current log name, we don't need to rename it.
         this.newLogName = !traceLogName.equals(newLogName)? newLogName: null;
+        this.enabled = false;
         loggerThread.interrupt();
     }   //closeLogger
 
