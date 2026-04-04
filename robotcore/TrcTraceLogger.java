@@ -26,6 +26,7 @@ import java.io.BufferedWriter;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.PrintWriter;
+import java.util.Arrays;
 import java.util.concurrent.LinkedBlockingQueue;
 
 import trclib.timer.TrcTimer;
@@ -72,6 +73,8 @@ public class TrcTraceLogger
      */
     public synchronized void setEnabled(boolean enabled)
     {
+double[] timestamps = new double[3];
+timestamps[0] = TrcTimer.getModeElapsedTime();
         if (loggerThread == null && enabled)
         {
             //
@@ -87,9 +90,11 @@ public class TrcTraceLogger
                 e.printStackTrace();
                 throw new RuntimeException("Failed to open trace log file " + traceLogName);
             }
+timestamps[1] = TrcTimer.getModeElapsedTime();
             loggerThread = new Thread(this::loggerTask, traceLogName);
             loggerThread.start();
             this.enabled = true;
+timestamps[2] = TrcTimer.getModeElapsedTime();
         }
         else if (loggerThread != null && !enabled)
         {
@@ -108,6 +113,7 @@ public class TrcTraceLogger
                 loggerThread.interrupt();
             }
         }
+TrcDbgTrace.getGlobalTracer().traceInfo("Tracer", "TracerTimestamps=" + Arrays.toString(timestamps));
     }   //setEnabled
 
     /**
