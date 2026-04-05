@@ -64,16 +64,11 @@ public class TrcPurePursuitDrive
 {
     private static final boolean applySquidOnVel = false;
 
-    public interface WaypointEventHandler
+    public static class WaypointContext
     {
-        /**
-         * This method is called when Pure Pursuit crosses a waypoint or the path is completed.
-         *
-         * @param index specifies the index of the waypoint in the path, -1 if the path is completed or canceled.
-         * @param waypoint specifies the current target waypoint.
-         */
-        void waypointEvent(int index, TrcWaypoint waypoint);
-    }   //interface WaypointEventHandler
+        public int index;
+        public TrcWaypoint waypoint;
+    }   //class WaypointContext
 
     public interface TargetHeadingOffset
     {
@@ -123,7 +118,9 @@ public class TrcPurePursuitDrive
 
     private double moveOutputLimit = Double.POSITIVE_INFINITY;
     private double rotOutputLimit = Double.POSITIVE_INFINITY;
-    private WaypointEventHandler waypointEventHandler = null;
+    private TrcEvent.Callback waypointCallback = null;
+    private TrcEvent waypointEvent = null;
+    private WaypointContext waypointContext = null;
     private InterpolationType interpolationType = InterpolationType.LINEAR;
     private volatile boolean incrementalTurn;
     private TargetHeadingOffset targetHeadingOffset = null;
@@ -665,6 +662,36 @@ public class TrcPurePursuitDrive
     }   //getPathRobotVelocity
 
     /**
+     * This method performs the waypoint callback when crossing a waypoint or reaching the end of the path.
+     *
+     * @param index specifies the index of the waypoint in the path, -1 if the path is completed or canceled.
+     * @param waypoint specifies the current target waypoint, null if the path is completed or canceled.
+     */
+    private void performWaypointCallback(int index, TrcWaypoint waypoint)
+    {
+        if (waypointEvent != null)
+        {
+            waypointContext.index = index;
+            waypointContext.waypoint = waypoint;
+            waypointEvent.setCallback(waypointCallback, waypointContext);
+            waypointEvent.signal();
+        }
+    }   //performWaypointCallback
+
+    /**
+     * This method clears the waypoint callback and related event and context.
+     */
+    private void clearWaypointCallback()
+    {
+        if (waypointCallback != null)
+        {
+            waypointCallback = null;
+            waypointEvent = null;
+            waypointContext = null;
+        }
+    }   //clearWaypointCallback
+
+    /**
      * Start following the supplied path using a pure pursuit controller. The velocity must always be positive, and
      * the path must start at (0,0). Heading is absolute and position is relative in the starting robot reference frame.
      *
@@ -679,7 +706,7 @@ public class TrcPurePursuitDrive
      */
     public synchronized void start(
         String owner, TrcEvent event, double timeout, Double maxVel, Double maxAccel, Double maxDecel,
-        WaypointEventHandler waypointCallback, TrcPath path)
+        TrcEvent.Callback waypointCallback, TrcPath path)
     {
         if (path == null || path.getSize() == 0)
         {
@@ -701,7 +728,12 @@ public class TrcPurePursuitDrive
             {
                 onFinishedEvent.clear();
             }
-            this.waypointEventHandler = waypointCallback;
+            this.waypointCallback = waypointCallback;
+            if (waypointCallback != null)
+            {
+                this.waypointEvent = new TrcEvent(instanceName + ".waypointEvent");
+                this.waypointContext = new WaypointContext();
+            }
             // Label waypoints with corresponding path indexes.
             TrcWaypoint[] waypoints = path.getAllWaypoints();
             for (int i = 0; i < waypoints.length; i++)
@@ -748,11 +780,7 @@ public class TrcPurePursuitDrive
             turnPidCtrl.startStallDetection();
             velPidCtrl.reset();
             this.path = newPath;
-            if (waypointEventHandler != null)
-            {
-                // Do waypoint callback for the start waypoint.
-                waypointEventHandler.waypointEvent(0, null);
-            }
+            performWaypointCallback(0, null);
             driveTaskObj.registerTask(TrcTaskMgr.TaskType.POST_PERIODIC_TASK);
             tracer.traceInfo(instanceName, "Path=" + newPath.toAbsolute(referencePose));
         }
@@ -772,7 +800,7 @@ public class TrcPurePursuitDrive
      */
     public void start(
         TrcEvent event, double timeout, Double maxVel, Double maxAccel, Double maxDecel,
-        WaypointEventHandler waypointCallback, TrcPath path)
+        TrcEvent.Callback waypointCallback, TrcPath path)
     {
         start(null, event, timeout, maxVel, maxAccel, maxDecel, waypointCallback, path);
     }   //start
@@ -789,7 +817,7 @@ public class TrcPurePursuitDrive
      * @param path The path to follow. Must start at (0,0).
      */
     public void start(
-        TrcEvent event, Double maxVel, Double maxAccel, Double maxDecel, WaypointEventHandler waypointCallback,
+        TrcEvent event, Double maxVel, Double maxAccel, Double maxDecel, TrcEvent.Callback  waypointCallback,
         TrcPath path)
     {
         start(null, event, 0.0, maxVel, maxAccel, maxDecel, waypointCallback, path);
@@ -806,7 +834,7 @@ public class TrcPurePursuitDrive
      * @param path The path to follow. Must start at (0,0).
      */
     public void start(
-        Double maxVel, Double maxAccel, Double maxDecel, WaypointEventHandler waypointCallback, TrcPath path)
+        Double maxVel, Double maxAccel, Double maxDecel, TrcEvent.Callback  waypointCallback, TrcPath path)
     {
         start(null, null, 0.0, maxVel, maxAccel, maxDecel, waypointCallback, path);
     }   //start
@@ -877,7 +905,7 @@ public class TrcPurePursuitDrive
      */
     public void start(
         String owner, TrcEvent event, double timeout, boolean incrementalPath, Double maxVel, Double maxAccel,
-        Double maxDecel, WaypointEventHandler waypointCallback, TrcPose2D... poses)
+        Double maxDecel, TrcEvent.Callback  waypointCallback, TrcPose2D... poses)
     {
         TrcPathBuilder pathBuilder = new TrcPathBuilder(driveBase.getFieldPosition(), incrementalPath);
 
@@ -904,7 +932,7 @@ public class TrcPurePursuitDrive
      */
     public void start(
         TrcEvent event, double timeout, boolean incrementalPath, Double maxVel, Double maxAccel, Double maxDecel,
-        WaypointEventHandler waypointCallback, TrcPose2D... poses)
+        TrcEvent.Callback  waypointCallback, TrcPose2D... poses)
     {
         start(null, event, timeout, incrementalPath, maxVel, maxAccel, maxDecel, waypointCallback, poses);
     }   //start
@@ -926,7 +954,7 @@ public class TrcPurePursuitDrive
      */
     public void start(
         TrcEvent event, double timeout, boolean incrementalPath, Double maxVel, Double maxAccel, Double maxDecel,
-        WaypointEventHandler waypointCallback, String path, boolean loadFromResources)
+        TrcEvent.Callback  waypointCallback, String path, boolean loadFromResources)
     {
         start(null, event, timeout, incrementalPath, maxVel, maxAccel, maxDecel, waypointCallback,
               TrcPose2D.loadPosesFromCsv(path, loadFromResources));
@@ -946,7 +974,7 @@ public class TrcPurePursuitDrive
      */
     public void start(
         TrcEvent event, boolean incrementalPath, Double maxVel, Double maxAccel, Double maxDecel,
-        WaypointEventHandler waypointCallback, TrcPose2D... poses)
+        TrcEvent.Callback  waypointCallback, TrcPose2D... poses)
     {
         start(null, event, 0.0, incrementalPath, maxVel, maxAccel, maxDecel, waypointCallback, poses);
     }   //start
@@ -964,7 +992,7 @@ public class TrcPurePursuitDrive
      */
     public void start(
         boolean incrementalPath, Double maxVel, Double maxAccel, Double maxDecel,
-        WaypointEventHandler waypointCallback, TrcPose2D... poses)
+        TrcEvent.Callback  waypointCallback, TrcPose2D... poses)
     {
         start(null, null, 0.0, incrementalPath, maxVel, maxAccel, maxDecel, waypointCallback, poses);
     }   //start
@@ -981,7 +1009,7 @@ public class TrcPurePursuitDrive
      * @param poses specifies an array of waypoint poses in the drive path.
      */
     public void start(
-        String owner, TrcEvent event, double timeout, boolean incrementalPath, WaypointEventHandler waypointCallback,
+        String owner, TrcEvent event, double timeout, boolean incrementalPath, TrcEvent.Callback waypointCallback,
         TrcPose2D... poses)
     {
         start(owner, event, timeout, incrementalPath, maxVelocity, maxAcceleration, maxDeceleration, waypointCallback,
@@ -999,7 +1027,7 @@ public class TrcPurePursuitDrive
      * @param poses specifies an array of waypoint poses in the drive path.
      */
     public void start(
-        TrcEvent event, double timeout, boolean incrementalPath, WaypointEventHandler waypointCallback,
+        TrcEvent event, double timeout, boolean incrementalPath, TrcEvent.Callback waypointCallback,
         TrcPose2D... poses)
     {
         start(null, event, timeout, incrementalPath, maxVelocity, maxAcceleration, maxDeceleration, waypointCallback,
@@ -1016,7 +1044,7 @@ public class TrcPurePursuitDrive
      * @param poses specifies an array of waypoint poses in the drive path.
      */
     public void start(
-        TrcEvent event, boolean incrementalPath, WaypointEventHandler waypointCallback, TrcPose2D... poses)
+        TrcEvent event, boolean incrementalPath, TrcEvent.Callback  waypointCallback, TrcPose2D... poses)
     {
         start(null, event, 0.0, incrementalPath, maxVelocity, maxAcceleration, maxDeceleration, waypointCallback,
               poses);
@@ -1030,7 +1058,7 @@ public class TrcPurePursuitDrive
      * @param waypointCallback specifies the method to call when reaching a waypoint, can be null if not provided.
      * @param poses specifies an array of waypoint poses in the drive path.
      */
-    public void start(boolean incrementalPath, WaypointEventHandler waypointCallback, TrcPose2D... poses)
+    public void start(boolean incrementalPath, TrcEvent.Callback  waypointCallback, TrcPose2D... poses)
     {
         start(null, null, 0.0, incrementalPath, maxVelocity, maxAcceleration, maxDeceleration, waypointCallback,
               poses);
@@ -1066,10 +1094,10 @@ public class TrcPurePursuitDrive
             //
             // Either the path is done or canceled, call the event handler one last time with index -1 and be done.
             //
-            if (waypointEventHandler != null)
+            if (waypointCallback != null)
             {
-                waypointEventHandler.waypointEvent(-1, null);
-                waypointEventHandler = null;
+                performWaypointCallback(-1, null);
+                clearWaypointCallback();
             }
         }
     }   //cancel
@@ -1208,11 +1236,11 @@ public class TrcPurePursuitDrive
                 }
 
                 stop();
-                if (waypointEventHandler != null)
+                if (waypointCallback != null)
                 {
                     // Do waypoint callback for the end point.
-                    waypointEventHandler.waypointEvent(-1, targetPoint);
-                    waypointEventHandler = null;
+                    performWaypointCallback(-1, targetPoint);
+                    clearWaypointCallback();
                 }
 
                 if (onFinishedEvent != null)
@@ -1612,9 +1640,9 @@ public class TrcPurePursuitDrive
                 if (pathIndex != i)
                 {
                     // We are moving to the next waypoint.
-                    if (waypointEventHandler != null && segmentStart.index != -1)
+                    if (waypointCallback != null && segmentStart.index != -1)
                     {
-                        waypointEventHandler.waypointEvent(segmentStart.index, segmentStart);
+                        performWaypointCallback(segmentStart.index, segmentStart);
                     }
                 }
                 tracer.traceDebug(
