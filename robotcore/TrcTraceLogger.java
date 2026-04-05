@@ -90,9 +90,7 @@ public class TrcTraceLogger
      */
     public synchronized void closeLogger(String newName)
     {
-        // If the new log name is the same as the current log name, we don't need to rename it.
-        this.newLogName = newName != null && !traceLogName.equals(newName)?
-            traceLogName + "!" + newName + ".log": null;
+        this.newLogName = newName != null? newName + ".log": null;
         this.enabled = false;
         this.deleteLog = newName == null;
         loggerThread.interrupt();
@@ -184,7 +182,7 @@ public class TrcTraceLogger
             else if (newLogName != null)
             {
                 Path source = Paths.get(traceLogName);
-                Path target = Paths.get(newLogName);
+                Path target = source.resolveSibling(newLogName);
 
                 try
                 {
