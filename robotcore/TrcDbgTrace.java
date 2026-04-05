@@ -151,25 +151,6 @@ public class TrcDbgTrace
     }   //getGlobalTracer
 
     /**
-     * This method opens a log file for writing all the trace messages to it.
-     *
-     * @param traceLogName specifies the full trace log file path name.
-     * @return true if log file is successfully opened, false if it failed.
-     */
-    private static boolean openTraceLog(String traceLogName)
-    {
-        boolean success = false;
-
-        if (traceLogger == null)
-        {
-            traceLogger = new TrcTraceLogger(traceLogName);
-            success = true;
-        }
-
-        return success;
-    }   //openTraceLog
-
-    /**
      * This method opens a log file for writing all the trace messages to it. The log file is written to the specified
      * folder. The file name will be formed by concatenating the date-time stamp with the specified file name.
      *
@@ -196,15 +177,25 @@ public class TrcDbgTrace
         {
             logFileName += "!" + fileName;
         }
-        logFileName += ".log";
 
-        return openTraceLog(logFileName);
+        boolean success = false;
+        if (traceLogger == null)
+        {
+            traceLogger = new TrcTraceLogger(logFileName);
+            success = true;
+        }
+        else
+        {
+            globalTracer.traceErr(moduleName, "Trace log is already opened: " + traceLogger.toString());
+        }
+
+        return success;
     }   //openTraceLog
 
     /**
      * This method closes the trace log file.
      *
-     * @param fileName specifies the filename to rename the log to, can be null if not renaming.
+     * @param fileName specifies the filename to rename the log to, if null deleting the log.
      */
     public static void closeTraceLog(String fileName)
     {

@@ -44,6 +44,7 @@ public class TrcTraceLogger
     private volatile Thread loggerThread = null;
     private volatile boolean enabled = false;
     private String newLogName = null;
+    private boolean deleteLog = false;
     private double totalNanoTime = 0.0;
     private int totalMessages = 0;
 
@@ -85,13 +86,15 @@ public class TrcTraceLogger
     /**
      * This method closes the trace logger and renames the log file.
      *
-     * @param newLogName specifies the new log file name. If provided, the log file will be renamed to the new name.
+     * @param newName specifies the filename to rename the log to, delete the log if null.
      */
-    public synchronized void closeLogger(String newLogName)
+    public synchronized void closeLogger(String newName)
     {
         // If the new log name is the same as the current log name, we don't need to rename it.
-        this.newLogName = !traceLogName.equals(newLogName)? newLogName: null;
+        this.newLogName = newName != null && !traceLogName.equals(newName)?
+            traceLogName + "!" + newName + ".log": null;
         this.enabled = false;
+        this.deleteLog = newName == null;
         loggerThread.interrupt();
     }   //closeLogger
 
@@ -165,7 +168,20 @@ public class TrcTraceLogger
         {
             traceLog.close();
             traceLog = null;
-            if (newLogName != null)
+            if (deleteLog)
+            {
+                Path logFile = Paths.get(traceLogName);
+                try
+                {
+                    Files.deleteIfExists(logFile);
+                }
+                catch (IOException e)
+                {
+                    tracer.traceErr(traceLogName, "Failed to delete log file " + traceLogName);
+                }
+                deleteLog = false;
+            }
+            else if (newLogName != null)
             {
                 Path source = Paths.get(traceLogName);
                 Path target = Paths.get(newLogName);
@@ -176,7 +192,8 @@ public class TrcTraceLogger
                 }
                 catch (IOException e)
                 {
-                    e.printStackTrace();
+                    tracer.traceErr(
+                        traceLogName, "Failed to rename log file from " + traceLogName + " to " + newLogName);
                 }
             }
         }
