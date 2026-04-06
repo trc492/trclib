@@ -176,4 +176,79 @@ public class TrcColor
         return new double[] {hue, sat, value};
      }  //rgbToHsv
 
+    /**
+     * This method translates HSV color values into RGB.
+     *
+     * @param hsv specifies HSV values where hue is [0.0, 360.0], saturation/value are [0.0, 1.0].
+     * @return normalized RGB values (0.0-1.0).
+     */
+    public static double[] hsvToRgb(double ... hsv)
+    {
+        double hue = hsv.length > 0? hsv[0]: 0.0;
+        double sat = hsv.length > 1? hsv[1]: 0.0;
+        double value = hsv.length > 2? hsv[2]: 0.0;
+        double red;
+        double green;
+        double blue;
+
+        hue = TrcUtil.modulo(hue, 360.0);
+        sat = TrcUtil.clipRange(sat, 0.0, 1.0);
+        value = TrcUtil.clipRange(value, 0.0, 1.0);
+
+        if (sat == 0.0)
+        {
+            red = green = blue = value;
+        }
+        else
+        {
+            double sector = hue/60.0;
+            int sectorIndex = (int) Math.floor(sector);
+            double fraction = sector - sectorIndex;
+            double p = value*(1.0 - sat);
+            double q = value*(1.0 - sat*fraction);
+            double t = value*(1.0 - sat*(1.0 - fraction));
+
+            switch (sectorIndex)
+            {
+                case 0:
+                    red = value;
+                    green = t;
+                    blue = p;
+                    break;
+
+                case 1:
+                    red = q;
+                    green = value;
+                    blue = p;
+                    break;
+
+                case 2:
+                    red = p;
+                    green = value;
+                    blue = t;
+                    break;
+
+                case 3:
+                    red = p;
+                    green = q;
+                    blue = value;
+                    break;
+
+                case 4:
+                    red = t;
+                    green = p;
+                    blue = value;
+                    break;
+
+                default:
+                    red = value;
+                    green = p;
+                    blue = q;
+                    break;
+            }
+        }
+
+        return new double[] {red, green, blue};
+    }   //hsvToRgb
+
 }   //class TrcColor
