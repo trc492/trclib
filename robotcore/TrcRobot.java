@@ -107,13 +107,15 @@ public class TrcRobot
     public interface RobotCommand
     {
         /**
-         * This method is call periodically to perform the robot command. Typically, it is implemented by using
-         * a state machine.
-         *
-         * @param elapsedTime specifies the elapsed time of the period in seconds.
-         * @return true if the command is done, false otherwise.
+         * This method starts the RobotCommand. It is called to set the state to start from the beginning. Typically,
+         * you will reset the state machine to the initial state and reset any timers used by the command.
          */
-        boolean cmdPeriodic(double elapsedTime);
+        void start();
+
+        /**
+         * This method is called to cancel the RobotCommand prematurely.
+         */
+        void cancel();
 
         /**
          * This method checks if the current RobotCommand is running.
@@ -123,9 +125,13 @@ public class TrcRobot
         boolean isActive();
 
         /**
-         * This method is called to cancel the RobotCommand prematurely.
+         * This method is call periodically to perform the robot command. Typically, it is implemented by using
+         * a state machine.
+         *
+         * @param elapsedTime specifies the elapsed time of the period in seconds.
+         * @return true if the command is done, false otherwise.
          */
-        void cancel();
+        boolean cmdPeriodic(double elapsedTime);
 
     }   //interface RobotCommand
 
