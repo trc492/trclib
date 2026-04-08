@@ -126,7 +126,7 @@ public class CmdPidDrive implements TrcRobot.RobotCommand
      *        tune mode.
      * @param pathPoints specifies one or more points on the path.
      */
-    public void start(
+    public void startPath(
         double delay, double drivePowerLimit, TrcPidController.PidCoefficients tunePidCoeff, TrcPose2D... pathPoints)
     {
         if (pathPoints.length == 0)
@@ -168,21 +168,20 @@ public class CmdPidDrive implements TrcRobot.RobotCommand
         }
 
         sm.start(State.DO_DELAY);
-    }   //start
+    }   //startPath
 
     //
     // Implements the TrcRobot.RobotCommand interface.
     //
 
     /**
-     * This method checks if the current RobotCommand  is running.
-     *
-     * @return true if the command is running, false otherwise.
+     * This method starts the RobotCommand. It is called to set the state to start from the beginning. Typically,
+     * you will reset the state machine to the initial state and reset any timers used by the command.
      */
-    public boolean isActive()
+    @Override
+    public void start()
     {
-        return sm.isEnabled();
-    }   //isActive
+    }   //start
 
     /**
      * This method cancels the command if it is active.
@@ -220,6 +219,16 @@ public class CmdPidDrive implements TrcRobot.RobotCommand
         tunePidCtrl = null;
         sm.stop();
     }   //cancel
+
+    /**
+     * This method checks if the current RobotCommand  is running.
+     *
+     * @return true if the command is running, false otherwise.
+     */
+    public boolean isActive()
+    {
+        return sm.isEnabled();
+    }   //isActive
 
     /**
      * This method must be called periodically by the caller to drive the command sequence forward.

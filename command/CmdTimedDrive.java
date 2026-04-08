@@ -83,12 +83,31 @@ public class CmdTimedDrive implements TrcRobot.RobotCommand
         event = new TrcEvent(moduleName);
         timer = new TrcTimer(moduleName);
         sm = new TrcStateMachine<>(moduleName);
-        sm.start(State.DO_DELAY);
     }   //CmdTimedDrive
 
     //
     // Implements the TrcRobot.AutoStrategy interface.
     //
+
+    /**
+     * This method starts the RobotCommand. It is called to set the state to start from the beginning. Typically,
+     * you will reset the state machine to the initial state and reset any timers used by the command.
+     */
+    @Override
+    public void start()
+    {
+        sm.start(State.DO_DELAY);
+    }   //start
+
+    /**
+     * This method cancels the command if it is active.
+     */
+    @Override
+    public void cancel()
+    {
+        driveBase.stop();
+        sm.stop();
+    }   //cancel
 
     /**
      * This method checks if the current RobotCommand  is running.
@@ -100,16 +119,6 @@ public class CmdTimedDrive implements TrcRobot.RobotCommand
     {
         return sm.isEnabled();
     }   //isActive
-
-    /**
-     * This method cancels the command if it is active.
-     */
-    @Override
-    public void cancel()
-    {
-        driveBase.stop();
-        sm.stop();
-    }   //cancel
 
     /**
      * This method must be called periodically by the caller to drive the command sequence forward.
