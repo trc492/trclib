@@ -87,7 +87,7 @@ public class TrcTriggerThresholdZones implements TrcTrigger
         @Override
         public String toString()
         {
-            return String.format(Locale.US, "(value-%f,prevZone=%d,currZone=%d)", sensorValue, prevZone, currZone);
+            return String.format(Locale.US, "(value=%f,prevZone=%d,currZone=%d)", sensorValue, prevZone, currZone);
         }   //toString
 
     }   //class CallbackContext
