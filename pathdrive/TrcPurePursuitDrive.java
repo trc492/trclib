@@ -781,7 +781,8 @@ public class TrcPurePursuitDrive
             velPidCtrl.reset();
             this.path = newPath;
             performWaypointCallback(0, null);
-            driveTaskObj.registerTask(TrcTaskMgr.TaskType.POST_PERIODIC_TASK);
+            // driveTaskObj.registerTask(TrcTaskMgr.TaskType.POST_PERIODIC_TASK);
+            driveTaskObj.registerTask(TrcTaskMgr.TaskType.OUTPUT_TASK);
             tracer.traceInfo(instanceName, "Path=" + newPath.toAbsolute(referencePose));
         }
     }   //start
