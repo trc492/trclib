@@ -22,6 +22,8 @@
 
 package trclib.pathdrive;
 
+import java.util.Arrays;
+
 import org.apache.commons.math3.linear.RealVector;
 
 import trclib.controller.TrcPidController;
@@ -692,27 +694,70 @@ public class TrcPurePursuitDrive
     }   //clearWaypointCallback
 
     /**
-     * Start following the supplied path using a pure pursuit controller. The velocity must always be positive, and
-     * the path must start at (0,0). Heading is absolute and position is relative in the starting robot reference frame.
+     * This method prepares the path for following. It applies motion profile if the parameters are provided, and
+     * labels the waypoints with corresponding path indexes. For non-holonomic drive base, it also computes the
+     * heading for each waypoint based on the relative angle from the start point to the end point of each path
+     * segment, since the robot heading must be pointing to the endpoint of the line segment. Note that the provided
+     * path is not modified. A new path is created if motion profile is applied or the drive base is non-holonomic.
+     * Otherwise, the provided path is returned as is.
      *
-     * @param owner specifies the ID string of the caller requesting exclusive access.
-     * @param event When finished, signal this event.
-     * @param timeout Number of seconds after which to cancel this operation. 0.0 for no timeout.
      * @param maxVel specifies the maximum velocity if applying trapezoid velocity profile, null if not.
      * @param maxAccel specifies the maximum acceleration if applying trapezoid velocity profile, null if not.
      * @param maxDecel specifies the maximum deceleration if applying trapezoid velocity profile, null if not.
-     * @param waypointCallback specifies the method to call when reaching a waypoint, can be null if not provided.
      * @param path The path to follow. Must start at (0,0).
+     * @return the prepared path ready for following.
      */
-    public synchronized void start(
-        String owner, TrcEvent event, double timeout, Double maxVel, Double maxAccel, Double maxDecel,
-        TrcEvent.Callback waypointCallback, TrcPath path)
+    public synchronized TrcPath preparePath(Double maxVel, Double maxAccel, Double maxDecel, TrcPath path)
     {
         if (path == null || path.getSize() == 0)
         {
             throw new IllegalArgumentException("Path cannot be null or empty!");
         }
 
+        // Label waypoints with corresponding path indexes.
+        TrcWaypoint[] waypoints = path.getAllWaypoints();
+        for (int i = 0; i < waypoints.length; i++)
+        {
+            waypoints[i].index = i;
+        }
+
+        TrcPath newPath =
+            maxVel != null && maxAccel != null && maxDecel != null?
+                path.trapezoidVelocity(maxVel, maxAccel, maxDecel): path;
+
+        if (xPosPidCtrl == null)
+        {
+            //
+            // For non-holonomic drive base, the robot heading must be pointing to the endpoint of the line segment.
+            // So, we must ignore the provided startpoint heading and compute our own based on the startpoint heading
+            // and the relative angle of the startpoint from the endpoint.
+            //
+            for (int i = 0; i < newPath.getSize() - 1; i++)
+            {
+                TrcWaypoint startPoint = newPath.getWaypoint(i);
+                TrcWaypoint endPoint = newPath.getWaypoint(i + 1);
+                startPoint.pose.angle = Math.toDegrees(Math.atan2(endPoint.pose.x - startPoint.pose.x,
+                                                                    endPoint.pose.y - startPoint.pose.y));
+            }
+        }
+
+        tracer.traceInfo(instanceName, "Path=" + newPath.toAbsolute(referencePose));
+        return newPath;
+    }   //preparePath
+
+    /**
+     * Start following the supplied path using a pure pursuit controller. The velocity must always be positive, and
+     * the path must start at (0,0). Heading is absolute and position is relative in the starting robot reference frame.
+     *
+     * @param owner specifies the ID string of the caller requesting exclusive access.
+     * @param event When finished, signal this event.
+     * @param timeout Number of seconds after which to cancel this operation. 0.0 for no timeout.
+     * @param waypointCallback specifies the method to call when reaching a waypoint, can be null if not provided.
+     * @param path The prepared path to follow. Must start at (0,0).
+     */
+    public synchronized void start(
+        String owner, TrcEvent event, double timeout, TrcEvent.Callback waypointCallback, TrcPath path)
+    {
         if (driveBase.validateOwnership(owner))
         {
             if (isActive())
@@ -734,16 +779,91 @@ public class TrcPurePursuitDrive
                 this.waypointEvent = new TrcEvent(instanceName + ".waypointEvent");
                 this.waypointContext = new WaypointContext();
             }
+
+            double currTime = TrcTimer.getCurrentTime();
+            timedOutTime = timeout == 0.0 ? Double.POSITIVE_INFINITY : currTime + timeout;
+
+            referencePose = driveBase.getFieldPosition();
+            pathIndex = 1;
+            targetVelocity = null;
+            nearStartPath = true;
+            nearEndPath = false;
+
+            if (xPosPidCtrl != null)
+            {
+                xPosPidCtrl.reset();
+                xPosPidCtrl.startStallDetection();
+            }
+            yPosPidCtrl.reset();
+            yPosPidCtrl.startStallDetection();
+            turnPidCtrl.reset();
+            turnPidCtrl.startStallDetection();
+            velPidCtrl.reset();
+            this.path = path;
+            performWaypointCallback(0, null);
+            // driveTaskObj.registerTask(TrcTaskMgr.TaskType.POST_PERIODIC_TASK);
+            driveTaskObj.registerTask(TrcTaskMgr.TaskType.OUTPUT_TASK);
+        }
+    }   //start
+
+    /**
+     * Start following the supplied path using a pure pursuit controller. The velocity must always be positive, and
+     * the path must start at (0,0). Heading is absolute and position is relative in the starting robot reference frame.
+     *
+     * @param owner specifies the ID string of the caller requesting exclusive access.
+     * @param event When finished, signal this event.
+     * @param timeout Number of seconds after which to cancel this operation. 0.0 for no timeout.
+     * @param maxVel specifies the maximum velocity if applying trapezoid velocity profile, null if not.
+     * @param maxAccel specifies the maximum acceleration if applying trapezoid velocity profile, null if not.
+     * @param maxDecel specifies the maximum deceleration if applying trapezoid velocity profile, null if not.
+     * @param waypointCallback specifies the method to call when reaching a waypoint, can be null if not provided.
+     * @param path The path to follow. Must start at (0,0).
+     */
+    public synchronized void start(
+        String owner, TrcEvent event, double timeout, Double maxVel, Double maxAccel, Double maxDecel,
+        TrcEvent.Callback waypointCallback, TrcPath path)
+    {
+double[] timestamps = new double[6];
+        if (path == null || path.getSize() == 0)
+        {
+            throw new IllegalArgumentException("Path cannot be null or empty!");
+        }
+
+        if (driveBase.validateOwnership(owner))
+        {
+timestamps[0] = TrcTimer.getModeElapsedTime();
+            if (isActive())
+            {
+                // We successfully validated the ownership but PudrivrePursuit was active. It means somebody was doing
+                // PurePursuitDrive with no ownership. Let's cancel it before we take over.
+                cancel();
+            }
+timestamps[1] = TrcTimer.getModeElapsedTime();
+
+            this.owner = owner;
+            this.onFinishedEvent = event;
+            if (onFinishedEvent != null)
+            {
+                onFinishedEvent.clear();
+            }
+            this.waypointCallback = waypointCallback;
+            if (waypointCallback != null)
+            {
+                this.waypointEvent = new TrcEvent(instanceName + ".waypointEvent");
+                this.waypointContext = new WaypointContext();
+            }
             // Label waypoints with corresponding path indexes.
             TrcWaypoint[] waypoints = path.getAllWaypoints();
             for (int i = 0; i < waypoints.length; i++)
             {
                 waypoints[i].index = i;
             }
+timestamps[2] = TrcTimer.getModeElapsedTime();
 
             TrcPath newPath =
                 maxVel != null && maxAccel != null && maxDecel != null?
                     path.trapezoidVelocity(maxVel, maxAccel, maxDecel): path;
+timestamps[3] = TrcTimer.getModeElapsedTime();
 
             double currTime = TrcTimer.getCurrentTime();
             timedOutTime = timeout == 0.0 ? Double.POSITIVE_INFINITY : currTime + timeout;
@@ -780,10 +900,13 @@ public class TrcPurePursuitDrive
             turnPidCtrl.startStallDetection();
             velPidCtrl.reset();
             this.path = newPath;
+timestamps[4] = TrcTimer.getModeElapsedTime();
             performWaypointCallback(0, null);
+timestamps[5] = TrcTimer.getModeElapsedTime();
             // driveTaskObj.registerTask(TrcTaskMgr.TaskType.POST_PERIODIC_TASK);
             driveTaskObj.registerTask(TrcTaskMgr.TaskType.OUTPUT_TASK);
-            tracer.traceInfo(instanceName, "Path=" + newPath.toAbsolute(referencePose));
+            // tracer.traceInfo(instanceName, "Path=" + newPath.toAbsolute(referencePose));
+tracer.traceErr(instanceName, "ppStartTimestamps=" + Arrays.toString(timestamps));
         }
     }   //start
 
