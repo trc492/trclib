@@ -22,7 +22,6 @@
 
 package trclib.subsystem;
 
-import java.util.Arrays;
 import java.util.concurrent.atomic.AtomicReference;
 
 import trclib.dataprocessor.TrcUtil;
@@ -387,12 +386,9 @@ public class TrcShooter implements TrcExclusiveSubsystem
      */
     private void goalTrackingTask(TrcTaskMgr.TaskType taskType, TrcRobot.RunMode runMode, boolean slowPeriodicLoop)
     {
-double[] timestamps = new double[3];
         // If goalTrackingTask is running, aimInfoSource should not be null.
-timestamps[0] = TrcTimer.getModeElapsedTime();
         GoalTrackingParams trackingParams = goalTrackingParams.get();
         AimInfo aimInfo = aimInfoSource.getAimInfo();
-timestamps[1] = TrcTimer.getModeElapsedTime();
 
         if (aimInfo != null)
         {
@@ -401,19 +397,16 @@ timestamps[1] = TrcTimer.getModeElapsedTime();
             {
                 setShooterMotorRPM(aimInfo.flywheel1RPM, aimInfo.flywheel2RPM);
             }
-timestamps[2] = TrcTimer.getModeElapsedTime();
 
             if (trackingParams.trackTiltPos && aimInfo.tiltAngle != null)
             {
                 setTiltAngle(aimInfo.tiltAngle);
             }
-timestamps[3] = TrcTimer.getModeElapsedTime();
 
             if (trackingParams.trackPanPos && aimInfo.panAngle != null)
             {
                 setPanAngle(aimInfo.panAngle);
             }
-timestamps[4] = TrcTimer.getModeElapsedTime();
         }
 
         synchronized (shooterState)
@@ -442,8 +435,6 @@ timestamps[4] = TrcTimer.getModeElapsedTime();
                 }
             }
         }
-timestamps[5] = TrcTimer.getModeElapsedTime();
-tracer.traceErr(instanceName, "GoalTrackingTaskTimestamps=" + Arrays.toString(timestamps));
     }   //goalTrackingTask
 
     /**
@@ -464,20 +455,15 @@ tracer.traceErr(instanceName, "GoalTrackingTaskTimestamps=" + Arrays.toString(ti
      */
     public void enableGoalTracking(GoalTrackingParams trackingParams, AimInfoSource aimInfoSource)
     {
-double[] timestamps = new double[3];
         tracer.traceInfo(instanceName, "Enable GoalTracking (trackingParams=%s).", trackingParams);
         // Cancel previous operation if any.
-timestamps[0] = TrcTimer.getModeElapsedTime();
         finish(false);
-timestamps[1] = TrcTimer.getModeElapsedTime();
         this.aimInfoSource = aimInfoSource;
         if (goalTrackingParams.getAndSet(trackingParams) == null)
         {
             // Tracking task was not enabled, enable it now.
             goalTrackingTaskObj.registerTask(TrcTaskMgr.TaskType.POST_PERIODIC_TASK);
         }
-timestamps[2] = TrcTimer.getModeElapsedTime();
-tracer.traceErr(instanceName, "EnableGoalTrackingTimestamps=" + Arrays.toString(timestamps));
     }   //enableGoalTracking
 
     /**
