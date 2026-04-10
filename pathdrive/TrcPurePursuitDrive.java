@@ -906,7 +906,7 @@ timestamps[5] = TrcTimer.getModeElapsedTime();
             // driveTaskObj.registerTask(TrcTaskMgr.TaskType.POST_PERIODIC_TASK);
             driveTaskObj.registerTask(TrcTaskMgr.TaskType.OUTPUT_TASK);
             // tracer.traceDebug(instanceName, "Path=" + newPath.toAbsolute(referencePose));
-tracer.traceErr(instanceName, "ppStartTimestamps=" + Arrays.toString(timestamps));
+tracer.traceInfo(instanceName, "ppStartTimestamps=" + Arrays.toString(timestamps));
         }
     }   //start
 
@@ -1031,14 +1031,19 @@ tracer.traceErr(instanceName, "ppStartTimestamps=" + Arrays.toString(timestamps)
         String owner, TrcEvent event, double timeout, boolean incrementalPath, Double maxVel, Double maxAccel,
         Double maxDecel, TrcEvent.Callback  waypointCallback, TrcPose2D... poses)
     {
+double[] timestamps = new double[3];
+timestamps[0] = TrcTimer.getModeElapsedTime();
         TrcPathBuilder pathBuilder = new TrcPathBuilder(driveBase.getFieldPosition(), incrementalPath);
 
+timestamps[1] = TrcTimer.getModeElapsedTime();
         for (TrcPose2D pose: poses)
         {
             pathBuilder.append(pose);
         }
+timestamps[2] = TrcTimer.getModeElapsedTime();
 
         start(owner, event, timeout, maxVel, maxAccel, maxDecel, waypointCallback, pathBuilder.toRelativeStartPath());
+tracer.traceInfo(instanceName, "ppStartBuildPathTimestamp=" + Arrays.toString(timestamps));
     }   //start
 
     /**
