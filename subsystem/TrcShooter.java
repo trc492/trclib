@@ -387,7 +387,7 @@ public class TrcShooter implements TrcExclusiveSubsystem
      */
     private void goalTrackingTask(TrcTaskMgr.TaskType taskType, TrcRobot.RunMode runMode, boolean slowPeriodicLoop)
     {
-double[] timestamps = new double[3];
+double[] timestamps = new double[6];
         // If goalTrackingTask is running, aimInfoSource should not be null.
 timestamps[0] = TrcTimer.getModeElapsedTime();
         GoalTrackingParams trackingParams = goalTrackingParams.get();
