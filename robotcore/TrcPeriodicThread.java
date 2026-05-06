@@ -332,7 +332,7 @@ public class TrcPeriodicThread<T>
         tracer.traceDebug(
             instanceName,
             "Thread " + numThreads +
-            ": tid=" + thread.getId() +
+            ": tid=" + thread.threadId() +
             ", priority=" + thread.getPriority() +
             ", group=" + thread.getThreadGroup());
         // Do not create a watchdog for the Watchdog Manager task.
