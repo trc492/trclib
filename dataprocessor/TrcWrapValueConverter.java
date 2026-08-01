@@ -100,7 +100,9 @@ public class TrcWrapValueConverter
         if (!this.enabled && enabled)
         {
             resetConverter();
-            converterTaskObj.registerTask(TrcTaskMgr.TaskType.INPUT_TASK);
+            // We can't afford to miss any crossovers, so we register the task as a standalone task which runs in its
+            // own thread and is not dependent on whether the other threads may get blocked.
+            converterTaskObj.registerTask(TrcTaskMgr.TaskType.STANDALONE_TASK);
         }
         else if (this.enabled && !enabled)
         {
