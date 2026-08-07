@@ -60,7 +60,6 @@ public abstract class TrcAutoTask<T>
      * This methods is called periodically to run the auto task state.
      *
      * @param owner specifies the owner that acquired the subsystem ownerships.
-     * @param params specifies the task parameters.
      * @param state specifies the current state of the task.
      * @param taskType specifies the type of task being run.
      * @param runMode specifies the competition mode (e.g. Autonomous, TeleOp, Test).
@@ -68,8 +67,7 @@ public abstract class TrcAutoTask<T>
      *        false otherwise.
      */
     protected abstract void runTaskState(
-        String owner, Object params, T state, TrcTaskMgr.TaskType taskType, TrcRobot.RunMode runMode,
-        boolean slowPeriodicLoop);
+        String owner, T state, TrcTaskMgr.TaskType taskType, TrcRobot.RunMode runMode, boolean slowPeriodicLoop);
 
     private static final ArrayList<TrcAutoTask<?>> autoTaskList = new ArrayList<>();
     public final TrcDbgTrace tracer;
@@ -79,8 +77,6 @@ public abstract class TrcAutoTask<T>
     protected final TrcStateMachine<T> sm;
     private boolean stateTracingEnabled = true;
     private String currOwner;
-
-    private Object taskParams;
     private TrcEvent completionEvent;
 
     /**
@@ -143,10 +139,9 @@ public abstract class TrcAutoTask<T>
      *
      * @param owner specifies the owner to acquire subsystem ownerships, can be null if not requiring ownership.
      * @param startState specifies the state to start the state machine.
-     * @param taskParams specifies the task parameters, can be null if not provided.
      * @param completionEvent specifies the event to signal when the task is completed, can be null if none provided.
      */
-    protected void startAutoTask(String owner, T startState, Object taskParams, TrcEvent completionEvent)
+    protected void startAutoTask(String owner, T startState, TrcEvent completionEvent)
     {
         boolean acquiredOwnership = owner == null || acquireSubsystemsOwnership(owner);
 
@@ -157,7 +152,6 @@ public abstract class TrcAutoTask<T>
                 tracer.traceInfo(instanceName, "Successfully acquired subsystem ownerships on behalf of " + owner);
             }
             this.currOwner = owner;
-            this.taskParams = taskParams;
             this.completionEvent = completionEvent;
             sm.start(startState);
             setTaskEnabled(true);
@@ -257,7 +251,7 @@ public abstract class TrcAutoTask<T>
             {
                 tracer.tracePreStateInfo(sm.toString(), state);
             }
-            runTaskState(currOwner, taskParams, state, taskType, runMode, slowPeriodicLoop);
+            runTaskState(currOwner, state, taskType, runMode, slowPeriodicLoop);
             if (stateTracingEnabled)
             {
                 tracer.tracePostStateInfo(sm.toString(), state, null);
