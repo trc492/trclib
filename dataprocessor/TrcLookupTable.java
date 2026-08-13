@@ -122,7 +122,7 @@ public class TrcLookupTable
             throw new IllegalArgumentException("An entry with the same name already exist.");
         }
 
-        if (region.polynomialCoeffs.length != outputs.length)
+        if (region.polynomialCoeffs == null || region.polynomialCoeffs.length != outputs.length)
         {
             throw new IllegalArgumentException(
                 "The number of outputs must match the number of polynomial coefficient sets.");
