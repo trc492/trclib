@@ -109,6 +109,17 @@ public class TrcPresets
     }   //nextPresetIndexUp
 
     /**
+     * This method determines the next preset value up from the specified current value.
+     *
+     * @param currValue specifies the current value to check against.
+     * @return next preset value up.
+     */
+    public double nextPresetValueUp(double currValue)
+    {
+        return presets[nextPresetIndexUp(currValue)];
+    }   //nextPresetValueUp
+
+    /**
      * This method determines the next preset index down from the specified current value.
      *
      * @param currValue specifies the current value to check against.
@@ -135,5 +146,16 @@ public class TrcPresets
 
         return index;
     }   //nextPresetIndexDown
+
+    /**
+     * This method determines the next preset value down from the specified current value.
+     *
+     * @param currValue specifies the current value to check against.
+     * @return next preset value down.
+     */
+    public double nextPresetValueDown(double currValue)
+    {
+        return presets[nextPresetIndexDown(currValue)];
+    }   //nextPresetValueDown
 
 }   //class TrcPresets

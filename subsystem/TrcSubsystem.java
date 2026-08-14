@@ -85,13 +85,19 @@ public abstract class TrcSubsystem
 
     /**
      * This method is called to update subsystem parameter to the Dashboard.
+     *
+     * @param subsystemName specifies the name of the subsystem to be updated.
+     * @param nextValueUp specifies true for the next preset target value up, false for next preset target value down,
+     *        null for the current target value.
      */
-    public abstract void updateParamsToDashboard();
+    public abstract void updateParamsToDashboard(String subsystemName, Boolean nextValueUp);
 
     /**
      * This method is called to update subsystem parameters from the Dashboard.
+     *
+     * @param subsystemName specifies the name of the subsystem to be updated.
      */
-    public abstract void updateParamsFromDashboard();
+    public abstract void updateParamsFromDashboard(String subsystemName);
 
     /**
      * Constructor: Creates an instance of the object.
@@ -207,28 +213,6 @@ public abstract class TrcSubsystem
     }   //resetStateAll
 
     /**
-     * This method updates parameters to the Dashboard from all subsystems.
-     */
-    public static void updateSubsystemParamsToDashboard()
-    {
-        for (SubsystemInfo subsystemInfo: subsystemList)
-        {
-            subsystemInfo.subsystem.updateParamsToDashboard();
-        }
-    }   //updateSubsystemParamsToDashboard
-
-    /**
-     * This method updates parameters from the Dashboard to all subsystems.
-     */
-    public static void updateSubsystemParamsFromDashboard()
-    {
-        for (SubsystemInfo subsystemInfo: subsystemList)
-        {
-            subsystemInfo.subsystem.updateParamsFromDashboard();
-        }
-    }   //updateSubsystemParamsFromDashboard
-
-    /**
      * This method enumerates all subsystems and calls their updateStatus method.
      *
      * @param lineNum specifies the starting line number to print the subsystem status.
@@ -244,6 +228,40 @@ public abstract class TrcSubsystem
 
         return lineNum;
     }   //updateStatusAll
+
+    /**
+     * This method updates parameters to the Dashboard from all subsystems.
+     *
+     * @param subsystemName specifies the name of the subsystem to be updated.
+     * @param nextValueUp specifies true for the next preset target value up, false for next preset target value down,
+     *        null for the current target value.
+     */
+    public static void updateSubsystemParamsToDashboard(String subsystemName, Boolean nextValueUp)
+    {
+        if (subsystemName != null && !subsystemName.isEmpty())
+        {
+            for (SubsystemInfo subsystemInfo: subsystemList)
+            {
+                subsystemInfo.subsystem.updateParamsToDashboard(subsystemName, nextValueUp);
+            }
+        }
+    }   //updateSubsystemParamsToDashboard
+
+    /**
+     * This method updates parameters from the Dashboard to all subsystems.
+     *
+     * @param subsystemName specifies the name of the subsystem to be updated.
+     */
+    public static void updateSubsystemParamsFromDashboard(String subsystemName)
+    {
+        if (subsystemName != null && !subsystemName.isEmpty())
+        {
+            for (SubsystemInfo subsystemInfo: subsystemList)
+            {
+                subsystemInfo.subsystem.updateParamsFromDashboard(subsystemName);
+            }
+        }
+    }   //updateSubsystemParamsFromDashboard
 
     /**
      * This method is called when the zero calibration completion event of a subsystem is signaled. If there are

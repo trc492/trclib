@@ -71,7 +71,6 @@ public abstract class TrcMotor implements TrcMotorController, TrcExclusiveSubsys
         public boolean useSoftwarePid = true;
         public boolean enableSquid = false;
         public double pidTarget = 0.0;
-        public double gravityCompPower = 0.0;
 
         /**
          * This method sets the PID Coefficients of the motor. The PID Coefficients could be for position control,
@@ -219,13 +218,10 @@ public abstract class TrcMotor implements TrcMotorController, TrcExclusiveSubsys
          * This method sets parameters related to tuning.
          *
          * @param pidTarget specifies PID control target value.
-         * @param gravityCompPower specifies gravity compensation power.
-         * @return this object for chaining.
          */
-        public PidParams setTuningParams(double pidTarget, double gravityCompPower)
+        public PidParams setTuningParams(double pidTarget)
         {
             this.pidTarget = pidTarget;
-            this.gravityCompPower = gravityCompPower;
             return this;
         }   //setTuningParams
 
@@ -238,8 +234,7 @@ public abstract class TrcMotor implements TrcMotorController, TrcExclusiveSubsys
                    ",pidSettling=" + pidSettling +
                    ",useSoftwarePid=" + useSoftwarePid +
                    ",enableSquid=" + enableSquid +
-                   ",pidTarget=" + pidTarget +
-                   ",gravityCompPower=" + gravityCompPower + ")";
+                   ",pidTarget=" + pidTarget + ")";
         }   //toString
     }   //PidParams
 
@@ -3845,16 +3840,91 @@ public abstract class TrcMotor implements TrcMotorController, TrcExclusiveSubsys
      * @param timeout specifies a timeout value in seconds. If the operation is not completed without the specified
      *                timeout, the operation will be canceled and the event will be signaled. If no timeout is
      *                specified, it should be set to zero.
+     * @return position value set, null if set failed.
      */
-    public void setPresetPosition(
+    public Double setPresetPosition(
         String owner, double delay, int presetIndex, boolean holdTarget, Double powerLimit, TrcEvent event,
         double timeout)
     {
+        Double presetValue = null;
+
         if (!velocityPresets && presets != null && presets.validatePresetIndex(presetIndex))
         {
-            setPosition(owner, delay, presets.getPresetValue(presetIndex), holdTarget, powerLimit, event, timeout);
+            presetValue = presets.getPresetValue(presetIndex);
+            setPosition(owner, delay, presetValue, holdTarget, powerLimit, event, timeout);
         }
+
+        return presetValue;
     }   //setPresetPosition`
+
+    /**
+     * This method sets the motor to the next preset position up or down from the current position.
+     *
+     * @param owner specifies the owner ID that will acquire ownership before setting the preset position and will
+     *        automatically release ownership when the motor movement is completed, can be null if no ownership
+     *        is required.
+     * @param presetUp specifies true to move to next preset up, false to move to next preset down.
+     * @param powerLimit specifies the maximum power limit, can be null if not provided.
+     * @return position value set, null if set failed.
+     */
+    private Double setNextPresetPosition(String owner, boolean presetUp, Double powerLimit)
+    {
+        Double presetValue = null;
+
+        if (presets != null)
+        {
+            double currValue = getPosition();
+            int index = presetUp ? presets.nextPresetIndexUp(currValue) : presets.nextPresetIndexDown(currValue);
+
+            if (index != -1)
+            {
+                presetValue = setPresetPosition(owner, 0.0, index, true, powerLimit, null, 0.0);
+            }
+        }
+
+        return presetValue;
+    }   //setNextPresetPosition
+
+    /**
+     * This method sets the motor to the next preset position up from the current position.
+     *
+     * @param owner specifies the owner ID that will acquire ownership before setting the preset position and will
+     *        automatically release ownership when the motor movement is completed, can be null if no ownership
+     *        is required.
+     * @param powerLimit specifies the maximum power limit, can be null if not provided.
+     * @return position value set, null if set failed.
+     */
+    public Double presetPositionUp(String owner, Double powerLimit)
+    {
+        return setNextPresetPosition(owner, true, powerLimit);
+    }   //presetPositionUp
+
+    /**
+     * This method sets the motor to the next preset position down from the current position.
+     *
+     * @param owner specifies the owner ID that will acquire ownership before setting the preset position and will
+     *        automatically release ownership when the motor movement is completed, can be null if no ownership
+     *        is required.
+     * @param powerLimit specifies the maximum power limit, can be null if not provided.
+     * @return position value set, null if set failed.
+     */
+    public Double presetPositionDown(String owner, Double powerLimit)
+    {
+        return setNextPresetPosition(owner, false, powerLimit);
+    }   //presetPositionDown
+
+    /**
+     * This method returns the next preset position value up/down from the given value.
+     *
+     * @param value specifies the current position value.
+     * @param presetUp specifies true for getting the next value up, false to get the next value down.
+     * @return next preset position value, null if there is no preset position.
+     */
+    public Double getNextPresetPosition(double value, boolean presetUp)
+    {
+        return velocityPresets? null:
+               presetUp? presets.nextPresetValueUp(value): presets.nextPresetValueDown(value);
+    }   //getNextPresetPosition
 
     /**
      * This method sets the motor to the specified preset velocity.
@@ -3865,63 +3935,20 @@ public abstract class TrcMotor implements TrcMotorController, TrcExclusiveSubsys
      * @param duration specifies the duration in seconds to run the motor and turns it off afterwards, 0.0 if not
      *        turning off.
      * @param event specifies the event to signal when target is reached, can be null if not provided.
+     * @return velocity value set, null if set failed.
      */
-    public void setPresetVelocity(String owner, double delay, int presetIndex, double duration, TrcEvent event)
+    public Double setPresetVelocity(String owner, double delay, int presetIndex, double duration, TrcEvent event)
     {
+        Double presetValue = null;
+
         if (velocityPresets && presets != null && presets.validatePresetIndex(presetIndex))
         {
-            setVelocity(owner, delay, presets.getPresetValue(presetIndex), duration, event);
+            presetValue = presets.getPresetValue(presetIndex);
+            setVelocity(owner, delay, presetValue, duration, event);
         }
+
+        return presetValue;
     }   //setPresetVelocity
-
-    /**
-     * This method sets the motor to the next preset position up or down from the current position.
-     *
-     * @param owner specifies the owner ID that will acquire ownership before setting the preset position and will
-     *        automatically release ownership when the motor movement is completed, can be null if no ownership
-     *        is required.
-     * @param presetUp specifies true to move to next preset up, false to move to next preset down.
-     * @param powerLimit specifies the maximum power limit, can be null if not provided.
-     */
-    private void setNextPresetPosition(String owner, boolean presetUp, Double powerLimit)
-    {
-        if (presets != null)
-        {
-            double currValue = getPosition();
-            int index = presetUp ? presets.nextPresetIndexUp(currValue) : presets.nextPresetIndexDown(currValue);
-
-            if (index != -1)
-            {
-                setPresetPosition(owner, 0.0, index, true, powerLimit, null, 0.0);
-            }
-        }
-    }   //setNextPresetPosition
-
-    /**
-     * This method sets the motor to the next preset position up from the current position.
-     *
-     * @param owner specifies the owner ID that will acquire ownership before setting the preset position and will
-     *        automatically release ownership when the motor movement is completed, can be null if no ownership
-     *        is required.
-     * @param powerLimit specifies the maximum power limit, can be null if not provided.
-     */
-    public void presetPositionUp(String owner, Double powerLimit)
-    {
-        setNextPresetPosition(owner, true, powerLimit);
-    }   //presetPositionUp
-
-    /**
-     * This method sets the motor to the next preset position down from the current position.
-     *
-     * @param owner specifies the owner ID that will acquire ownership before setting the preset position and will
-     *        automatically release ownership when the motor movement is completed, can be null if no ownership
-     *        is required.
-     * @param powerLimit specifies the maximum power limit, can be null if not provided.
-     */
-    public void presetPositionDown(String owner, Double powerLimit)
-    {
-        setNextPresetPosition(owner, false, powerLimit);
-    }   //presetPositionDown
 
     /**
      * This method sets the motor to the next preset velocity up or down from the current velocity.
@@ -3930,9 +3957,12 @@ public abstract class TrcMotor implements TrcMotorController, TrcExclusiveSubsys
      *        automatically release ownership when the motor movement is completed, can be null if no ownership
      *        is required.
      * @param presetUp specifies true to move to next preset up, false to move to next preset down.
+     * @return velocity value set, null if set failed.
      */
-    private void setNextPresetVelocity(String owner, boolean presetUp)
+    private Double setNextPresetVelocity(String owner, boolean presetUp)
     {
+        Double presetValue = null;
+
         if (presets != null)
         {
             double currValue = getVelocity();
@@ -3940,9 +3970,11 @@ public abstract class TrcMotor implements TrcMotorController, TrcExclusiveSubsys
 
             if (index != -1)
             {
-                setPresetVelocity(owner, 0.0, index, 0.0, null);
+                presetValue = setPresetVelocity(owner, 0.0, index, 0.0, null);
             }
         }
+
+        return presetValue;
     }   //setNextPresetVelocity
 
     /**
@@ -3951,10 +3983,11 @@ public abstract class TrcMotor implements TrcMotorController, TrcExclusiveSubsys
      * @param owner specifies the owner ID that will acquire ownership before setting the preset position and will
      *        automatically release ownership when the motor movement is completed, can be null if no ownership
      *        is required.
+     * @return velocity value set, null if set failed.
      */
-    public void presetVelocityUp(String owner)
+    public Double presetVelocityUp(String owner)
     {
-        setNextPresetVelocity(owner, true);
+        return setNextPresetVelocity(owner, true);
     }   //presetVelocityUp
 
     /**
@@ -3963,11 +3996,25 @@ public abstract class TrcMotor implements TrcMotorController, TrcExclusiveSubsys
      * @param owner specifies the owner ID that will acquire ownership before setting the preset position and will
      *        automatically release ownership when the motor movement is completed, can be null if no ownership
      *        is required.
+     * @return velocity value set, null if set failed.
      */
-    public void presetVelocityDown(String owner)
+    public Double presetVelocityDown(String owner)
     {
-        setNextPresetVelocity(owner, false);
+        return setNextPresetVelocity(owner, false);
     }   //presetVelocityDown
+
+    /**
+     * This method returns the next preset velocity value up/down from the given value.
+     *
+     * @param value specifies the current velocity value.
+     * @param presetUp specifies true for getting the next value up, false to get the next value down.
+     * @return next preset velocity value, null if there is no preset velocity.
+     */
+    public Double getNextPresetVelocity(double value, boolean presetUp)
+    {
+        return !velocityPresets? null:
+               presetUp? presets.nextPresetValueUp(value): presets.nextPresetValueDown(value);
+    }   //getNextPresetVelocity
 
     //
     // Odometry.
