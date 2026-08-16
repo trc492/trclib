@@ -41,9 +41,9 @@ public abstract class TrcGameController
      */
     public enum DriveMode
     {
-        TankMode,
-        ArcadeMode,
-        HolonomicMode
+        Tank,
+        Arcade,
+        Holonomic
     }   //enum DriveMode
 
     /**

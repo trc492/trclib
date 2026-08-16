@@ -75,6 +75,12 @@ public abstract class TrcSubsystem
     public abstract void resetState();
 
     /**
+     * This method is called to publish the NetworkTable entries for the subsystem to the Dashboard at Subsystem
+     * construction time.
+     */
+    public abstract void publishToDashboard();
+
+    /**
      * This method update the dashboard with the subsystem status.
      *
      * @param lineNum specifies the starting line number to print the subsystem status.
@@ -109,6 +115,7 @@ public abstract class TrcSubsystem
     {
         this.instanceName = instanceName;
         subsystemList.add(new SubsystemInfo(this, needsZeroCal? false: null));
+        publishToDashboard();
     }   //TrcSubsystem
 
     /**

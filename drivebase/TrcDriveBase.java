@@ -252,7 +252,7 @@ public abstract class TrcDriveBase implements TrcExclusiveSubsystem
      */
     public enum DriveOrientation
     {
-        ROBOT, FIELD, INVERTED;
+        Robot, Field, Inverted;
 
         public static DriveOrientation nextDriveOrientation(DriveOrientation driveOrientation)
         {
@@ -260,17 +260,17 @@ public abstract class TrcDriveBase implements TrcExclusiveSubsystem
 
             switch (driveOrientation)
             {
-                case ROBOT:
-                    nextDriveOrientation = FIELD;
+                case Robot:
+                    nextDriveOrientation = Field;
                     break;
 
-                case FIELD:
-                    nextDriveOrientation = INVERTED;
+                case Field:
+                    nextDriveOrientation = Inverted;
                     break;
 
-                case INVERTED:
+                case Inverted:
                 default:
-                    nextDriveOrientation = ROBOT;
+                    nextDriveOrientation = Robot;
                     break;
             }
 
@@ -450,7 +450,7 @@ public abstract class TrcDriveBase implements TrcExclusiveSubsystem
     private final TrcTaskMgr.TaskObject odometryTaskObj;
     protected double xScale, yScale, angleScale;
     private final Stack<Odometry> referenceOdometryStack = new Stack<>();
-    private DriveOrientation driveOrientation = DriveOrientation.ROBOT;
+    private DriveOrientation driveOrientation = DriveOrientation.Robot;
     private double fieldForwardHeading;
 
     private String driveOwner = null;
@@ -581,7 +581,7 @@ public abstract class TrcDriveBase implements TrcExclusiveSubsystem
      */
     public void setFieldForwardHeading(double heading)
     {
-        if (driveOrientation == DriveOrientation.FIELD)
+        if (driveOrientation == DriveOrientation.Field)
         {
             fieldForwardHeading = heading;
         }
@@ -605,7 +605,7 @@ public abstract class TrcDriveBase implements TrcExclusiveSubsystem
     public void setDriveOrientation(DriveOrientation orientation, boolean resetHeading)
     {
         // Don't allow setting FIELD mode if drive base doesn't support holonomic drive.
-        if (orientation != DriveOrientation.FIELD || supportsHolonomicDrive())
+        if (orientation != DriveOrientation.Field || supportsHolonomicDrive())
         {
             driveOrientation = orientation;
             // If switching to FIELD oriented driving, reset robot heading so that the current robot heading is
@@ -641,15 +641,15 @@ public abstract class TrcDriveBase implements TrcExclusiveSubsystem
         switch (driveOrientation)
         {
             default:
-            case ROBOT:
+            case Robot:
                 angle = null;
                 break;
 
-            case INVERTED:
+            case Inverted:
                 angle = 180.0;
                 break;
 
-            case FIELD:
+            case Field:
                 angle = getHeading() - fieldForwardHeading;
                 break;
         }
