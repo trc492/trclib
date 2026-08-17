@@ -115,7 +115,6 @@ public abstract class TrcSubsystem
     {
         this.instanceName = instanceName;
         subsystemList.add(new SubsystemInfo(this, needsZeroCal? false: null));
-        publishToDashboard();
     }   //TrcSubsystem
 
     /**
@@ -235,6 +234,18 @@ public abstract class TrcSubsystem
 
         return lineNum;
     }   //updateStatusAll
+
+    /**
+     * This method enumerates all subsystems and calls their publishToDashboard method. Typically, you put code
+     * to publish NetworkTable entries to the Dashboard in FRC.
+     */
+    public static void publishToDashboardAll()
+    {
+        for (SubsystemInfo subsystemInfo: subsystemList)
+        {
+            subsystemInfo.subsystem.publishToDashboard();
+        }
+    }   //publishToDashboardAll
 
     /**
      * This method updates parameters to the Dashboard from all subsystems.
