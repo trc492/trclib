@@ -93,10 +93,8 @@ public abstract class TrcSubsystem
      * This method is called to update subsystem parameter to the Dashboard.
      *
      * @param subsystemName specifies the name of the subsystem to be updated.
-     * @param nextValueUp specifies true for the next preset target value up, false for next preset target value down,
-     *        null for the current target value.
      */
-    public abstract void updateParamsToDashboard(String subsystemName, Boolean nextValueUp);
+    public abstract void updateParamsToDashboard(String subsystemName);
 
     /**
      * This method is called to update subsystem parameters from the Dashboard.
@@ -251,16 +249,14 @@ public abstract class TrcSubsystem
      * This method updates parameters to the Dashboard from all subsystems.
      *
      * @param subsystemName specifies the name of the subsystem to be updated.
-     * @param nextValueUp specifies true for the next preset target value up, false for next preset target value down,
-     *        null for the current target value.
      */
-    public static void updateSubsystemParamsToDashboard(String subsystemName, Boolean nextValueUp)
+    public static void updateSubsystemParamsToDashboard(String subsystemName)
     {
         if (subsystemName != null && !subsystemName.isEmpty())
         {
             for (SubsystemInfo subsystemInfo: subsystemList)
             {
-                subsystemInfo.subsystem.updateParamsToDashboard(subsystemName, nextValueUp);
+                subsystemInfo.subsystem.updateParamsToDashboard(subsystemName);
             }
         }
     }   //updateSubsystemParamsToDashboard
