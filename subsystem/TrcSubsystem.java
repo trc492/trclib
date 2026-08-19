@@ -104,6 +104,20 @@ public abstract class TrcSubsystem
     public abstract void updateParamsFromDashboard(String subsystemName);
 
     /**
+     * This method is called to set the next tune target up from the current target.
+     *
+     * @param subsystemName specifies the name of the subsystem to update its tune target.
+     */
+    public abstract void setNextTuneTargetUp(String subsystemName);
+
+    /**
+     * This method is called to set the next tune target down from the current target.
+     *
+     * @param subsystemName specifies the name of the subsystem to update its tune target.
+     */
+    public abstract void setNextTuneTargetDown(String subsystemName);
+
+    /**
      * Constructor: Creates an instance of the object.
      *
      * @param instanceName specifies the hardware name.
@@ -246,7 +260,7 @@ public abstract class TrcSubsystem
     }   //publishToDashboardAll
 
     /**
-     * This method updates parameters to the Dashboard from all subsystems.
+     * This method updates parameters to the Dashboard from the specified subsystems.
      *
      * @param subsystemName specifies the name of the subsystem to be updated.
      */
@@ -262,7 +276,7 @@ public abstract class TrcSubsystem
     }   //updateSubsystemParamsToDashboard
 
     /**
-     * This method updates parameters from the Dashboard to all subsystems.
+     * This method updates parameters from the Dashboard to the specified subsystems.
      *
      * @param subsystemName specifies the name of the subsystem to be updated.
      */
@@ -276,6 +290,38 @@ public abstract class TrcSubsystem
             }
         }
     }   //updateSubsystemParamsFromDashboard
+
+    /**
+     * This method sets the next tune target up for the specified subsystem.
+     *
+     * @param subsystemName specifies the name of the subsystem to update its tune target.
+     */
+    public static void setSubsystemTuneTargetUp(String subsystemName)
+    {
+        if (subsystemName != null && !subsystemName.isEmpty())
+        {
+            for (SubsystemInfo subsystemInfo: subsystemList)
+            {
+                subsystemInfo.subsystem.setNextTuneTargetUp(subsystemName);
+            }
+        }
+    }   //setSubsystemTuneTargetUp
+
+    /**
+     * This method sets the next tune target down for the specified subsystem.
+     *
+     * @param subsystemName specifies the name of the subsystem to update its tune target.
+     */
+    public static void setSubsystemTuneTargetDown(String subsystemName)
+    {
+        if (subsystemName != null && !subsystemName.isEmpty())
+        {
+            for (SubsystemInfo subsystemInfo: subsystemList)
+            {
+                subsystemInfo.subsystem.setNextTuneTargetDown(subsystemName);
+            }
+        }
+    }   //setSubsystemTuneTargetDown
 
     /**
      * This method is called when the zero calibration completion event of a subsystem is signaled. If there are
