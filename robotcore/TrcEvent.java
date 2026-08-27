@@ -53,7 +53,7 @@ public class TrcEvent
     private final String instanceName;
     private final AtomicReference<EventState> eventState = new AtomicReference<>(EventState.CLEARED);
     private final ArrayList<TrcEvent> waitOnEvents = new ArrayList<>();
-    private boolean signalOnAll = false;
+    private boolean waitForAllEvents = false;
 
     /**
      * Constructor: Create an instance of the object.
@@ -114,15 +114,15 @@ public class TrcEvent
      * @param initClear specifies true to initialize the given events to clear state, false otherwise.
      * @param events specifies the list of events to be monitored.
      */
-    public void signalOnMultipleEvents(boolean waitForAll, boolean initClear, TrcEvent... events)
+    public void signalOnEvents(boolean waitForAll, boolean initClear, TrcEvent... events)
     {
         if (events != null)
         {
             synchronized (waitOnEvents)
             {
-                signalOnAll = waitForAll;
                 // If there is a previous list, clear it.
                 waitOnEvents.clear();
+                waitForAllEvents = waitForAll;
                 for (TrcEvent event: events)
                 {
                     if (initClear)
@@ -134,7 +134,7 @@ public class TrcEvent
                 }
             }
         }
-    }   //signalOnMultipleEvents
+    }   //signalOnEvents
 
     /**
      * This method is called when any of the events in the waitOnEvents list is signaled or canceled.
@@ -146,35 +146,36 @@ public class TrcEvent
     {
         synchronized (waitOnEvents)
         {
-            int signalCount = 0;
-            int cancelCount = 0;
+            int signaledCount = 0;
+            int canceledCount = 0;
+
             for (TrcEvent event: waitOnEvents)
             {
                 if (event.isSignaled())
                 {
-                    signalCount++;
+                    signaledCount++;
                 }
                 else if (event.isCanceled())
                 {
-                    cancelCount++;
+                    canceledCount++;
                 }
             }
             //
-            // If signalOnAll is true, the number of signaled events must equal to the size of the event list
-            // (i.e. all events have signaled). If signalOnAll is false, then we just need a non-zero signal count
-            // to signal the event.
+            // If waitForAllEvents is true, the number of signaled events must equal to the size of the event list
+            // (i.e. all events have signaled). If waitForAllEvents is false, then we just need a non-zero signaled
+            // count to signal the event.
             //
-            if (!signalOnAll && signalCount > 0 || signalOnAll && signalCount == waitOnEvents.size())
+            if (!waitForAllEvents && signaledCount > 0 || waitForAllEvents && signaledCount == waitOnEvents.size())
             {
                 this.signal();
                 waitOnEvents.clear();
-                signalOnAll = false;
+                waitForAllEvents = false;
             }
-            else if (cancelCount > 0)
+            else if (canceledCount > 0)
             {
                 this.cancel();
                 waitOnEvents.clear();
-                signalOnAll = false;
+                waitForAllEvents = false;
             }
         }
     }   //eventCallback
