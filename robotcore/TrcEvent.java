@@ -52,6 +52,8 @@ public class TrcEvent
     public final TrcDbgTrace tracer;
     private final String instanceName;
     private final AtomicReference<EventState> eventState = new AtomicReference<>(EventState.CLEARED);
+    private final ArrayList<TrcEvent> waitOnEvents = new ArrayList<>();
+    private boolean signalOnAll = false;
 
     /**
      * Constructor: Create an instance of the object.
@@ -102,6 +104,80 @@ public class TrcEvent
     {
         eventState.compareAndSet(EventState.CLEARED, EventState.SIGNALED);
     }   //signal
+
+    /**
+     * This method is given a list of events to monitor. If waitForAll is true, this event will be signaled when all
+     * given events are signaled. If waitForAll is false, this event will be signaled when any of the given events
+     * is signaled. This event will be canceled if any of the given events is canceled.
+     *
+     * @param waitForAll specifies true to wait for all given events, false to wait for any given events signaled.
+     * @param initClear specifies true to initialize the given events to clear state, false otherwise.
+     * @param events specifies the list of events to be monitored.
+     */
+    public void signalOnMultipleEvents(boolean waitForAll, boolean initClear, TrcEvent... events)
+    {
+        if (events != null)
+        {
+            synchronized (waitOnEvents)
+            {
+                signalOnAll = waitForAll;
+                // If there is a previous list, clear it.
+                waitOnEvents.clear();
+                for (TrcEvent event: events)
+                {
+                    if (initClear)
+                    {
+                        event.clear();
+                    }
+                    event.setCallback(this::eventCallback, null);
+                    waitOnEvents.add(event);
+                }
+            }
+        }
+    }   //signalOnMultipleEvents
+
+    /**
+     * This method is called when any of the events in the waitOnEvents list is signaled or canceled.
+     *
+     * @param context not used.
+     * @param canceled not used.
+     */
+    private void eventCallback(Object context, boolean canceled)
+    {
+        synchronized (waitOnEvents)
+        {
+            int signalCount = 0;
+            int cancelCount = 0;
+            for (TrcEvent event: waitOnEvents)
+            {
+                if (event.isSignaled())
+                {
+                    signalCount++;
+                }
+                else if (event.isCanceled())
+                {
+                    cancelCount++;
+                }
+            }
+            //
+            // If signalOnAll is true, the number of signaled events must equal to the size of the event list
+            // (i.e. all events have signaled). If signalOnAll is false, then we just need a non-zero signal count
+            // to signal the event.
+            //
+            if (!signalOnAll && signalCount > 0 || signalOnAll && signalCount == waitOnEvents.size())
+            {
+                this.signal();
+                waitOnEvents.clear();
+                signalOnAll = false;
+            }
+            else if (cancelCount > 0)
+            {
+                this.cancel();
+                waitOnEvents.clear();
+                signalOnAll = false;
+            }
+        }
+    }   //eventCallback
 
     /**
      * This method cancels an event if it is not already signaled. An event is either signaled or canceled by the
