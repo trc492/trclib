@@ -225,13 +225,13 @@ public class TrcMaxbotixSonarArray
                     //
                     rx.setState(true);
                     timer.set(RANGING_START_PULSE_WIDTH, event);
-                    sm.waitForSingleEvent(event, State.PULL_RX_LOW);
+                    sm.waitForEvents(State.PULL_RX_LOW, event);
                     break;
 
                 case PULL_RX_LOW:
                     rx.setState(false);
                     timer.set(RANGING_PERIOD*sensors.length, event);
-                    sm.waitForSingleEvent(event, !loopConfig && autoRepeat? State.PULL_RX_HIGH: State.DONE);
+                    sm.waitForEvents(!loopConfig && autoRepeat? State.PULL_RX_HIGH: State.DONE, event);
                     break;
 
                 case DONE:

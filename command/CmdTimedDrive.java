@@ -155,7 +155,7 @@ public class CmdTimedDrive implements TrcRobot.RobotCommand
                     else
                     {
                         timer.set(delay, event);
-                        sm.waitForSingleEvent(event, State.DRIVE_BY_TIME);
+                        sm.waitForEvents(State.DRIVE_BY_TIME, event);
                         break;
                     }
 
@@ -171,7 +171,7 @@ public class CmdTimedDrive implements TrcRobot.RobotCommand
                     {
                         driveBase.arcadeDrive(yDrivePower, turnPower, driveTime, event);
                     }
-                    sm.waitForSingleEvent(event, State.DONE);
+                    sm.waitForEvents(State.DONE, event);
                     break;
 
                 case DONE:

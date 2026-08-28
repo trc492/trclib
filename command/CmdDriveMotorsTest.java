@@ -168,7 +168,7 @@ public class CmdDriveMotorsTest implements TrcRobot.RobotCommand
                     }
                     motorIndex++;
                     timer.set(driveTime, event);
-                    sm.waitForSingleEvent(event, motorIndex < motors.length ? State.START : State.DONE);
+                    sm.waitForEvents(motorIndex < motors.length ? State.START : State.DONE, event);
                     break;
 
                 case DONE:

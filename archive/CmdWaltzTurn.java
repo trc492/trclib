@@ -153,7 +153,7 @@ public class CmdWaltzTurn implements TrcRobot.RobotCommand
                     prevTurnMode = pidDrive.getTurnMode();
                     pidDrive.setTurnMode(driveInverted? TurnMode.PIVOT_FORWARD: TurnMode.PIVOT_BACKWARD);
                     pidDrive.setRelativeTurnTarget(turnTarget, event);
-                    sm.waitForSingleEvent(event, State.DONE);
+                    sm.waitForEvents(State.DONE, event);
                     break;
 
                 case DONE:

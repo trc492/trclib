@@ -261,7 +261,7 @@ public class CmdPidDrive implements TrcRobot.RobotCommand
                     else
                     {
                         timer.set(delay, event);
-                        sm.waitForSingleEvent(event, State.PID_DRIVE);
+                        sm.waitForEvents(State.PID_DRIVE, event);
                         break;
                     }
 
@@ -286,7 +286,7 @@ public class CmdPidDrive implements TrcRobot.RobotCommand
                             nextState = tunePidCtrl != null? State.DONE: State.PID_DRIVE;
                             pathIndex++;
                         }
-                        sm.waitForSingleEvent(event, nextState);
+                        sm.waitForEvents(nextState, event);
                     }
                     else
                     {

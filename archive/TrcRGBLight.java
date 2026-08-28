@@ -321,7 +321,7 @@ public abstract class TrcRGBLight
                     if (onPeriod != 0.0)
                     {
                         timer.set(onPeriod, timerEvent);
-                        sm.waitForSingleEvent(timerEvent, State.TURN_OFF);
+                        sm.waitForEvents(State.TURN_OFF, timerEvent);
                     }
                     else
                     {
@@ -334,7 +334,7 @@ public abstract class TrcRGBLight
                     if (offPeriod != 0.0)
                     {
                         timer.set(offPeriod, timerEvent);
-                        sm.waitForSingleEvent(timerEvent, State.TURN_ON);
+                        sm.waitForEvents(State.TURN_ON, timerEvent);
                     }
                     else
                     {

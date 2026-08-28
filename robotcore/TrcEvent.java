@@ -106,81 +106,6 @@ public class TrcEvent
     }   //signal
 
     /**
-     * This method is given a list of events to monitor. If waitForAll is true, this event will be signaled when all
-     * given events are signaled. If waitForAll is false, this event will be signaled when any of the given events
-     * is signaled. This event will be canceled if any of the given events is canceled.
-     *
-     * @param waitForAll specifies true to wait for all given events, false to wait for any given events signaled.
-     * @param initClear specifies true to initialize the given events to clear state, false otherwise.
-     * @param events specifies the list of events to be monitored.
-     */
-    public void signalOnEvents(boolean waitForAll, boolean initClear, TrcEvent... events)
-    {
-        if (events != null)
-        {
-            synchronized (waitOnEvents)
-            {
-                // If there is a previous list, clear it.
-                waitOnEvents.clear();
-                waitForAllEvents = waitForAll;
-                for (TrcEvent event: events)
-                {
-                    if (initClear)
-                    {
-                        event.clear();
-                    }
-                    event.setCallback(this::eventCallback, null);
-                    waitOnEvents.add(event);
-                }
-            }
-        }
-    }   //signalOnEvents
-
-    /**
-     * This method is called when any of the events in the waitOnEvents list is signaled or canceled.
-     *
-     * @param context not used.
-     * @param canceled not used.
-     */
-    private void eventCallback(Object context, boolean canceled)
-    {
-        synchronized (waitOnEvents)
-        {
-            int signaledCount = 0;
-            int canceledCount = 0;
-
-            for (TrcEvent event: waitOnEvents)
-            {
-                if (event.isSignaled())
-                {
-                    signaledCount++;
-                }
-                else if (event.isCanceled())
-                {
-                    canceledCount++;
-                }
-            }
-            //
-            // If waitForAllEvents is true, the number of signaled events must equal to the size of the event list
-            // (i.e. all events have signaled). If waitForAllEvents is false, then we just need a non-zero signaled
-            // count to signal the event.
-            //
-            if (!waitForAllEvents && signaledCount > 0 || waitForAllEvents && signaledCount == waitOnEvents.size())
-            {
-                this.signal();
-                waitOnEvents.clear();
-                waitForAllEvents = false;
-            }
-            else if (canceledCount > 0)
-            {
-                this.cancel();
-                waitOnEvents.clear();
-                waitForAllEvents = false;
-            }
-        }
-    }   //eventCallback
-
-    /**
      * This method cancels an event if it is not already signaled. An event is either signaled or canceled by the
      * event source either of which will cause whoever is waiting for it to move on. Note: if an event is canceled,
      * no callback will be performed.
@@ -211,6 +136,130 @@ public class TrcEvent
     {
         return eventState.get() == EventState.CANCELED;
     }   //isCanceled
+
+    /**
+     * This method is given a list of events to monitor. If waitForAll is true, this event will be signaled when all
+     * given events are signaled. If waitForAll is false, this event will be signaled when any of the given events
+     * is signaled. This event will be canceled if any of the given events is canceled.
+     *
+     * @param waitForAll specifies true to wait for all given events, false to wait for any given events signaled.
+     * @param initEventsClear specifies true to initialize the given events to clear state, false otherwise.
+     * @param events specifies the list of events to be monitored.
+     */
+    public void signalOnEvents(boolean waitForAll, boolean initEventsClear, TrcEvent... events)
+    {
+        if (events != null)
+        {
+            synchronized (waitOnEvents)
+            {
+                // Cancel previous WaitOnEvents if there is one.
+                cancelWaitOnEvents();
+                waitForAllEvents = waitForAll;
+                for (TrcEvent event: events)
+                {
+                    if (event != null && !waitOnEvents.contains(event))
+                    {
+                        if (initEventsClear)
+                        {
+                            event.clear();
+                        }
+                        event.setCallback(this::eventCallback, null);
+                        waitOnEvents.add(event);
+                    }
+                }
+            }
+        }
+    }   //signalOnEvents
+
+    /**
+     * This method is given a list of events to monitor. If waitForAll is true, this event will be signaled when all
+     * given events are signaled. If waitForAll is false, this event will be signaled when any of the given events
+     * is signaled. This event will be canceled if any of the given events is canceled.
+     *
+     * @param waitForAll specifies true to wait for all given events, false to wait for any given events signaled.
+     * @param events specifies the list of events to be monitored.
+     */
+    public void signalOnEvents(boolean waitForAll, TrcEvent... events)
+    {
+        signalOnEvents(waitForAll, false, events);
+    }   //signalOnEvents
+
+    /**
+     * This method is called when any of the events in the waitOnEvents list is signaled or canceled.
+     *
+     * @param context not used.
+     * @param canceled not used.
+     */
+    private void eventCallback(Object context, boolean canceled)
+    {
+        synchronized (waitOnEvents)
+        {
+            final int totalEvents = waitOnEvents.size();
+            int signaledCount = 0;
+            int canceledCount = 0;
+            // Scanning the list backward so removing entries won't cause problems.
+            for (int i = totalEvents - 1; i >= 0; i--)
+            {
+                TrcEvent event = waitOnEvents.get(i);
+
+                if (event.isSignaled())
+                {
+                    signaledCount++;
+                    waitOnEvents.remove(i);
+                }
+                else if (event.isCanceled())
+                {
+                    canceledCount++;
+                    waitOnEvents.remove(i);
+                }
+            }
+            //
+            // If waitForAllEvents is true, the number of signaled events must equal to the size of the event
+            // list (i.e. all events have signaled). If waitForAllEvents is false, then we just need a non-zero
+            // signaled count to signal this event, or any canceled event will cancel this event.
+            //
+            if (waitForAllEvents)
+            {
+                if (signaledCount == totalEvents)
+                {
+                    this.signal();
+                    cancelWaitOnEvents();
+                }
+                else if (canceledCount > 0)
+                {
+                    this.cancel();
+                    cancelWaitOnEvents();
+                }
+            }
+            else
+            {
+                if (signaledCount > 0)
+                {
+                    this.signal();
+                    cancelWaitOnEvents();
+                }
+                else if (canceledCount > 0)
+                {
+                    this.cancel();
+                    cancelWaitOnEvents();
+                }
+            }
+        }
+    }   //eventCallback
+
+    /**
+     * This method cleans up all the wait for events and remove them from the list. This method assumes the caller
+     * has taken the waitOnEvent lock.
+     */
+    private void cancelWaitOnEvents()
+    {
+        for (TrcEvent event: waitOnEvents)
+        {
+            event.setCallback(null, null);
+        }
+        waitOnEvents.clear();
+        waitForAllEvents = false;
+    }   //cancelWaitOnEvents
 
     //
     // Callback Management.
