@@ -745,6 +745,7 @@ public class TrcShooter implements TrcExclusiveSubsystem
     {
         synchronized (shooterState)
         {
+            event.clear();
             shooterState.shooterReadyEvent = event;
             shooterState.shooterReadyTimeout = timeout > 0.0? TrcTimer.getCurrentTime() + timeout: 0.0;
         }
@@ -792,6 +793,11 @@ public class TrcShooter implements TrcExclusiveSubsystem
 
         if (validateOwnership(owner))
         {
+            if (event != null)
+            {
+                event.clear();
+            }
+
             synchronized (shooterState)
             {
                 this.completionEvent = event;

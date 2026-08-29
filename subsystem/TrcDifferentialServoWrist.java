@@ -538,6 +538,10 @@ public class TrcDifferentialServoWrist implements TrcExclusiveSubsystem
         tracer.traceDebug(
             instanceName, "setPosition(owner=%s, delay=%.3f, tiltPos=%.3f, rotatePos=%.3f, event=%s, timeout=%.3f)",
             owner, delay, tiltPos, rotatePos, completionEvent, timeout);
+        if (completionEvent != null)
+        {
+            completionEvent.clear();
+        }
 
         TrcEvent releaseOwnershipEvent = acquireOwnership(owner, completionEvent, tracer);
         if (releaseOwnershipEvent != null) completionEvent = releaseOwnershipEvent;

@@ -510,6 +510,11 @@ public class TrcServoClaw implements TrcExclusiveSubsystem
         {
             throw new RuntimeException("Must have sensor to perform Auto Operation.");
         }
+
+        if (event != null)
+        {
+            event.clear();
+        }
         // This is an auto operation, make sure the caller has ownership.
         TrcEvent releaseOwnershipEvent = acquireOwnership(owner, event, tracer);
         if (releaseOwnershipEvent != null) event = releaseOwnershipEvent;

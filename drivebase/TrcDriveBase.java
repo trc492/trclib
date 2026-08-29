@@ -547,6 +547,10 @@ public abstract class TrcDriveBase implements TrcExclusiveSubsystem
             driveTimer.cancel();
             driveOwner = owner;
             driveTimerEvent = event;
+            if (event != null)
+            {
+                event.clear();
+            }
             driveTimer.set(driveTime, this::driveTimerHandler);
         }
     }   //setDriveTime

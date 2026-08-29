@@ -799,6 +799,11 @@ public class TrcRollerIntake implements TrcExclusiveSubsystem
         {
             throw new RuntimeException("Must have sensor to perform Auto Operation.");
         }
+
+        if (completionEvent != null)
+        {
+            completionEvent.clear();
+        }
         // This is an auto operation, make sure the caller has ownership.
         TrcEvent releaseOwnershipEvent = acquireOwnership(owner, completionEvent, tracer);
         if (releaseOwnershipEvent != null) completionEvent = releaseOwnershipEvent;

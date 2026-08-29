@@ -22,8 +22,6 @@
 
 package trclib.pathdrive;
 
-import java.util.Arrays;
-
 import org.apache.commons.math3.linear.RealVector;
 
 import trclib.controller.TrcPidController;
@@ -823,7 +821,6 @@ public class TrcPurePursuitDrive
         String owner, TrcEvent event, double timeout, Double maxVel, Double maxAccel, Double maxDecel,
         TrcEvent.Callback waypointCallback, TrcPath path)
     {
-double[] timestamps = new double[6];
         if (path == null || path.getSize() == 0)
         {
             throw new IllegalArgumentException("Path cannot be null or empty!");
@@ -831,14 +828,12 @@ double[] timestamps = new double[6];
 
         if (driveBase.validateOwnership(owner))
         {
-timestamps[0] = TrcTimer.getModeElapsedTime();
             if (isActive())
             {
                 // We successfully validated the ownership but PudrivrePursuit was active. It means somebody was doing
                 // PurePursuitDrive with no ownership. Let's cancel it before we take over.
                 cancel();
             }
-timestamps[1] = TrcTimer.getModeElapsedTime();
 
             this.owner = owner;
             this.onFinishedEvent = event;
@@ -858,12 +853,10 @@ timestamps[1] = TrcTimer.getModeElapsedTime();
             {
                 waypoints[i].index = i;
             }
-timestamps[2] = TrcTimer.getModeElapsedTime();
 
             TrcPath newPath =
                 maxVel != null && maxAccel != null && maxDecel != null?
                     path.trapezoidVelocity(maxVel, maxAccel, maxDecel): path;
-timestamps[3] = TrcTimer.getModeElapsedTime();
 
             double currTime = TrcTimer.getCurrentTime();
             timedOutTime = timeout == 0.0 ? Double.POSITIVE_INFINITY : currTime + timeout;
@@ -900,13 +893,10 @@ timestamps[3] = TrcTimer.getModeElapsedTime();
             turnPidCtrl.startStallDetection();
             velPidCtrl.reset();
             this.path = newPath;
-timestamps[4] = TrcTimer.getModeElapsedTime();
             performWaypointCallback(0, null);
-timestamps[5] = TrcTimer.getModeElapsedTime();
             // driveTaskObj.registerTask(TrcTaskMgr.TaskType.POST_PERIODIC_TASK);
             driveTaskObj.registerTask(TrcTaskMgr.TaskType.OUTPUT_TASK);
             // tracer.traceDebug(instanceName, "Path=" + newPath.toAbsolute(referencePose));
-tracer.traceInfo(instanceName, "ppStartTimestamps=" + Arrays.toString(timestamps));
         }
     }   //start
 
@@ -1031,19 +1021,14 @@ tracer.traceInfo(instanceName, "ppStartTimestamps=" + Arrays.toString(timestamps
         String owner, TrcEvent event, double timeout, boolean incrementalPath, Double maxVel, Double maxAccel,
         Double maxDecel, TrcEvent.Callback  waypointCallback, TrcPose2D... poses)
     {
-double[] timestamps = new double[3];
-timestamps[0] = TrcTimer.getModeElapsedTime();
         TrcPathBuilder pathBuilder = new TrcPathBuilder(driveBase.getFieldPosition(), incrementalPath);
 
-timestamps[1] = TrcTimer.getModeElapsedTime();
         for (TrcPose2D pose: poses)
         {
             pathBuilder.append(pose);
         }
-timestamps[2] = TrcTimer.getModeElapsedTime();
 
         start(owner, event, timeout, maxVel, maxAccel, maxDecel, waypointCallback, pathBuilder.toRelativeStartPath());
-tracer.traceInfo(instanceName, "ppStartBuildPathTimestamp=" + Arrays.toString(timestamps));
     }   //start
 
     /**

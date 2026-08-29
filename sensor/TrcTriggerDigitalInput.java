@@ -197,6 +197,11 @@ public class TrcTriggerDigitalInput implements TrcTrigger
             // Enable trigger only if it's not already enabled.
             if (!triggerState.triggerEnabled)
             {
+                if (event != null)
+                {
+                    event.clear();
+                }
+
                 setTriggerParams(triggerMode, event);
                 if (triggerDelay != null)
                 {

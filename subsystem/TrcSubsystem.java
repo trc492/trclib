@@ -197,6 +197,11 @@ public abstract class TrcSubsystem
      */
      public static void zeroCalibrateAll(String owner, TrcEvent completionEvent)
     {
+        if (completionEvent != null)
+        {
+            completionEvent.clear();
+        }
+
         zeroCalCompletionEvent = completionEvent;
         for (SubsystemInfo subsystemInfo: subsystemList)
         {

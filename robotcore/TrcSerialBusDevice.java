@@ -89,6 +89,11 @@ public abstract class TrcSerialBusDevice
             this.length = length;
             this.completionEvent = completionEvent;
             this.canceled = false;
+
+            if (completionEvent != null)
+            {
+                completionEvent.clear();
+            }
         }   //Request
 
         /**

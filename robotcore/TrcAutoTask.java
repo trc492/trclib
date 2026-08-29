@@ -153,6 +153,11 @@ public abstract class TrcAutoTask<T>
             }
             this.currOwner = owner;
             this.completionEvent = completionEvent;
+
+            if (completionEvent != null)
+            {
+                completionEvent.clear();
+            }
             sm.start(startState);
             setTaskEnabled(true);
         }
