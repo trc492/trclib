@@ -35,18 +35,17 @@ public abstract class TrcSubsystem
 {
     private static final String moduleName = TrcSubsystem.class.getSimpleName();
     private static final ArrayList<SubsystemInfo> subsystemList = new ArrayList<>();
-    private static TrcEvent zeroCalCompletionEvent = null;
     protected final String instanceName;
 
     private static class SubsystemInfo
     {
         final TrcSubsystem subsystem;
-        Boolean zeroCalDone;
+        boolean needZeroCal;
 
-        SubsystemInfo(TrcSubsystem subsystem, Boolean zeroCalDone)
+        SubsystemInfo(TrcSubsystem subsystem, boolean needZeroCal)
         {
             this.subsystem = subsystem;
-            this.zeroCalDone = zeroCalDone;
+            this.needZeroCal = needZeroCal;
         }   //SubsystemInfo
 
     }   //class SubsystemInfo
@@ -121,12 +120,12 @@ public abstract class TrcSubsystem
      * Constructor: Creates an instance of the object.
      *
      * @param instanceName specifies the hardware name.
-     * @param needsZeroCal specifies true if the subsystem needs zero calibration, false otherwise.
+     * @param needZeroCal specifies true if the subsystem needs zero calibration, false otherwise.
      */
-    public TrcSubsystem(String instanceName, boolean needsZeroCal)
+    public TrcSubsystem(String instanceName, boolean needZeroCal)
     {
         this.instanceName = instanceName;
-        subsystemList.add(new SubsystemInfo(this, needsZeroCal? false: null));
+        subsystemList.add(new SubsystemInfo(this, needZeroCal));
     }   //TrcSubsystem
 
     /**
@@ -197,29 +196,41 @@ public abstract class TrcSubsystem
      */
      public static void zeroCalibrateAll(String owner, TrcEvent completionEvent)
     {
-        if (completionEvent != null)
-        {
-            completionEvent.clear();
-        }
+        ArrayList<TrcEvent> zeroCalEvents = new ArrayList<>();
 
-        zeroCalCompletionEvent = completionEvent;
         for (SubsystemInfo subsystemInfo: subsystemList)
         {
-            // Only do zero calibration for subsystems that need it.
-            if (subsystemInfo.zeroCalDone != null)
+            if (subsystemInfo.needZeroCal)
             {
-                TrcEvent event = completionEvent != null?
-                    new TrcEvent(subsystemInfo.subsystem.instanceName + ".zeroCal"): null;
-                if (event != null)
+                TrcEvent event = null;
+
+                if (completionEvent != null)
                 {
-                    event.setCallback(TrcSubsystem::zeroCalCallback, subsystemInfo);
+                    event = new TrcEvent(subsystemInfo.subsystem.instanceName + ".zeroCal");
+                    zeroCalEvents.add(event);
                 }
+
                 TrcDbgTrace.globalTraceInfo(
                     moduleName,
                     "ZeroCalibrate(Subsystem=%s, owner=%s, event=%s)",
                     subsystemInfo.subsystem.instanceName, owner, event);
-                subsystemInfo.zeroCalDone = false;
                 subsystemInfo.subsystem.zeroCalibrate(owner, event);
+            }
+        }
+
+        if (completionEvent != null)
+        {
+            if (zeroCalEvents.isEmpty())
+            {
+                // Nobody needs zero calibration, just signal completion.
+                completionEvent.signal();
+            }
+            else
+            {
+                TrcEvent[] events = new TrcEvent[zeroCalEvents.size()];
+
+                events = zeroCalEvents.toArray(events);
+                completionEvent.signalOnEvents(true, false, events);
             }
         }
     }   //zeroCalibrate
@@ -327,42 +338,5 @@ public abstract class TrcSubsystem
             }
         }
     }   //setSubsystemTuneTargetDown
-
-    /**
-     * This method is called when the zero calibration completion event of a subsystem is signaled. If there are
-     * multiple subsystems, it will check
-     *
-     * @param context specifies the SubsystemInfo object.
-     * @param canceled not used.
-     */
-    private static void zeroCalCallback(Object context, boolean canceled)
-    {
-        boolean zeroCalCompleted = true;
-
-        ((SubsystemInfo) context).zeroCalDone = true;
-        // Check all subsystems that need zero calibration have completed calibration.
-        for (SubsystemInfo subsystemInfo: subsystemList)
-        {
-            if (subsystemInfo.zeroCalDone != null && !subsystemInfo.zeroCalDone)
-            {
-                // Subsystem needs zero calibration but is not done yet.
-                zeroCalCompleted = false;
-                break;
-            }
-        }
-
-        if (zeroCalCompleted)
-        {
-            if (canceled)
-            {
-                zeroCalCompletionEvent.cancel();
-            }
-            else
-            {
-                zeroCalCompletionEvent.signal();
-            }
-            zeroCalCompletionEvent = null;
-        }
-    }   //zeroCalCallback
 
 }   //class TrcSubsystem

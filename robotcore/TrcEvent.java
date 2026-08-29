@@ -155,6 +155,7 @@ public class TrcEvent
                 // Cancel previous WaitOnEvents if there is one.
                 cancelWaitOnEvents();
                 waitForAllEvents = waitForAll;
+                this.clear();
                 for (TrcEvent event: events)
                 {
                     if (event != null && !waitOnEvents.contains(event))
