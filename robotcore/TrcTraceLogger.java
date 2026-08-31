@@ -84,17 +84,27 @@ public class TrcTraceLogger
     }   //toString
 
     /**
-     * This method closes the trace logger and renames the log file.
+     * This method closes the log and optionally renames the log file to the given new name.
      *
-     * @param newName specifies the filename to rename the log to, delete the log if null.
+     * @param newName specifies the filename to rename the log to, null if not renaming.
      */
     public synchronized void closeLogger(String newName)
     {
-        this.newLogName = newName != null? newName + ".log": null;
         this.enabled = false;
-        this.deleteLog = newName == null;
+        this.deleteLog = false;
+        this.newLogName = newName != null? newName + ".log": null;
         loggerThread.interrupt();
     }   //closeLogger
+
+    /**
+     * This method closes the log and deletes the log file.
+     */
+    public synchronized void deleteLogger()
+    {
+        this.enabled = false;
+        this.deleteLog = true;
+        loggerThread.interrupt();
+    }   //deleteLogger
 
     /**
      * This method enables/disables the trace logger thread.

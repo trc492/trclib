@@ -193,9 +193,9 @@ public class TrcDbgTrace
     }   //openTraceLog
 
     /**
-     * This method closes the trace log file.
+     * This method closes the trace log file and optionally renames it.
      *
-     * @param fileName specifies the filename to rename the log to, if null deleting the log.
+     * @param fileName specifies the filename to rename the log to, null if no renaming.
      */
     public static void closeTraceLog(String fileName)
     {
@@ -205,6 +205,18 @@ public class TrcDbgTrace
             traceLogger = null;
         }
     }   //closeTraceLog
+
+    /**
+     * This method closes and deletes the log file.
+     */
+    public static void deleteTraceLog()
+    {
+        if (traceLogger != null)
+        {
+            traceLogger.deleteLogger();
+            traceLogger = null;
+        }
+    }   //deleteTraceLog
 
     /**
      * This method checks if the trace log is opened.
