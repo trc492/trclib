@@ -96,7 +96,7 @@ public class TrcVisionRelocalize
      */
     public TrcPose2D getRelocalizedPose(double visionTimestamp, TrcPose2D visionPose, TrcPose2D robotPose)
     {
-        TrcPose2D relocalizedPose = null;
+        TrcPose2D relocalizedPose = visionPose;
 
         synchronized (timedPoses)
         {
