@@ -993,14 +993,20 @@ public abstract class TrcServo implements TrcExclusiveSubsystem
      * @param timeout specifies a timeout value in seconds. If the operation is not completed without the specified
      *        timeout, the operation will be canceled and the event will be signaled. If no timeout is specified, it
      *        should be set to zero.
+     * @return phyiscal position set, null if set failed.
      */
-    public void setPresetPosition(
+    public Double setPresetPosition(
         String owner, double delay, int presetIndex, TrcEvent event, double timeout)
     {
+        Double position = null;
+
         if (posPresets != null && posPresets.validatePresetIndex(presetIndex))
         {
-            setPosition(owner, delay, posPresets.getPresetValue(presetIndex), event, timeout);
+            position = posPresets.getPresetValue(presetIndex);
+            setPosition(owner, delay, position, event, timeout);
         }
+
+        return position;
     }   //setPresetPosition
 
     /**
@@ -1010,9 +1016,12 @@ public abstract class TrcServo implements TrcExclusiveSubsystem
      *        automatically release ownership when the actuator movement is coompleted, can be null if no ownership
      *        is required.
      * @param presetUp specifies true to move to next preset up, false to move to next preset down.
+     * @return phyiscal position set, null if set failed.
      */
-    private void setNextPresetPosition(String owner, boolean presetUp)
+    private Double setNextPresetPosition(String owner, boolean presetUp)
     {
+        Double position = null;
+
         if (posPresets != null)
         {
             double currValue = getPosition();
@@ -1020,9 +1029,11 @@ public abstract class TrcServo implements TrcExclusiveSubsystem
 
             if (index != -1)
             {
-                setPresetPosition(owner, 0.0, index, null, 0.0);
+                position = setPresetPosition(owner, 0.0, index, null, 0.0);
             }
         }
+
+        return position;
     }   //setNextPresetPosition
 
     /**
@@ -1031,10 +1042,11 @@ public abstract class TrcServo implements TrcExclusiveSubsystem
      * @param owner specifies the owner ID that will acquire ownership before setting the preset position and will
      *        automatically release ownership when the actuator movement is completed, can be null if no ownership
      *        is required.
+     * @return phyiscal position set, null if set failed.
      */
-    public void presetPositionUp(String owner)
+    public Double presetPositionUp(String owner)
     {
-        setNextPresetPosition(owner, true);
+        return setNextPresetPosition(owner, true);
     }   //presetPositionUp
 
     /**
@@ -1043,10 +1055,11 @@ public abstract class TrcServo implements TrcExclusiveSubsystem
      * @param owner specifies the owner ID that will acquire ownership before setting the preset position and will
      *        automatically release ownership when the actuator movement is coompleted, can be null if no ownership
      *        is required.
+     * @return phyiscal position set, null if set failed.
      */
-    public void presetPositionDown(String owner)
+    public Double presetPositionDown(String owner)
     {
-        setNextPresetPosition(owner, false);
+        return setNextPresetPosition(owner, false);
     }   //presetPositionDown
 
     //
