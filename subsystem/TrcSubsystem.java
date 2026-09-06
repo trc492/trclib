@@ -74,6 +74,22 @@ public abstract class TrcSubsystem
     public abstract void resetState();
 
     /**
+     * This method is called when gamepad analog control is operated on the subsystem.
+     *
+     * @param altFunc specifies true if the gamepad AltFunc button is pressed, false otherwise.
+     * @param inputs specifies an array of analog values.
+     */
+    public abstract void subsystemControl(boolean altFunc, double... inputs);
+
+    /**
+     * This method is called when a gamepad button is pressed to perform the subsystem action.
+     *
+     * @param pressed specifies true if the gamepad button is pressed, false otherwise.
+     * @param altFunc specifies true if the gamepad AltFunc button is pressed, false otherwise.
+     */
+    public abstract void subsystemAction(boolean pressed, boolean altFunc);
+
+    /**
      * This method is called to publish the NetworkTable entries for the subsystem to the Dashboard at Subsystem
      * construction time.
      */
