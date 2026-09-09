@@ -142,6 +142,37 @@ public class CmdPurePursuitDrive implements TrcRobot.RobotCommand
      *        false if appending point is in the same reference frame as startingPose.
      * @param maxVel specifies the maximum velocity if applying trapezoid velocity profile, null if not.
      * @param maxAccel specifies the maximum acceleration if applying trapezoid velocity profile, null if not.
+     * @param maxDecel specifies the maximum deceleration if applying trapezoid velocity profile, null if not.
+     * @param drivePowerLimit specifies the drive power limit, null if not provided.
+     * @param turnPowerLimit specifies the turn power limit, null if not provided.
+     * @param poses specifies an array of waypoint poses in the drive path.
+     */
+    public void startPath(
+        double timeout, boolean incrementalPath, Double maxVel, Double maxAccel, Double maxDecel,
+        Double drivePowerLimit, Double turnPowerLimit, TrcPose2D... poses)
+    {
+        if (drivePowerLimit != null)
+        {
+            purePursuitDrive.setMoveOutputLimit(drivePowerLimit);
+        }
+
+        if (turnPowerLimit != null)
+        {
+            purePursuitDrive.setRotOutputLimit(turnPowerLimit);
+        }
+
+        purePursuitDrive.start(event, timeout, incrementalPath, maxVel, maxAccel, maxDecel, null, poses);
+    }   //startPath
+
+    /**
+     * This method starts the Pure Pursuit drive with the specified poses in the drive path.
+     *
+     * @param timeout specifies the maximum time allowed for this operation.
+     * @param incrementalPath specifies true if appending point is relative to the previous point in the path,
+     *        false if appending point is in the same reference frame as startingPose.
+     * @param maxVel specifies the maximum velocity if applying trapezoid velocity profile, null if not.
+     * @param maxAccel specifies the maximum acceleration if applying trapezoid velocity profile, null if not.
+     * @param maxDecel specifies the maximum deceleration if applying trapezoid velocity profile, null if not.
      * @param poses specifies an array of waypoint poses in the drive path.
      */
     public void startPath(
