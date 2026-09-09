@@ -91,15 +91,11 @@ public abstract class TrcDriveBase implements TrcExclusiveSubsystem
 
         public double drivePidTolerance = 0.0;
         public double turnPidTolerance = 0.0;
-        public double driveTime = 0.0;
         public TrcPidController.PidCoefficients xDrivePidCoeffs = null;
-        public double xDriveTarget = 0.0;
         public double xDrivePowerLimit = 1.0;
         public TrcPidController.PidCoefficients yDrivePidCoeffs = null;
-        public double yDriveTarget = 0.0;
         public double yDrivePowerLimit = 1.0;
         public TrcPidController.PidCoefficients turnPidCoeffs = null;
-        public double turnTarget = 0.0;
         public double turnPowerLimit = 1.0;
         public TrcPidController.PidCoefficients velPidCoeffs = null;
 //        public boolean enableSquid = false;
