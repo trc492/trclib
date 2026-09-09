@@ -121,13 +121,17 @@ public class CmdPidDrive implements TrcRobot.RobotCommand
      * This method starts the specified PID drive run.
      *
      * @param delay specifies delay in seconds before PID drive starts. 0 means no delay.
-     * @param drivePowerLimit specifies the power limit to be applied for the PID controlled drive.
+     * @param drivePowerLimit specifies the power limit to be applied for the PID controlled drive, can be null
+     *        if not provided.
+     * @param turnPowerLimit specifies the power limit to be applied for the PID controlled turn, can be null
+     *        if not provided.
      * @param tunePidCoeff specifies PID coefficients for tuning PID controllers, can be null if not in
      *        tune mode.
      * @param pathPoints specifies one or more points on the path.
      */
     public void startPath(
-        double delay, double drivePowerLimit, TrcPidController.PidCoefficients tunePidCoeff, TrcPose2D... pathPoints)
+        double delay, Double drivePowerLimit, Double turnPowerLimit, TrcPidController.PidCoefficients tunePidCoeff,
+        TrcPose2D... pathPoints)
     {
         if (pathPoints.length == 0)
         {
@@ -139,9 +143,12 @@ public class CmdPidDrive implements TrcRobot.RobotCommand
 
         this.delay = delay;
         this.pathPoints = pathPoints;
-        if (xPidCtrl != null) xPidCtrl.setOutputLimit(drivePowerLimit);
-        if (yPidCtrl != null) yPidCtrl.setOutputLimit(drivePowerLimit);
-        if (turnPidCtrl != null) turnPidCtrl.setOutputLimit(drivePowerLimit);
+        if (drivePowerLimit != null)
+        {
+            if (xPidCtrl != null) xPidCtrl.setOutputLimit(drivePowerLimit);
+            if (yPidCtrl != null) yPidCtrl.setOutputLimit(drivePowerLimit);
+        }
+        if (turnPowerLimit != null && turnPidCtrl != null) turnPidCtrl.setOutputLimit(turnPowerLimit);
         pathIndex = 0;
 
         pidDrive.resetAbsoluteTargetPose();
