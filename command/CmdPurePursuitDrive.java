@@ -93,10 +93,24 @@ public class CmdPurePursuitDrive implements TrcRobot.RobotCommand
      * @param maxVel specifies the maximum velocity if applying trapezoid velocity profile, null if not.
      * @param maxAccel specifies the maximum acceleration if applying trapezoid velocity profile, null if not.
      * @param maxDecel specifies the maximum deceleration if applying trapezoid velocity profile, null if not.
+     * @param drivePowerLimit specifies the drive power limit, null if not provided.
+     * @param turnPowerLimit specifies the turn power limit, null if not provided.
      * @param path specifies the drive path with waypoints.
      */
-    public void startPath(double timeout, Double maxVel, Double maxAccel, Double maxDecel, TrcPath path)
+    public void startPath(
+        double timeout, Double maxVel, Double maxAccel, Double maxDecel, Double drivePowerLimit, Double turnPowerLimit,
+        TrcPath path)
     {
+        if (drivePowerLimit != null)
+        {
+            purePursuitDrive.setMoveOutputLimit(drivePowerLimit);
+        }
+
+        if (turnPowerLimit != null)
+        {
+            purePursuitDrive.setRotOutputLimit(turnPowerLimit);
+        }
+
         purePursuitDrive.start(event, timeout, maxVel, maxAccel, maxDecel, null, path);
     }   //startPath
 
@@ -191,13 +205,25 @@ public class CmdPurePursuitDrive implements TrcRobot.RobotCommand
      * @param maxVel specifies the maximum velocity if applying trapezoid velocity profile, null if not.
      * @param maxAccel specifies the maximum acceleration if applying trapezoid velocity profile, null if not.
      * @param maxDecel specifies the maximum deceleration if applying trapezoid velocity profile, null if not.
+     * @param drivePowerLimit specifies the drive power limit, null if not provided.
+     * @param turnPowerLimit specifies the turn power limit, null if not provided.
      * @param path specifies the file system path or resource name.
      * @param loadFromResources specifies true if the data is from attached resources, false if from file system.
      */
     public void startPath(
         double timeout, boolean incrementalPath, Double maxVel, Double maxAccel, Double maxDecel,
-        String path, boolean loadFromResources)
+        Double drivePowerLimit, Double turnPowerLimit, String path, boolean loadFromResources)
     {
+        if (drivePowerLimit != null)
+        {
+            purePursuitDrive.setMoveOutputLimit(drivePowerLimit);
+        }
+
+        if (turnPowerLimit != null)
+        {
+            purePursuitDrive.setRotOutputLimit(turnPowerLimit);
+        }
+
         purePursuitDrive.start(
             event, timeout, incrementalPath, maxVel, maxAccel, maxDecel, null, path, loadFromResources);
     }   //startPath
