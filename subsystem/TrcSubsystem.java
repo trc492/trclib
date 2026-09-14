@@ -31,7 +31,7 @@ import trclib.robotcore.TrcEvent;
  * This class implements a generic platform independent subsystem. It is intended to be extended by a subsystem class
  * that must implement a set of common subsystem abstract methods.
  */
-public abstract class TrcSubsystem
+public abstract class TrcSubsystem<Action>
 {
     private static final String moduleName = TrcSubsystem.class.getSimpleName();
     private static final ArrayList<SubsystemInfo> subsystemList = new ArrayList<>();
@@ -39,16 +39,22 @@ public abstract class TrcSubsystem
 
     private static class SubsystemInfo
     {
-        final TrcSubsystem subsystem;
+        final TrcSubsystem<?> subsystem;
         boolean needZeroCal;
 
-        SubsystemInfo(TrcSubsystem subsystem, boolean needZeroCal)
+        SubsystemInfo(TrcSubsystem<?> subsystem, boolean needZeroCal)
         {
             this.subsystem = subsystem;
             this.needZeroCal = needZeroCal;
         }   //SubsystemInfo
 
     }   //class SubsystemInfo
+
+    public enum TuneAction
+    {
+        SetNextTuneTargetUp,
+        SetNextTuneTargetDown
+    }   //enum TuneAction
 
     //
     // Abstract methods to be implemented by subsystem classes.
@@ -82,12 +88,20 @@ public abstract class TrcSubsystem
     public abstract void subsystemControl(boolean altFunc, double... inputs);
 
     /**
-     * This method is called when a gamepad button is pressed to perform the subsystem action.
+     * This method is called to perform the subsystem action.
      *
-     * @param pressed specifies true if the gamepad button is pressed, false otherwise.
-     * @param altFunc specifies true if the gamepad AltFunc button is pressed, false otherwise.
+     * @param action specifies the subsystem action to perform.
+     * @param context specifies the context object for the action.
      */
-    public abstract void subsystemAction(boolean pressed, boolean altFunc);
+    public abstract void subsystemAction(Action action, Object context);
+
+    /**
+     * This method is called to perform the subsystem tune action.
+     *
+     * @param action specifies the subsystem tune action to perform.
+     * @param tuneSubsystemName specifies the subsystem object name to tune.
+     */
+    public abstract void tuneSubsystem(TuneAction action, String tuneSubsystemName);
 
     /**
      * This method is called to publish the NetworkTable entries for the subsystem to the Dashboard at Subsystem
@@ -117,20 +131,6 @@ public abstract class TrcSubsystem
      * @param subsystemName specifies the name of the subsystem to be updated.
      */
     public abstract void updateParamsFromDashboard(String subsystemName);
-
-    /**
-     * This method is called to set the next tune target up from the current target.
-     *
-     * @param subsystemName specifies the name of the subsystem to update its tune target.
-     */
-    public abstract void setNextTuneTargetUp(String subsystemName);
-
-    /**
-     * This method is called to set the next tune target down from the current target.
-     *
-     * @param subsystemName specifies the name of the subsystem to update its tune target.
-     */
-    public abstract void setNextTuneTargetDown(String subsystemName);
 
     /**
      * Constructor: Creates an instance of the object.
@@ -179,7 +179,7 @@ public abstract class TrcSubsystem
      * @param name specifies the subsystem name to look for.
      * @return subsystem matching the given name.
      */
-    public static TrcSubsystem getSubsystem(String name)
+    public static TrcSubsystem<?> getSubsystem(String name)
     {
         for (SubsystemInfo subsystemInfo: subsystemList)
         {
@@ -324,35 +324,20 @@ public abstract class TrcSubsystem
     }   //updateSubsystemParamsFromDashboard
 
     /**
-     * This method sets the next tune target up for the specified subsystem.
+     * This method performs the subsystem tune action for all subsystems.
      *
-     * @param subsystemName specifies the name of the subsystem to update its tune target.
+     * @param action specifies the subsystem tune action to perform.
+     * @param tuneSubsystemName specifies the subsystem object name to tune.
      */
-    public static void setSubsystemTuneTargetUp(String subsystemName)
+    public static void performTuneSubsystemAction(TuneAction action, String tuneSubsystemName)
     {
-        if (subsystemName != null && !subsystemName.isEmpty())
+        if (tuneSubsystemName != null && !tuneSubsystemName.isEmpty())
         {
             for (SubsystemInfo subsystemInfo: subsystemList)
             {
-                subsystemInfo.subsystem.setNextTuneTargetUp(subsystemName);
+                subsystemInfo.subsystem.tuneSubsystem(action, tuneSubsystemName);
             }
         }
-    }   //setSubsystemTuneTargetUp
-
-    /**
-     * This method sets the next tune target down for the specified subsystem.
-     *
-     * @param subsystemName specifies the name of the subsystem to update its tune target.
-     */
-    public static void setSubsystemTuneTargetDown(String subsystemName)
-    {
-        if (subsystemName != null && !subsystemName.isEmpty())
-        {
-            for (SubsystemInfo subsystemInfo: subsystemList)
-            {
-                subsystemInfo.subsystem.setNextTuneTargetDown(subsystemName);
-            }
-        }
-    }   //setSubsystemTuneTargetDown
+    }   //performTuneSubsystemAction
 
 }   //class TrcSubsystem
