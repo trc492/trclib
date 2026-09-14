@@ -99,7 +99,7 @@ public abstract class TrcSubsystem<Action>
      * This method is called to perform the subsystem tune action.
      *
      * @param action specifies the subsystem tune action to perform.
-     * @param tuneSubsystemName specifies the subsystem object name to tune.
+     * @param tuneSubsystemName specifies the subsystem object to tune.
      */
     public abstract void tuneSubsystem(TuneAction action, String tuneSubsystemName);
 
@@ -327,7 +327,7 @@ public abstract class TrcSubsystem<Action>
      * This method performs the subsystem tune action for all subsystems.
      *
      * @param action specifies the subsystem tune action to perform.
-     * @param tuneSubsystemName specifies the subsystem object name to tune.
+     * @param tuneSubsystemName specifies the subsystem object to tune.
      */
     public static void performTuneSubsystemAction(TuneAction action, String tuneSubsystemName)
     {
