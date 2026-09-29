@@ -32,14 +32,13 @@ import org.opencv.core.Rect;
 import org.opencv.core.Scalar;
 import org.opencv.imgproc.Imgproc;
 
+import java.util.ArrayList;
 import java.util.Collections;
 
 /**
  * This interface implements the standard methods for an OpenCV pipeline.
- *
- * @param <O> specifies the detected object type the pipeline will produce.
  */
-public interface TrcOpenCvPipeline<O>
+public interface TrcOpenCvPipeline
 {
     /**
      * This method is called to reset the state of the pipeline if any.
@@ -50,16 +49,16 @@ public interface TrcOpenCvPipeline<O>
      * This method is called to process the input image through the pipeline.
      *
      * @param input specifies the input image to be processed.
-     * @return array of detected objects.
+     * @return list of detected objects.
      */
-    O[] process(Mat input);
+    ArrayList<TrcVision.TargetInfo> process(Mat input);
 
     /**
-     * This method returns the array of detected objects.
+     * This method returns the array of detected targets.
      *
-     * @return array of detected objects.
+     * @return list of detected targets.
      */
-    O[] getDetectedObjects();
+    ArrayList<TrcVision.TargetInfo> getDetectedTargets();
 
     /**
      * This method enables image annotation of the detected object.
@@ -114,7 +113,7 @@ public interface TrcOpenCvPipeline<O>
      * This method is called to overlay rectangles of the detected objects on an image.
      *
      * @param image specifies the frame to be rendered to the video output.
-     * @param detectedObjects specifies the detected objects.
+     * @param detectedTargets specifies the detected targets.
      * @param drawRotatedRect specifies true to draw rotated rectangle, false to draw bounding rectangle.
      * @param drawCrosshair specifies true to draw crosshair at the center of the screen, false otherwise.
      * @param rectColor specifies the color of the annotated rectangle.
@@ -123,14 +122,14 @@ public interface TrcOpenCvPipeline<O>
      * @param fontScale specifies the scale factor that is multiplied by the font-specific base size.
      */
     default void annotateFrame(
-        Mat image, TrcOpenCvDetector.DetectedObject<?>[] detectedObjects, boolean drawRotatedRect,
+        Mat image, ArrayList<TrcVision.TargetInfo> detectedTargets, boolean drawRotatedRect,
         boolean drawCrosshair, Scalar rectColor, int thickness, Scalar textColor, double fontScale)
     {
-        for (TrcOpenCvDetector.DetectedObject<?> object : detectedObjects)
+        for (TrcVision.TargetInfo target: detectedTargets)
         {
-            Rect objRect = null;
+            Rect targetRect = target.getPixelRect();
             Point[] vertices;
-            if (drawRotatedRect && (vertices = object.getRotatedRectVertices()) != null)
+            if (drawRotatedRect && (vertices = target.getRotatedRectVertices()) != null)
             {
                 MatOfPoint points = new MatOfPoint(vertices);
                 Imgproc.drawContours(image, Collections.singletonList(points), -1, rectColor, thickness);
@@ -138,25 +137,18 @@ public interface TrcOpenCvPipeline<O>
             }
             else
             {
-                objRect = object.getObjectRect();
-                Imgproc.rectangle(image, objRect, rectColor, thickness);
-            }
-
-            if (objRect == null)
-            {
-                objRect = object.getObjectRect();
+                Imgproc.rectangle(image, targetRect, rectColor, thickness);
             }
 
             if (drawCrosshair)
             {
                 Imgproc.drawMarker(
-                    image, new Point(objRect.x + objRect.width/2.0, objRect.y + objRect.height), rectColor,
-                    MARKER_CROSS);
+                    image, new Point(targetRect.x + targetRect.width/2.0, targetRect.y + targetRect.height),
+                    rectColor, MARKER_CROSS);
             }
             Imgproc.putText(
-                image, object.label, new Point(objRect.x, objRect.y), FONT_HERSHEY_SIMPLEX, fontScale, textColor,
-                thickness);
+                image, target.label, new Point(targetRect.x, targetRect.y), FONT_HERSHEY_SIMPLEX, fontScale,
+                textColor, thickness);
         }
     }   //annotatedFrame
-
 }   //interface TrcOpenCvPipeline

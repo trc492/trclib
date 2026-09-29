@@ -45,7 +45,6 @@ import org.opencv.imgproc.Imgproc;
 
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
 
 import trclib.dataprocessor.TrcUtil;
@@ -57,7 +56,7 @@ import trclib.timer.TrcTimer;
 /**
  * This class implements a generic OpenCV color blob detection pipeline.
  */
-public class TrcOpenCvColorBlobPipeline implements TrcOpenCvPipeline<TrcOpenCvDetector.DetectedObject<?>>
+public class TrcOpenCvColorBlobPipeline implements TrcOpenCvPipeline
 {
     public static class Annotation
     {
@@ -665,7 +664,7 @@ public class TrcOpenCvColorBlobPipeline implements TrcOpenCvPipeline<TrcOpenCvDe
          * @param cameraPose specifies the camera pose from robot center.
          * @return this object for chaining.
          */
-        public SolvePnpParams setSolvePnpParams(TrcOpenCvDetector.LensInfo lensInfo, TrcPose3D cameraPose)
+        public SolvePnpParams setSolvePnpParams(TrcVision.LensInfo lensInfo, TrcPose3D cameraPose)
         {
             cameraMatrix = new Mat(3, 3, CvType.CV_64FC1);
             cameraMatrix.put(
@@ -694,79 +693,300 @@ public class TrcOpenCvColorBlobPipeline implements TrcOpenCvPipeline<TrcOpenCvDe
     }   //class SolvePnpParams
 
     /**
-     * This class encapsulates info of the detected object. It extends TrcOpenCvDetector.DetectedObject that requires
-     * it to provide a method to return the detected object rect and area.
+     * This class encapsulates info of the detected target. It extends TrcVision.Target that requires this class to
+     * provide methods to return info of the detected target.
      */
-    public class DetectedObject extends TrcOpenCvDetector.DetectedObject<Point[]>
+    public class TargetInfo extends TrcVision.TargetInfo
     {
-        public final Rect objRect;
-        public final RotatedRect rotatedRect;
-        public final double rotatedRectAngle;
-        public final double objArea;
-        public final Point[] vertices = new Point[4];
-        public final TrcPose2D objPose;
-        public final double pixelWidth, pixelHeight;
+        private final MatOfPoint contour;
+        private final Double targetKnownWidth;
+        private final double targetGroundOffset;
+        private final TrcHomographyMapper homographyMapper;
 
         /**
          * Constructor: Creates an instance of the object.
          *
          * @param label specifies the object label.
+         * @param cameraInfo specifies camera info.
          * @param contour specifies the contour of the detected object.
+         * @param targetKnownWidth specifies the target's known width in real world unit, can be null if not provided.
+         * @param targetGroundOffset specifies the target offset from ground, can be zero if target is on the ground.
+         * @param homographyMapper specifies Homography Mapper to be used to determine target pose, can be null
+         *        if not provided.
          */
-        public DetectedObject(String label, MatOfPoint contour)
+        public TargetInfo(
+            String label, TrcVision.CameraInfo cameraInfo, MatOfPoint contour, Double targetKnownWidth,
+            double targetGroundOffset, TrcHomographyMapper homographyMapper)
         {
-            super(label, null);
-            objRect = Imgproc.boundingRect(contour);
-            MatOfPoint2f contourPoints2f = new MatOfPoint2f(contour.toArray());
-            rotatedRect = Imgproc.minAreaRect(contourPoints2f);
-            contourPoints2f.release();
-            // The angle OpenCV gives us can be ambiguous, so look at the shape of the rectangle to fix that.
-            if (rotatedRect.size.width < rotatedRect.size.height)
-            {
-                // pixelWidth is the longer edge, swap them.
-                rotatedRectAngle = rotatedRect.angle + 90.0;
-                pixelWidth = rotatedRect.size.height;
-                pixelHeight = rotatedRect.size.width;
-            }
-            else
-            {
-                rotatedRectAngle = rotatedRect.angle;
-                pixelWidth = rotatedRect.size.width;
-                pixelHeight = rotatedRect.size.height;
-            }
-            objArea = Imgproc.contourArea(contour);
-            // Get the 2D image points from the detected rectangle corners
-            rotatedRect.points(vertices);
+            super(label, cameraInfo);
+            this.contour = contour;
+            this.targetKnownWidth = targetKnownWidth;
+            this.targetGroundOffset = targetGroundOffset;
+            this.homographyMapper = homographyMapper;
+        }   //TargetInfo
 
-            // Solve PnP: assuming the object is a rectangle with known dimensions.
-            if (solvePnpParams == null || solvePnpParams.cameraMatrix == null || solvePnpParams.distCoeffs != null)
+        /**
+         * This method returns the string form of the target info.
+         *
+         * @return string form of the target info.
+         */
+        @Override
+        public String toString()
+        {
+            return super.toString() +
+                   ",knownWidth=" + targetKnownWidth +
+                   ",groundOffset=" + targetGroundOffset;
+        }   //toString
+
+        //
+        // Implement TrcVision.TargetInfo abstract methods.
+        //
+
+        /**
+         * This method returns the robot field pose on the ground.
+         *
+         * @return robot field pose, null if not supported.
+         */
+        @Override
+        public TrcPose2D getRobotPose()
+        {
+            // ColorBlob detection does not support calculating robotPose.
+            return null;
+        }   //getRobotPose
+
+        /**
+         * This method returns the projected 2D pose on the ground of the detected target relative to the camera.
+         *
+         * @return pose of the detected target relative to camera, null if not supported.
+         */
+        @Override
+        public TrcPose2D getTargetPose()
+        {
+            if (targetPose == null)
             {
-                // Caller did not provide camera matrix nor distortion coefficients so we can't call solvePnP.
-                objPose = null;
-            }
-            else
-            {
-                MatOfPoint2f verticePoints = new MatOfPoint2f(orderPoints(vertices));
-                if (Calib3d.solvePnP(
-                    // Define the 3D coordinates of the object corners in the object coordinate space
-                    solvePnpParams.objPoints,   // Object points in 3D
-                    verticePoints,              // Corresponding image points
-                    solvePnpParams.cameraMatrix,
-                    solvePnpParams.distCoeffs,
-                    rvec,
-                    tvec))
+                if (solvePnpParams != null && solvePnpParams.cameraMatrix != null && solvePnpParams.distCoeffs != null)
                 {
-                    objPose = projectPose(rvec, tvec, solvePnpParams.cameraPose);
-//                    objPose = new TrcPose2D(tvec.get(0, 0)[0], tvec.get(2, 0)[0], -(Math.toDegrees(rvec.get(1, 0)[0])));
+                    // Best but also lots of work to tune.
+                    // Solve PnP: assuming the object is a rectangle with known dimensions.
+                    if (rotatedRectVertices == null)
+                    {
+                        // We need the vertices for SolvePnP, let's get them first.
+                        getRotatedRectVertices();
+                    }
+
+                    if (rotatedRectVertices != null)
+                    {
+                        Point[] ordered = orderPoints(rotatedRectVertices);
+                        MatOfPoint2f verticePoints = new MatOfPoint2f(ordered);
+
+                        try
+                        {
+                            if (Calib3d.solvePnP(
+                                solvePnpParams.objPoints,   // Object points in 3D
+                                verticePoints,              // Corresponding image points
+                                solvePnpParams.cameraMatrix,
+                                solvePnpParams.distCoeffs,
+                                rvec,
+                                tvec))
+                            {
+                                targetPose = projectPose(rvec, tvec, solvePnpParams.cameraPose);
+                            }
+                        }
+                        finally
+                        {
+                            // Ensured release even if solvePnP throws a native crash/exception
+                            verticePoints.release();
+                        }
+                    }
+                }
+                else if (targetKnownWidth != null)
+                {
+                    // Good and much less work as long as the target width is known.
+                    targetPose = getTargetPoseByKnownWidth(targetKnownWidth);
+                }
+                else if (homographyMapper != null)
+                {
+                    // Good but needs camera fixed and Homography calibration.
+                    targetPose = getTargetPoseByHomography(homographyMapper, targetGroundOffset);
+                }
+                else if (cameraInfo != null)
+                {
+                    // Worst because it depends on the camera pitch. The flatter the camera pitch, the bigger
+                    // the error.
+                    targetPose = getTargetPoseByPixelPosition(targetGroundOffset);
+                }
+
+                if (targetPose != null)
+                {
+                    targetDistance = TrcUtil.magnitude(targetPose.x, targetPose.y);
+                }
+            }
+
+            return targetPose != null? targetPose.clone(): null;
+        }   //getTargetPose
+
+        /**
+         * This method returns the target's real world ground distance from the camera.
+         *
+         * @return target real world ground distance, null if not supported.
+         */
+        @Override
+        public Double getTargetDistance()
+        {
+            if (targetDistance == null)
+            {
+                // getTargetPose will calculate targetDistance.
+                getTargetPose();
+            }
+
+            return targetDistance;
+        }   //getTargetDistance
+
+        /**
+         * This method returns the target's real world width.
+         *
+         * @return target real world width, null if not supported.
+         */
+        @Override
+        public Double getTargetWidth()
+        {
+            if (targetWidth == null)
+            {
+                if (solvePnpParams != null)
+                {
+                    targetWidth = solvePnpParams.objWidth;
+                }
+                else if (targetPose == null)
+                {
+                    // Some getTargetPose method may give you targetWidth (i.e. Homography), try it.
+                    getTargetPose();
+                }
+            }
+
+            return targetWidth;
+        }   //getTargetWidth
+
+        /**
+         * This method returns the normalized area percent of the detected target.
+         *
+         * @return normalized area percent of the detected target (0.0 to 1.0), null if not supported.
+         */
+        @Override
+        public Double getNormalizedTargetArea()
+        {
+            if (normalizedTargetArea == null)
+            {
+                normalizedTargetArea = Imgproc.contourArea(contour) /
+                                       (cameraInfo.camImageWidth*cameraInfo.camImageHeight);
+            }
+
+            return normalizedTargetArea;
+        }   //getNormalizedTargetArea
+
+        /**
+         * This method returns the pixel rect of the detected target.
+         *
+         * @return pixel rect of the detected target, null if not supported.
+         */
+        @Override
+        public Rect getPixelRect()
+        {
+            if (pixelRect == null)
+            {
+                pixelRect = Imgproc.boundingRect(contour);
+            }
+
+            return pixelRect;
+        }   //getPixelRect
+
+        /**
+         * This method returns the pixel width of the detected target. This may be different from pixel rect width.
+         * If the target is rotated, this will give you a more accurate width.
+         *
+         * @return target pixel width, null if not supported.
+         */
+        @Override
+        public Double getPixelWidth()
+        {
+            if (pixelWidth == null)
+            {
+                // getRotatedRectVertices will calculate pixelWidth.
+                getRotatedRectVertices();
+            }
+
+            return pixelWidth;
+        }   //getPixelWidth
+
+        /**
+         * This method returns the pixel height of the detected target. This may be different from pixel rect height.
+         * If the target is rotated, this will give you a more accurate height.
+         *
+         * @return target pixel height, null if not supported.
+         */
+        @Override
+        public Double getPixelHeight()
+        {
+            if (pixelHeight == null)
+            {
+                // getRotatedRectVertices will calculate pixelHeight.
+                getRotatedRectVertices();
+            }
+
+            return pixelHeight;
+        }   //getPixelHeight
+
+        /**
+         * This method returns the target's rotated rectangle angle.
+         *
+         * @return rotated rectangle angle, null if not supported.
+         */
+        @Override
+        public Double getRotatedRectAngle()
+        {
+            if (rotatedRectAngle == null)
+            {
+                // getRotatedRectVertices will calculate rotatedRectAngle.
+                getRotatedRectVertices();
+            }
+
+            return rotatedRectAngle;
+        }   //getRotatedRectAngle
+
+        /**
+         * This method returns the rotated rect vertices of the detected target.
+         *
+         * @return rotated rect vertices, null if not supported.
+         */
+        @Override
+        public Point[] getRotatedRectVertices()
+        {
+            if (rotatedRectVertices == null)
+            {
+                MatOfPoint2f contourPoints2f = new MatOfPoint2f(contour.toArray());
+                RotatedRect rotatedRect = Imgproc.minAreaRect(contourPoints2f);
+
+                contourPoints2f.release();
+                // The angle OpenCV gives us can be ambiguous, so look at the shape of the rectangle to fix that.
+                if (rotatedRect.size.width < rotatedRect.size.height)
+                {
+                    // pixelWidth is the longer edge, swap them.
+                    rotatedRectAngle = rotatedRect.angle + 90.0;
+                    // Swap width and height.
+                    pixelWidth = rotatedRect.size.height;
+                    pixelHeight = rotatedRect.size.width;
                 }
                 else
                 {
-                    // SolvePnP failed, return null so caller will determine object pose by Homography.
-                    objPose = null;
+                    rotatedRectAngle = rotatedRect.angle;
+                    pixelWidth = rotatedRect.size.width;
+                    pixelHeight = rotatedRect.size.height;
                 }
-                verticePoints.release();
+                // Get the 2D image points from the detected rectangle corners
+                rotatedRect.points(rotatedRectVertices);
             }
-        }   //DetectedObject
+
+            return rotatedRectVertices;
+        }   //getRotatedRectVertices
 
         /**
          * This method projects the result from SolvePnP to a 2D pose on the ground.
@@ -778,28 +998,51 @@ public class TrcOpenCvColorBlobPipeline implements TrcOpenCvPipeline<TrcOpenCvDe
          */
         private TrcPose2D projectPose(Mat rvec, Mat tvec, TrcPose3D cameraPose)
         {
-            Mat camera_rvec = cameraRVec(cameraPose);
-            Mat camera_tvec = cameraTVec(cameraPose);
-
+            Mat camera_rvec = null;
+            Mat camera_tvec = null;
             Mat modelToRobot_rvec = new Mat();
             Mat modelToRobot_tvec = new Mat();
-            Calib3d.composeRT(rvec, tvec, camera_rvec, camera_tvec, modelToRobot_rvec, modelToRobot_tvec);
             Mat rotMat = new Mat();
-            Calib3d.Rodrigues(modelToRobot_rvec, rotMat);
 
-            double theta = Math.atan2(
-                -rotMat.get(1, 2)[0],
-                -rotMat.get(0, 2)[0]);
+            try
+            {
+                camera_rvec = cameraRVec(cameraPose);
+                camera_tvec = cameraTVec(cameraPose);
 
-            return new TrcPose2D(
-                -modelToRobot_tvec.get(1, 0)[0],
-                modelToRobot_tvec.get(0, 0)[0],
-                -Math.toDegrees(theta)
-            );
+                Calib3d.composeRT(rvec, tvec, camera_rvec, camera_tvec, modelToRobot_rvec, modelToRobot_tvec);
+                Calib3d.Rodrigues(modelToRobot_rvec, rotMat);
+
+                double[] rMat12 = rotMat.get(1, 2);
+                double[] rMat02 = rotMat.get(0, 2);
+                double[] tVec10 = modelToRobot_tvec.get(1, 0);
+                double[] tVec00 = modelToRobot_tvec.get(0, 0);
+
+                if (rMat12 != null && rMat02 != null && tVec10 != null && tVec00 != null)
+                {
+                    double theta = Math.atan2(-rMat12[0], -rMat02[0]);
+
+                    return new TrcPose2D(
+                        -tVec10[0],
+                        tVec00[0],
+                        -Math.toDegrees(theta));
+                }
+            }
+            finally
+            {
+                // Release every locally allocated native Mat
+                if (camera_rvec != null) camera_rvec.release();
+                if (camera_tvec != null) camera_tvec.release();
+                modelToRobot_rvec.release();
+                modelToRobot_tvec.release();
+                rotMat.release();
+            }
+
+            return null;
         }   //projectPose
 
         /**
          * This method creates a rotational vector from the camera pose.
+         * Note: Caller is responsible to release the returned Mat.
          *
          * @param cameraPose specifies the camera's 3D position on the robot.
          * @return rotational vector of the camera on the robot.
@@ -825,6 +1068,7 @@ public class TrcOpenCvColorBlobPipeline implements TrcOpenCvPipeline<TrcOpenCvDe
 
         /**
          * This method creates a translational vector from the camera pose.
+         * Note: Caller is responsible to release the returned Mat.
          *
          * @param cameraPose specifies the camera's 3D position on the robot.
          * @return translational vector of the camera on the robot.
@@ -848,7 +1092,6 @@ public class TrcOpenCvColorBlobPipeline implements TrcOpenCvPipeline<TrcOpenCvDe
         {
             // Orders the array of 4 points in the order: top-left, top-right, bottom-right, bottom-left
             Point[] orderedPts = new Point[4];
-
             // Sum and difference of x and y coordinates
             double[] sum = new double[4];
             double[] diff = new double[4];
@@ -921,109 +1164,7 @@ public class TrcOpenCvColorBlobPipeline implements TrcOpenCvPipeline<TrcOpenCvDe
             }
             return index;
         }   //indexOfMax
-
-        /**
-         * This method returns the rect of the detected object.
-         *
-         * @return rect of the detected object.
-         */
-        @Override
-        public Rect getObjectRect()
-        {
-            // Get detected object bounding box.
-            return objRect;
-        }   //getObjectRect
-
-        /**
-         * This method returns the area of the detected object.
-         *
-         * @return area of the detected object.
-         */
-        @Override
-        public double getObjectArea()
-        {
-            // OpenCv returns the actual area of the object, not just the bounding box.
-            return objArea;
-        }   //getObjectArea
-
-        /**
-         * This method returns the object's pixel width.
-         *
-         * @return object pixel width, null if not supported.
-         */
-        @Override
-        public Double getPixelWidth()
-        {
-            return pixelWidth;
-        }   //getPixelWidth
-
-        /**
-         * This method returns the object's pixel height.
-         *
-         * @return object pixel height, null if not supported.
-         */
-        @Override
-        public Double getPixelHeight()
-        {
-            return pixelHeight;
-        }   //getPixelHeight
-
-        /**
-         * This method returns the object's rotated rectangle angle.
-         *
-         * @return rotated rectangle angle.
-         */
-        @Override
-        public Double getRotatedRectAngle()
-        {
-            return rotatedRectAngle;
-        }   //getRotatedRectAngle
-
-        /**
-         * This method returns the pose of the detected object relative to the camera.
-         *
-         * @return pose of the detected object relative to camera.
-         */
-        @Override
-        public TrcPose2D getObjectPose()
-        {
-            return objPose;
-        }   //getObjectPose
-
-        /**
-         * This method returns the real world width of the detected object.
-         *
-         * @return real world width of the detected object.
-         */
-        @Override
-        public Double getObjectWidth()
-        {
-            return solvePnpParams != null? solvePnpParams.objWidth: null;
-        }   //getObjectWidth
-
-        /**
-         * This method returns the real world depth of the detected object.
-         *
-         * @return real world depth of the detected object.
-         */
-        @Override
-        public Double getObjectDepth()
-        {
-            return objPose != null? TrcUtil.magnitude(objPose.x, objPose.y): null;
-        }   //getObjectDepth
-
-        /**
-         * This method returns the rotated rect vertices of the detected object.
-         *
-         * @return rotated rect vertices.
-         */
-        @Override
-        public Point[] getRotatedRectVertices()
-        {
-            return vertices;
-        }   //getRotatedRectVertices
-
-    }   //class DetectedObject
+    }   //class TargetInfo
 
     private static final Scalar ANNOTATE_RECT_COLOR = new Scalar(0, 255, 0, 255);
     private static final Scalar ANNOTATE_RECT_WHITE = new Scalar(255, 255, 255, 255);
@@ -1036,6 +1177,10 @@ public class TrcOpenCvColorBlobPipeline implements TrcOpenCvPipeline<TrcOpenCvDe
     private final String instanceName;
     private final PipelineParams pipelineParams;
     private final SolvePnpParams solvePnpParams;
+    private final TrcVision.CameraInfo cameraInfo;
+    private final TrcVision.TargetKnownWidth targetKnownWidth;
+    private final TrcVision.TargetGroundOffset targetGroundOffset;
+    private final TrcHomographyMapper homographyMapper;
     private final Mat[] intermediateMats;
     private final Mat circlesMat = new Mat();
     private final Mat hierarchy = new Mat();
@@ -1043,7 +1188,7 @@ public class TrcOpenCvColorBlobPipeline implements TrcOpenCvPipeline<TrcOpenCvDe
     private final Mat tvec = new Mat();
 
     private final Annotation rawAnnotation = new Annotation();
-    private final AtomicReference<DetectedObject[]> detectedObjectsUpdate = new AtomicReference<>();
+    private final AtomicReference<ArrayList<TrcVision.TargetInfo>> detectedTargetsUpdate = new AtomicReference<>();
     private int intermediateStep = 0;
     private Mat roiMask = null;
     private TrcVisionPerformanceMetrics performanceMetrics = null;
@@ -1054,13 +1199,26 @@ public class TrcOpenCvColorBlobPipeline implements TrcOpenCvPipeline<TrcOpenCvDe
      * @param instanceName specifies the instance name.
      * @param pipelineParams specifies pipeline parameters.
      * @param solvePnpParams specifies SolvePnP parameters, can be null if not provided.
+     * @param cameraInfo specifies camera information.
+     * @param targetKnownWidth specifies the method to call to get the target's known width, can be null if not
+     *        provided.
+     * @param targetGroundOffset specifies the method to call to get target's ground offset, can be null if not
+     *        provided.
      */
-    public TrcOpenCvColorBlobPipeline(String instanceName, PipelineParams pipelineParams, SolvePnpParams solvePnpParams)
+    public TrcOpenCvColorBlobPipeline(
+        String instanceName, PipelineParams pipelineParams, SolvePnpParams solvePnpParams,
+        TrcVision.CameraInfo cameraInfo, TrcVision.TargetKnownWidth targetKnownWidth,
+        TrcVision.TargetGroundOffset targetGroundOffset)
     {
         this.tracer = new TrcDbgTrace();
         this.instanceName = instanceName;
         this.pipelineParams = pipelineParams;
         this.solvePnpParams = solvePnpParams;
+        this.cameraInfo = cameraInfo;
+        this.targetKnownWidth = targetKnownWidth;
+        this.targetGroundOffset = targetGroundOffset;
+        this.homographyMapper = cameraInfo.cameraRect != null && cameraInfo.worldRect != null?
+            new TrcHomographyMapper(cameraInfo.cameraRect, cameraInfo.worldRect): null;
         intermediateMats = new Mat[NUM_INTERMEDIATE_MATS];
         // Allocate Intermediate Mats, intermediateMats[0] is always the input Mat, no need to allocate.
         for (int i = 1; i < intermediateMats.length; i++)
@@ -1187,13 +1345,12 @@ public class TrcOpenCvColorBlobPipeline implements TrcOpenCvPipeline<TrcOpenCvDe
      * This method is called to process the input image through the pipeline.
      *
      * @param input specifies the input image to be processed.
-     * @return array of detected objects.
+     * @return list of detected objects.
      */
     @Override
-    public DetectedObject[] process(Mat input)
+    public ArrayList<TrcVision.TargetInfo> process(Mat input)
     {
-        ArrayList<DetectedObject> detectedObjectsList = new ArrayList<>();
-        DetectedObject[] detectedObjects;
+        ArrayList<TrcVision.TargetInfo> detectedTargetsList = new ArrayList<>();
         double startTime;
         Mat output;
         int matIndex = 0;
@@ -1382,17 +1539,21 @@ public class TrcOpenCvColorBlobPipeline implements TrcOpenCvPipeline<TrcOpenCvDe
                     contoursOutput.addAll(filterContoursOutput);
                 }
                 // Process contour result.
-                for (MatOfPoint contour : contoursOutput)
+                for (MatOfPoint contour: contoursOutput)
                 {
-                    detectedObjectsList.add(new DetectedObject(ct.name, contour));
+                    detectedTargetsList.add(
+                        new TargetInfo(
+                            ct.name, cameraInfo, contour,
+                            targetKnownWidth != null? targetKnownWidth.getRealWorldWidth((ct.name)): null,
+                            targetGroundOffset != null? targetGroundOffset.getOffset(ct.name): 0.0,
+                            homographyMapper));
                     contour.release();
                 }
-                tracer.traceDebug(instanceName, "DetectedObj: num=%d", detectedObjectsList.size());
+                tracer.traceDebug(instanceName, "DetectedTargets: num=%d", detectedTargetsList.size());
             }
             if (performanceMetrics != null) performanceMetrics.logProcessingTime(startTime);
 
-            detectedObjects = detectedObjectsList.toArray(new DetectedObject[0]);
-            detectedObjectsUpdate.set(detectedObjects);
+            detectedTargetsUpdate.set(detectedTargetsList);
 
             if (rawAnnotation.enabled)
             {
@@ -1410,10 +1571,10 @@ public class TrcOpenCvColorBlobPipeline implements TrcOpenCvPipeline<TrcOpenCvDe
                     textColor = ANNOTATE_RECT_WHITE;
                 }
 
-                if (detectedObjects.length > 0)
+                if (!detectedTargetsList.isEmpty())
                 {
                     annotateFrame(
-                        annotateMat, detectedObjects, rawAnnotation.drawRotatedRect,
+                        annotateMat, detectedTargetsList, rawAnnotation.drawRotatedRect,
                         rawAnnotation.drawCrosshair, rectColor, ANNOTATE_RECT_THICKNESS, textColor,
                         ANNOTATE_FONT_SCALE);
                     if (solvePnpParams != null && solvePnpParams.cameraMatrix != null)
@@ -1433,19 +1594,19 @@ public class TrcOpenCvColorBlobPipeline implements TrcOpenCvPipeline<TrcOpenCvDe
             }
         }
 
-        return detectedObjects;
+        return detectedTargetsList;
     }   //process
 
     /**
-     * This method returns the array of detected objects.
+     * This method returns the array of detected targets.
      *
-     * @return array of detected objects.
+     * @return list of detected targets.
      */
     @Override
-    public DetectedObject[] getDetectedObjects()
+    public ArrayList<TrcVision.TargetInfo> getDetectedTargets()
     {
-        return detectedObjectsUpdate.getAndSet(null);
-    }   //getDetectedObjects
+        return detectedTargetsUpdate.getAndSet(null);
+    }   //getDetectedTargets
 
     /**
      * This method enables image annotation of the detected object.
@@ -1590,7 +1751,7 @@ public class TrcOpenCvColorBlobPipeline implements TrcOpenCvPipeline<TrcOpenCvDe
      * @param output specifies the the output list of contours.
      */
     private void filterContours(
-        List<MatOfPoint> inputContours, FilterContourParams filterContourParams, List<MatOfPoint> output)
+        ArrayList<MatOfPoint> inputContours, FilterContourParams filterContourParams, ArrayList<MatOfPoint> output)
     {
         final MatOfInt hull = new MatOfInt();
         output.clear();

@@ -44,7 +44,7 @@ public class TrcVisionTask<I, O>
     private final TrcVisionProcessor<I, O> visionProcessor;
     private final I[] imageBuffers;
     private final TrcTaskMgr.TaskObject visionTaskObj;
-    private final AtomicReference<O[]> detectedObjects = new AtomicReference<>();
+    private final AtomicReference<O[]> detectedTargets = new AtomicReference<>();
     private volatile boolean taskEnabled = false;
     private int imageIndex = 0;
 
@@ -99,7 +99,7 @@ public class TrcVisionTask<I, O>
         {
             visionTaskObj.unregisterTask();
         }
-        detectedObjects.set(null);
+        detectedTargets.set(null);
         taskEnabled = enabled;
     }   //setTaskEnabled
 
@@ -139,10 +139,10 @@ public class TrcVisionTask<I, O>
      *
      * @return the last detected objects.
      */
-    public O[] getDetectedObjects()
+    public O[] getDetectedTargets()
     {
-        return detectedObjects.getAndSet(null);
-    }   //getDetectedObjects
+        return detectedTargets.getAndSet(null);
+    }   //getDetectedTargets
 
     /**
      * This method runs periodically to do vision processing.
@@ -178,7 +178,7 @@ public class TrcVisionTask<I, O>
                 visionProcessor.putFrame(output);
             }
 
-            detectedObjects.set(objects);
+            detectedTargets.set(objects);
             //
             // Switch to the next buffer so that we won't clobber the info while the client is accessing it.
             //
