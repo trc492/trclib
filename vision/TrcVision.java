@@ -476,6 +476,26 @@ public class TrcVision
 
             return targetPose;
         }   //getTargetPoseByPixelPosition
+
+        /**
+         * This method transforms a target pose in camera space into the main robot frame of reference.
+         *
+         * @param targetPoseCameraSpace specifies the 3D target pose in Camera Space.
+         * @param cameraPose specifies the physical location and mounting orientation of the camera relative to the
+         *        robot center.
+         * @return target position in 2D robot space (Y forward, X right, heading CW from the positive Y axis).
+         */
+        public static TrcPose2D transformCameraSpaceToRobotSpace(TrcPose3D targetPoseCameraSpace, TrcPose3D cameraPose)
+        {
+            // Combine the target's relative camera-space pose onto the camera's physical mounting pose.
+            // This rotates the target vector into global space and compounds the 3D orientations properly.
+            TrcPose3D targetPosInRobotSpace = cameraPose.addRelativePose(targetPoseCameraSpace);
+            // Project components into TrcLib 2D space (Y forward, X right, heading CW from the Y-axis)
+            // Using Math.atan2(x, y) establishes a 0-heading along the positive Y-axis, increasing CW toward positive X.
+            double angleDeg = Math.toDegrees(Math.atan2(targetPosInRobotSpace.x, targetPosInRobotSpace.y));
+
+            return new TrcPose2D(targetPosInRobotSpace.x, targetPosInRobotSpace.y, angleDeg);
+        }   //transformCameraSpaceToRobotSpace
     }   //class TargetInfo
 
 }   //class TrcVision

@@ -22,6 +22,10 @@
 
 package trclib.pathdrive;
 
+import org.apache.commons.math3.geometry.euclidean.threed.Rotation;
+import org.apache.commons.math3.geometry.euclidean.threed.RotationConvention;
+import org.apache.commons.math3.geometry.euclidean.threed.RotationOrder;
+import org.apache.commons.math3.geometry.euclidean.threed.Vector3D;
 import org.apache.commons.math3.linear.RealVector;
 
 import java.io.BufferedReader;
@@ -35,16 +39,17 @@ import java.util.Objects;
 import trclib.dataprocessor.TrcUtil;
 
 /**
- * This class implements a 3D pose object that represents the positional state of an object.
+ * This class implements a 3D pose object that represents the positional and orientation state of an object.
  */
+
 public class TrcPose3D
 {
     public double x;
     public double y;
     public double z;
-    public double yaw;
-    public double pitch;
-    public double roll;
+    public double pitch; // Rotation around X-axis
+    public double roll;  // Rotation around Y-axis
+    public double yaw;   // Rotation around Z-axis
 
     /**
      * Constructor: Create an instance of the object.
@@ -52,24 +57,24 @@ public class TrcPose3D
      * @param x specifies the x component of the pose.
      * @param y specifies the y component of the pose.
      * @param z specifies the z component of the pose.
-     * @param yaw specifies the yaw angle.
-     * @param pitch specifies the pitch angle.
-     * @param roll specifies the roll angle.
+     * @param pitch specifies the pitch angle (rotation on X axis).
+     * @param roll specifies the roll angle (rotation on Y axis).
+     * @param yaw specifies the yaw angle (rotation on Z axis).
      */
-    public TrcPose3D(double x, double y, double z, double yaw, double pitch, double roll)
+    public TrcPose3D(double x, double y, double z, double pitch, double roll, double yaw)
     {
         this.x = x;
         this.y = y;
         this.z = z;
-        this.yaw = yaw;
         this.pitch = pitch;
         this.roll = roll;
+        this.yaw = yaw;
     }   //TrcPose3D
 
     /**
      * Constructor: Create an instance of the object.
      *
-     * @param data specifies an array with 6 elements: x, y, z, yaw, pitch and roll.
+     * @param data specifies an array with 6 elements: x, y, z, pitch, roll, and yaw.
      */
     public TrcPose3D(double[] data)
     {
@@ -79,9 +84,9 @@ public class TrcPose3D
     /**
      * Constructor: Create an instance of the object.
      *
-     * @param x specifies the x coordinate of the pose.
-     * @param y specifies the y coordinate of the pose.
-     * @param z specifies the z coordinate of the pose.
+     * @param x specifies the x component of the pose.
+     * @param y specifies the y component of the pose.
+     * @param z specifies the z component of the pose.
      */
     public TrcPose3D(double x, double y, double z)
     {
@@ -96,23 +101,18 @@ public class TrcPose3D
         this(0.0, 0.0, 0.0, 0.0, 0.0, 0.0);
     }   //TrcPose3D
 
-    /**
-     * This method returns the string representation of the pose.
-     *
-     * @return string representation of the pose.
-     */
     @Override
     public String toString()
     {
-        return "(x=" + x + ",y=" + y + ",z=" + z + ",yaw=" + yaw + ",pitch=" + pitch + ",roll=" + roll + ")";
+        return "(x=" + x + ",y=" + y + ",z=" + z + ",pitch=" + pitch + ",roll=" + roll + ",yaw=" + yaw + ")";
     }   //toString
 
     /**
-     * This method loads pose data from a CSV file either on the external file system or attached resources.
+     * This method creates TRC 3D poses from a CSV file.
      *
-     * @param path specifies the file system path or resource name.
-     * @param loadFromResources specifies true if the data is from attached resources, false if from file system.
-     * @return an array of poses.
+     * @param path specifies resource stream name or CSV file path.
+     * @param loadFromResources specifies true if path is a resource stream name, false if it is a CSV file path.
+     * @return array of TrcPose3D poses.
      */
     public static TrcPose3D[] loadPosesFromCsv(String path, boolean loadFromResources)
     {
@@ -133,18 +133,16 @@ public class TrcPose3D
             List<TrcPose3D> poseList = new ArrayList<>();
             String line;
 
-            in.readLine();  // Get rid of the first header line
+            in.readLine();  // Get rid of header
             while ((line = in.readLine()) != null)
             {
                 String[] tokens = line.split(",");
-
                 if (tokens.length != 6)
                 {
                     throw new IllegalArgumentException("There must be 6 columns in the csv file!");
                 }
 
                 double[] elements = new double[tokens.length];
-
                 for (int i = 0; i < elements.length; i++)
                 {
                     elements[i] = Double.parseDouble(tokens[i]);
@@ -155,7 +153,6 @@ public class TrcPose3D
                 poseList.add(pose);
             }
             in.close();
-
             poses = poseList.toArray(new TrcPose3D[0]);
         }
         catch (IOException e)
@@ -167,67 +164,57 @@ public class TrcPose3D
     }   //loadPosesFromCsv
 
     /**
-     * This method compares this pose with the specified pose for equality.
+     * This method compares the given pose with this one.
      *
-     * @return true if equal, false otherwise.
+     * @param o specifies the pose to compare to.
+     * @return true if they are equal, false otherwise.
      */
     @Override
     public boolean equals(Object o)
     {
-        boolean equality;
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        TrcPose3D pose = (TrcPose3D) o;
 
-        if (this == o)
-        {
-            equality = true;
-        }
-        else if (o == null || getClass() != o.getClass())
-        {
-            equality = false;
-        }
-        else
-        {
-            TrcPose3D pose = (TrcPose3D) o;
-            equality = Double.compare(pose.x, x) == 0 &&
-                       Double.compare(pose.y, y) == 0 &&
-                       Double.compare(pose.z, z) == 0 &&
-                       Double.compare(pose.yaw, yaw) == 0 &&
-                       Double.compare(pose.pitch, pitch) == 0 &&
-                       Double.compare(pose.roll, roll) == 0;
-        }
-
-        return equality;
+        return Double.compare(pose.x, x) == 0 &&
+               Double.compare(pose.y, y) == 0 &&
+               Double.compare(pose.z, z) == 0 &&
+               Double.compare(pose.pitch, pitch) == 0 &&
+               Double.compare(pose.roll, roll) == 0 &&
+               Double.compare(pose.yaw, yaw) == 0;
     }   //equals
 
     /**
-     * This method returns the hash code of the values in this pose.
+     * This method computes the hashcode of this pose.
      *
-     * @return pose hash code.
+     * @return computed hashcode.
      */
     @Override
     public int hashCode()
     {
-        return Objects.hash(x, y, z, yaw, pitch, roll);
+        return Objects.hash(x, y, z, pitch, roll, yaw);
     }   //hashCode
 
     /**
-     * This method creates and returns a copy of this pose.
+     * This method returns a cloned copy of this pose.
      *
-     * @return a copy of this pose.
+     * @return cloned pose.
      */
+    @Override
     public TrcPose3D clone()
     {
-        return new TrcPose3D(this.x, this.y, this.z, this.yaw, this.pitch, this.roll);
+        return new TrcPose3D(this.x, this.y, this.z, this.pitch, this.roll, this.yaw);
     }   //clone
 
     /**
-     * This method converts the Pose3D to a Pose2D.
+     * This method converts the pose to a TrcPose2D.
      *
-     * @return converted Pose2D.
+     * @return converted TrcPose2D.
      */
-    public TrcPose2D toPose2D()
+    public TrcPose2D toTrcPose2D()
     {
         return new TrcPose2D(x, y, yaw);
-    }   //toPose2D
+    }   //toTrcPose2D
 
     /**
      * This method returns the vector form of this pose.
@@ -237,7 +224,7 @@ public class TrcPose3D
     public RealVector toPosVector()
     {
         return TrcUtil.createVector(x, y, z);
-    }   //toPoseVector
+    }   //toPosVector
 
     /**
      * This method returns the distance of the specified pose to this pose.
@@ -261,86 +248,194 @@ public class TrcPose3D
         this.x = pose.x;
         this.y = pose.y;
         this.z = pose.z;
-        this.yaw = pose.yaw;
         this.pitch = pose.pitch;
         this.roll = pose.roll;
+        this.yaw = pose.yaw;
     }   //setAs
 
-    // TODO: implement these methods.
-//    /**
-//     * This method returns a transformed pose relative to the given pose.
-//     *
-//     * @param pose           specifies the reference pose.
-//     * @param transformAngle specifies true to also transform angle, false to leave it alone.
-//     * @return pose relative to the given pose.
-//     */
-//    public TrcPose3D relativeTo(TrcPose3D pose, boolean transformAngle)
-//    {
-//        double deltaX = x - pose.x;
-//        double deltaY = y - pose.y;
-//        double deltaZ = z - pose.z;
-//        double newAngle = angle;
-//
-//        RealVector newPos =
-//            TrcUtil.rotateCCW(MatrixUtils.createRealVector(new double[]{deltaX, deltaY}), pose.angle);
-//        if (transformAngle)
-//        {
-//            newAngle -= pose.angle;
-//        }
-//
-//        return new TrcPose3D(newPos.getEntry(0), newPos.getEntry(1), newAngle);
-//    }   //relativeTo
-//
-//    /**
-//     * This method returns a transformed pose relative to the given pose.
-//     *
-//     * @param pose specifies the reference pose.
-//     * @return pose relative to the given pose.
-//     */
-//    public TrcPose3D relativeTo(TrcPose3D pose)
-//    {
-//        return relativeTo(pose, true);
-//    }   //relativeTo
-//
-//    /**
-//     * This method translates this pose with the x and y offset in reference to the angle of the pose.
-//     *
-//     * @param xOffset specifies the x offset in reference to the angle of the pose.
-//     * @param yOffset specifies the y offset in reference to the angle of the pose.
-//     * @param zOffset specifies the z offset in reference to the angle of the pose.
-//     * @return translated pose.
-//     */
-//    public TrcPose3D translatePose(double xOffset, double yOffset, double zOffset)
-//    {
-//        TrcPose3D newPose = clone();
-//        double angleRadians = Math.toRadians(newPose.angle);
-//        double cosAngle = Math.cos(angleRadians);
-//        double sinAngle = Math.sin(angleRadians);
-//
-//        newPose.x += xOffset * cosAngle + yOffset * sinAngle;
-//        newPose.y += -xOffset * sinAngle + yOffset * cosAngle;
-//
-//        if (debugEnabled)
-//        {
-//            dbgTrace.traceInfo(moduleName, "xOffset=%.1f, yOffset=%.1f, Pose:%s, newPose:%s",
-//                xOffset, yOffset, this, newPose);
-//        }
-//
-//        return newPose;
-//    }   //translatePose
-//
-//    /**
-//     * This method adds a relative pose to the this pose and return the resulting pose. The relative pose has a
-//     * relative vector and relative angle from this pose.
-//     *
-//     * @param relativePose specifies the pose relative to the previous pose.
-//     * @return resulting pose.
-//     */
-//    public TrcPose3D addRelativePose(TrcPose3D relativePose)
-//    {
-//        RealVector vec = TrcUtil.createVector(this.x, this.y).add(
-//                TrcUtil.rotateCW(relativePose.toPosVector(), this.angle));
-//        return new TrcPose3D(vec.getEntry(0), vec.getEntry(1), this.angle + relativePose.angle);
-//    }   //addRelativePose
+    /**
+     * This method performs addition translation to this pose.
+     *
+     * @param pose specifies the translation pose to be added to this pose.
+     * @return resulting pose.
+     */
+    public TrcPose3D add(TrcPose3D pose)
+    {
+        return new TrcPose3D(this.x + pose.x, this.y + pose.y, this.z + pose.z, this.pitch, this.roll, this.yaw);
+    }   //add
+
+    /**
+     * This method performs subtraction translation to this pose.
+     *
+     * @param pose specifies the translation pose to be subtracted to this pose.
+     * @return resulting pose.
+     */
+    public TrcPose3D subtract(TrcPose3D pose)
+    {
+        return new TrcPose3D(this.x - pose.x, this.y - pose.y, this.z - pose.z, this.pitch, this.roll, this.yaw);
+    }   //subtract
+
+    /**
+     * This method negate this pose.
+     *
+     * @return resulting pose.
+     */
+    public TrcPose3D negate()
+    {
+        return new TrcPose3D(-this.x, -this.y, -this.z, this.pitch, this.roll, this.yaw);
+    }   //negate
+
+    /**
+     * This method scales this pose with the given scale factor.
+     *
+     * @param factor specifies the scaling factor.
+     * @return resulting pose.
+     */
+    public TrcPose3D scale(double factor)
+    {
+        return new TrcPose3D(this.x * factor, this.y * factor, this.z * factor, this.pitch, this.roll, this.yaw);
+    }   //scale
+
+    /**
+     * This method applies a 3D rotation matrix rotation to the positional coordinates.
+     * By utilizing RotationOrder.XYZ, Apache rotates around X (alpha1), then Y (alpha2), then Z (alpha3).
+     * This matches the pitch, roll, yaw variable order perfectly.
+     *
+     * @param rotationPose specifies the rotation to be performed.
+     * @return resulting pose.
+     */
+    public TrcPose3D rotate(TrcPose3D rotationPose)
+    {
+        Rotation rot = new Rotation(
+            RotationOrder.ZXY, // Configured to handle primary Z-Yaw transitions first
+            RotationConvention.VECTOR_OPERATOR,
+            Math.toRadians(-rotationPose.yaw),   // alpha1 -> Z axis (negated for CW positive)
+            Math.toRadians(rotationPose.pitch),  // alpha2 -> X axis
+            Math.toRadians(rotationPose.roll)    // alpha3 -> Y axis
+        );
+//        Rotation rot = new Rotation(
+//            RotationOrder.XYZ,
+//            RotationConvention.VECTOR_OPERATOR,
+//            Math.toRadians(rotationPose.pitch),  // alpha1 -> X axis (Pitch)
+//            Math.toRadians(rotationPose.roll),   // alpha2 -> Y axis (Roll)
+//            Math.toRadians(-rotationPose.yaw)    // alpha3 -> Z axis (Yaw, negated for CW positive)
+//        );
+
+        Vector3D posVec = new Vector3D(this.x, this.y, this.z);
+        Vector3D rotatedVec = rot.applyTo(posVec);
+
+        return new TrcPose3D(
+            rotatedVec.getX(), rotatedVec.getY(), rotatedVec.getZ(), this.pitch, this.roll, this.yaw);
+    }   //rotate
+
+    /**
+     * This method translates this pose with the given offsets mapped relative to its current 3D orientation.
+     *
+     * @param xOffset specifies the x offset relative to the pose's orientation.
+     * @param yOffset specifies the y offset relative to the pose's orientation.
+     * @param zOffset specifies the z offset relative to the pose's orientation.
+     * @return translated pose.
+     */
+    public TrcPose3D translatePose(double xOffset, double yOffset, double zOffset)
+    {
+        // Re-use your robust 3D rotation logic by treating the offset as a temporary relative pose
+        TrcPose3D offsetPose = new TrcPose3D(xOffset, yOffset, zOffset, 0, 0, 0);
+        TrcPose3D rotatedOffset = offsetPose.rotate(this);
+
+        // Combine translated offset with current position
+        return this.add(rotatedOffset);
+    }   //translatePose
+
+    /**
+     * This method adds a relative pose to this pose and returns the resulting global pose.
+     * The relative pose's translation is rotated by this pose's orientation, and its
+     * orientation is compounded mathematically via 3D matrix multiplication.
+     *
+     * @param relativePose specifies the pose relative to this pose.
+     * @return resulting global pose with precise 3D orientation.
+     */
+    public TrcPose3D addRelativePose(TrcPose3D relativePose)
+    {
+        // Transform the spatial translation vector
+        TrcPose3D rotatedRelativeOffset = relativePose.rotate(this);
+        TrcPose3D finalPose = this.add(rotatedRelativeOffset);
+        // Compound the 3D orientations properly using matrix multiplication
+        Rotation currentRot = this.getRotation();
+        Rotation relativeRot = relativePose.getRotation();
+        // Compound transformations: Apply current orientation first, then relative orientation
+        Rotation compoundedRot = relativeRot.applyTo(currentRot);
+
+        // Extract the clean combined angles back into our convention
+        finalPose.setOrientation(compoundedRot);
+
+        return finalPose;
+    }   //addRelativePose
+
+
+        // Compound transformations: Reverse compounding order for VECTOR_OPERATOR convention
+
+    /**
+     * This method returns a transformed pose relative to the given reference pose.
+     * Properly calculates the orientation difference via matrix composition.
+     *
+     * @param pose specifies the reference frame pose.
+     * @param transformAngle specifies true to also transform orientation, false to keep this pose's orientation.
+     * @return pose relative to the given reference pose.
+     */
+    public TrcPose3D relativeTo(TrcPose3D pose, boolean transformAngle)
+    {
+        // Calculate linear delta in world coordinates and un-rotate it into the local frame
+        double deltaX = this.x - pose.x;
+        double deltaY = this.y - pose.y;
+        double deltaZ = this.z - pose.z;
+        // Invert the reference frame's rotation matrix
+        Rotation refRotInverse = pose.getRotation().revert();
+        Vector3D deltaVec = new Vector3D(deltaX, deltaY, deltaZ);
+        Vector3D localVec = refRotInverse.applyTo(deltaVec);
+        TrcPose3D relativePose = new TrcPose3D(localVec.getX(), localVec.getY(), localVec.getZ());
+
+        // Handle true 3D orientation subtraction if requested
+        if (transformAngle)
+        {
+            // Find the relative rotation: R_rel = R_ref^(-1) * R_this
+            Rotation relativeRot = refRotInverse.applyTo(this.getRotation());
+            relativePose.setOrientation(relativeRot);
+        }
+        else
+        {
+            relativePose.pitch = this.pitch;
+            relativePose.roll  = this.roll;
+            relativePose.yaw   = this.yaw;
+        }
+
+        return relativePose;
+    }   //relativeTo
+
+    /**
+     * This method converts this pose's pitch, roll, and yaw into an Apache Rotation object.
+     * Takes care of sign conventions (negating your CW-positive yaw to match standard CCW math).
+     */
+    private Rotation getRotation()
+    {
+        return new Rotation(
+            RotationOrder.XYZ,
+            RotationConvention.VECTOR_OPERATOR,
+            Math.toRadians(this.pitch),
+            Math.toRadians(this.roll),
+            Math.toRadians(-this.yaw) // Negate to handle CW positive convention
+        );
+    }   //getRotation
+
+    /**
+     * This method extracts and sets pitch, roll, and yaw angles from an Apache Rotation object.
+     * Restores CW-positive yaw convention.
+     */
+    private void setOrientation(Rotation rotation)
+    {
+        double[] angles = rotation.getAngles(RotationOrder.XYZ, RotationConvention.VECTOR_OPERATOR);
+        this.pitch = Math.toDegrees(angles[0]);
+        this.roll  = Math.toDegrees(angles[1]);
+        this.yaw   = -Math.toDegrees(angles[2]); // Re-negate to restore CW positive convention
+    }   //setOrientation
 
 }   //class TrcPose3D
