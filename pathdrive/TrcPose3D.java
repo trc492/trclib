@@ -313,13 +313,6 @@ public class TrcPose3D
             Math.toRadians(rotationPose.pitch),  // alpha2 -> X axis
             Math.toRadians(rotationPose.roll)    // alpha3 -> Y axis
         );
-//        Rotation rot = new Rotation(
-//            RotationOrder.XYZ,
-//            RotationConvention.VECTOR_OPERATOR,
-//            Math.toRadians(rotationPose.pitch),  // alpha1 -> X axis (Pitch)
-//            Math.toRadians(rotationPose.roll),   // alpha2 -> Y axis (Roll)
-//            Math.toRadians(-rotationPose.yaw)    // alpha3 -> Z axis (Yaw, negated for CW positive)
-//        );
 
         Vector3D posVec = new Vector3D(this.x, this.y, this.z);
         Vector3D rotatedVec = rot.applyTo(posVec);
