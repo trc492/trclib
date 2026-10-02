@@ -165,15 +165,15 @@ public class TrcVision
          * @param xOffset specifies the X offset from robot center (positive right).
          * @param yOffset specifies the Y offset from robot center (positive forward).
          * @param zOffset specifies the Z offset from the ground (positive up).
-         * @param yaw specifies yaw angle from robot forward (positive clockwise).
          * @param pitch specifies pitch angle from horizontal (positive up).
          * @param roll specifies roll angle from vertical (positive left wing up).
+         * @param yaw specifies yaw angle from robot forward (positive clockwise).
          * @return this object for chaining.
          */
         public CameraInfo setCameraPose(
-            double xOffset, double yOffset, double zOffset, double yaw, double pitch, double roll)
+            double xOffset, double yOffset, double zOffset, double pitch, double roll, double yaw)
         {
-            this.camPose = new TrcPose3D(xOffset, yOffset, zOffset, yaw, pitch, roll);
+            this.camPose = new TrcPose3D(xOffset, yOffset, zOffset, pitch, roll, yaw);
             return this;
         }   //setCameraPose
 

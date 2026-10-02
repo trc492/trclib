@@ -37,7 +37,9 @@ import java.util.Objects;
 import trclib.dataprocessor.TrcUtil;
 
 /**
- * This class implements a 2D pose object that represents the positional state of an object.
+ * This class implements a 2D pose object that represents the positional and orientation state of a robot
+ * or a coordinate frame on a flat playing field. It follows the TrcLib convention: X positive is Right,
+ * Y positive is Forward, and angles increase Clockwise (CW) Positive.
  */
 public class TrcPose2D
 {
@@ -48,8 +50,8 @@ public class TrcPose2D
     /**
      * Constructor: Create an instance of the object.
      *
-     * @param x     specifies the x component of the position.
-     * @param y     specifies the y component of the position.
+     * @param x specifies the x component of the position.
+     * @param y specifies the y component of the position.
      * @param angle specifies the angle.
      */
     public TrcPose2D(double x, double y, double angle)
@@ -166,12 +168,11 @@ public class TrcPose2D
     @Override
     public boolean equals(Object o)
     {
-        if (this == o)
-            return true;
-        if (o == null || getClass() != o.getClass())
-            return false;
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
         TrcPose2D pose2D = (TrcPose2D) o;
-        return Double.compare(pose2D.x, x) == 0 && Double.compare(pose2D.y, y) == 0 &&
+        return Double.compare(pose2D.x, x) == 0 &&
+               Double.compare(pose2D.y, y) == 0 &&
                Double.compare(pose2D.angle, angle) == 0;
     }   //equals
 
@@ -198,28 +199,6 @@ public class TrcPose2D
     }   //clone
 
     /**
-     * This method returns the vector form of this pose.
-     *
-     * @return vector form of this pose.
-     */
-    public RealVector toPosVector()
-    {
-        return TrcUtil.createVector(x, y);
-    }   //toPoseVector
-
-    /**
-     * This method returns the distance of the specified pose to this pose.
-     *
-     * @param pose specifies the pose to calculate the distance to.
-     *
-     * @return distance to specified pose.
-     */
-    public double distanceTo(TrcPose2D pose)
-    {
-        return toPosVector().getDistance(pose.toPosVector());
-    }   //distanceTo
-
-    /**
      * This method sets this pose to be the same as the given pose.
      *
      * @param pose specifies the pose to make this pose equal to.
@@ -232,55 +211,85 @@ public class TrcPose2D
     }   //setAs
 
     /**
-     * This method returns a transformed pose relative to the given pose.
+     * This method returns the vector form of this pose's positional components.
      *
-     * @param pose           specifies the reference pose.
-     * @param transformAngle specifies true to also transform angle, false to leave it alone.
-     * @return pose relative to the given pose.
+     * @return vector form of this pose.
      */
-    public TrcPose2D relativeTo(TrcPose2D pose, boolean transformAngle)
+    public RealVector toPosVector()
     {
-        double deltaX = x - pose.x;
-        double deltaY = y - pose.y;
-        double newAngle = angle;
-
-        RealVector newPos =
-            TrcUtil.rotateCCW(MatrixUtils.createRealVector(new double[]{deltaX, deltaY}), pose.angle);
-        if (transformAngle)
-        {
-            newAngle -= pose.angle;
-        }
-
-        return new TrcPose2D(newPos.getEntry(0), newPos.getEntry(1), newAngle);
-    }   //relativeTo
+        return MatrixUtils.createRealVector(new double[]{x, y});
+    }   //toPosVector
 
     /**
-     * This method returns a transformed pose relative to the given pose.
+     * This method returns the linear distance of the specified pose to this pose.
      *
-     * @param pose specifies the reference pose.
-     * @return pose relative to the given pose.
+     * @param pose specifies the target pose to calculate the distance to.
+     * @return linear distance to the specified pose.
      */
-    public TrcPose2D relativeTo(TrcPose2D pose)
+    public double distanceTo(TrcPose2D pose)
     {
-        return relativeTo(pose, true);
-    }   //relativeTo
+        return toPosVector().getDistance(pose.toPosVector());
+    }   //distanceTo
+
+    //
+    // Linear Vector Arithmetic Methods (Parallel to TrcPose3D)
+    //
 
     /**
-     * This method computes the relative pose from {@code base} to this pose.
+     * This method adds another pose to this one (Vector addition).
+     * Positions compound lineally, orientations remain untouched.
+     * Parallel to TrcPose3D.add.
      *
-     * @param pose the reference pose
-     * @return relative pose such that base.addRelativePose(result) == this
+     * @param pose specifies the pose to be added.
+     * @return resulting summed pose.
      */
-    public TrcPose2D relativeFrom(TrcPose2D pose)
+    public TrcPose2D add(TrcPose2D pose)
     {
-        RealVector delta = TrcUtil.createVector(this.x - pose.x, this.y - pose.y);
-        RealVector relPos = TrcUtil.rotateCW(delta, -pose.angle);
-        double relAngle = this.angle - pose.angle;
-        return new TrcPose2D(relPos.getEntry(0), relPos.getEntry(1), relAngle);
-    }   //relativeFrom
+        return new TrcPose2D(this.x + pose.x, this.y + pose.y, this.angle);
+    }   //add
 
     /**
-     * This method translates this pose with the x and y offset in reference to the angle of the pose.
+     * This method subtracts another pose from this one (Vector subtraction).
+     * Parallel to TrcPose3D.subtract.
+     *
+     * @param pose specifies the pose to be subtracted.
+     * @return resulting difference pose.
+     */
+    public TrcPose2D subtract(TrcPose2D pose)
+    {
+        return new TrcPose2D(this.x - pose.x, this.y - pose.y, this.angle);
+    }   //subtract
+
+    /**
+     * This method negates the positional translations of this pose.
+     * Parallel to TrcPose3D.negate.
+     *
+     * @return negated translation pose.
+     */
+    public TrcPose2D negate()
+    {
+        return new TrcPose2D(-this.x, -this.y, this.angle);
+    }   //negate
+
+    /**
+     * This method scales the positional translations of this pose by a constant multiplier.
+     * Parallel to TrcPose3D.scale.
+     *
+     * @param scale specifies the scalar multiplier.
+     * @return scaled pose.
+     */
+    public TrcPose2D scale(double scale)
+    {
+        return new TrcPose2D(this.x * scale, this.y * scale, this.angle);
+    }   //scale
+
+    //
+    // Rigid Body Coordinate Frame Transformations
+    //
+
+    /**
+     * This method translates this pose with the x and y offset in reference to its own local angle.
+     * Parallel to TrcPose3D.translatePose.
      *
      * @param xOffset specifies the x offset in reference to the angle of the pose.
      * @param yOffset specifies the y offset in reference to the angle of the pose.
@@ -288,21 +297,14 @@ public class TrcPose2D
      */
     public TrcPose2D translatePose(double xOffset, double yOffset)
     {
-        TrcPose2D newPose = clone();
-        double angleRadians = Math.toRadians(newPose.angle);
-        double cosAngle = Math.cos(angleRadians);
-        double sinAngle = Math.sin(angleRadians);
-
-        newPose.x += xOffset * cosAngle + yOffset * sinAngle;
-        newPose.y += -xOffset * sinAngle + yOffset * cosAngle;
-
-        return newPose;
+        return this.addRelativePose(new TrcPose2D(xOffset, yOffset, 0.0));
     }   //translatePose
 
     /**
-     * This method rotates this pose with the specified angle.
+     * This method rotates this pose's positional coordinate vector around the world origin center point.
+     * Maps perfectly to TrcLib CW-positive convention.
      *
-     * @param angle specifies the angle to rotate the pose.
+     * @param angle specifies the angle in degrees to rotate the coordinates by.
      * @return rotated pose.
      */
     public TrcPose2D rotatePose(double angle)
@@ -312,52 +314,70 @@ public class TrcPose2D
     }   //rotatePose
 
     /**
-     * This method adds a relative pose to this pose and return the resulting pose. The relative pose has a
-     * relative vector and relative angle from this pose.
+     * This method adds a relative pose transformation onto this tracking base frame.
+     * The relative pose contains a local vector translation and relative orientation offset.
+     * Parallel to TrcPose3D.addRelativePose.
      *
-     * @param relativePose specifies the pose relative to the previous pose.
-     * @return resulting pose.
+     * @param relativePose specifies the local child pose relative to this parent frame.
+     * @return consolidated global field pose.
      */
     public TrcPose2D addRelativePose(TrcPose2D relativePose)
     {
-        RealVector vec =
-            TrcUtil.createVector(this.x, this.y).add(TrcUtil.rotateCW(relativePose.toPosVector(), this.angle));
-        return new TrcPose2D(vec.getEntry(0), vec.getEntry(1), this.angle + relativePose.angle);
+        RealVector baseVec = MatrixUtils.createRealVector(new double[]{this.x, this.y});
+        RealVector rotatedRelativeVec = TrcUtil.rotateCW(relativePose.toPosVector(), this.angle);
+        RealVector combinedVec = baseVec.add(rotatedRelativeVec);
+
+        return new TrcPose2D(combinedVec.getEntry(0), combinedVec.getEntry(1), this.angle + relativePose.angle);
     }   //addRelativePose
 
     /**
-     * This method subtracts a relative pose from this pose.
-     * Equivalent to: thisPose = basePose + relativePose  →  relativePose = thisPose - basePose
+     * This method returns a transformed pose relative to the given reference base pose.
+     * Maps perfectly to TrcLib Left-Handed CW-positive un-rotation transformations.
+     * Unified replacement for relativeFrom/subtractRelativePose.
      *
-     * @param basePose the pose to subtract (the "reference" pose)
-     * @return the relative pose from basePose to this pose
+     * @param pose           specifies the reference base pose.
+     * @param transformAngle specifies true to also transform angle, false to leave it alone.
+     * @return pose relative to the given pose.
      */
-    public TrcPose2D subtractRelativePose(TrcPose2D basePose)
+    public TrcPose2D relativeTo(TrcPose2D pose, boolean transformAngle)
     {
-        // Delta position in global frame
-        double deltaX = this.x - basePose.x;
-        double deltaY = this.y - basePose.y;
-
-        // Rotate the delta back into the base pose's local frame (clockwise rotation by -baseAngle)
-        RealVector deltaVec = TrcUtil.createVector(deltaX, deltaY);
-        RealVector relPos = TrcUtil.rotateCW(deltaVec, -basePose.angle);
-
-        // Relative angle
-        double relAngle = this.angle - basePose.angle;
-
-        return new TrcPose2D(relPos.getEntry(0), relPos.getEntry(1), relAngle);
-    }   //subtractRelativePose
+        double deltaX = this.x - pose.x;
+        double deltaY = this.y - pose.y;
+        double newAngle = this.angle;
+        RealVector deltaVec = MatrixUtils.createRealVector(new double[]{deltaX, deltaY});
+        // Un-rotate the delta vector into the target pose's frame by flipping direction
+        RealVector newPos = TrcUtil.rotateCW(deltaVec, -pose.angle);
+        if (transformAngle)
+        {
+            newAngle -= pose.angle;
+        }
+        return new TrcPose2D(newPos.getEntry(0), newPos.getEntry(1), newAngle);
+    }   //relativeTo
 
     /**
-     * This method inverts this relative 2D pose.
+     * This method returns a transformed pose relative to the given reference base pose.
+     * Compounds the orientation angles by default.
      *
-     * @return inverted pose.
+     * @param pose specifies the reference base pose.
+     * @return pose relative to the given pose.
      */
-    public TrcPose2D invert()
+    public TrcPose2D relativeTo(TrcPose2D pose)
+    {
+        return relativeTo(pose, true);
+    }   //relativeTo
+
+    /**
+     * This method calculates the mathematical transformation inverse of this pose.
+     * Formulated for rigid-body CW positive coordinate frame compliance.
+     *
+     * @return inverted coordinate frame pose mapping.
+     */
+    public TrcPose2D inverse()
     {
         double invAngle = -this.angle;
-        RealVector invPos = TrcUtil.rotateCCW(this.toPosVector(), invAngle).mapMultiply(-1.0);
+        RealVector negatedPos = this.toPosVector().mapMultiply(-1.0);
+        RealVector invPos = TrcUtil.rotateCW(negatedPos, invAngle);
         return new TrcPose2D(invPos.getEntry(0), invPos.getEntry(1), invAngle);
-    }   //invert
+    }   //inverse
 
 }   //class TrcPose2D
