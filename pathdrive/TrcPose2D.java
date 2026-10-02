@@ -22,13 +22,14 @@
 
 package trclib.pathdrive;
 
-import org.apache.commons.math3.linear.MatrixUtils;
 import org.apache.commons.math3.linear.RealVector;
 
 import java.io.BufferedReader;
 import java.io.FileReader;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.io.Reader;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
@@ -103,6 +104,33 @@ public class TrcPose2D
     }   //toString
 
     /**
+     * This method opens a CSV reader either from a file or from attached resources.
+     *
+     * @param path specifies the file system path or resource name.
+     * @param loadFromResources specifies true if the data is from attached resources, false if from file system.
+     * @return created reader.
+     * @throws IOException when no resource found.
+     */
+    private static Reader openCsvReader(String path, boolean loadFromResources)
+        throws IOException
+    {
+        if (loadFromResources)
+        {
+            InputStream inputStream =
+                Objects.requireNonNull(TrcPose2D.class.getClassLoader()).getResourceAsStream(path);
+
+            if (inputStream == null)
+            {
+                throw new IOException("Resource not found: " + path);
+            }
+
+            return new InputStreamReader(inputStream);
+        }
+
+        return new FileReader(path);
+    }   //openCsvReader
+
+    /**
      * This method loads pose data from a CSV file either on the external file system or attached resources.
      *
      * @param path specifies the file system path or resource name.
@@ -111,26 +139,25 @@ public class TrcPose2D
      */
     public static TrcPose2D[] loadPosesFromCsv(String path, boolean loadFromResources)
     {
-        TrcPose2D[] poses;
-
-        if (!path.endsWith(".csv"))
+        if (!path.toLowerCase(Locale.ROOT).endsWith(".csv"))
         {
             throw new IllegalArgumentException(path + " is not a csv file!");
         }
 
-        try
+        try (BufferedReader reader = new BufferedReader(openCsvReader(path, loadFromResources)))
         {
-            BufferedReader in = new BufferedReader(
-                loadFromResources?
-                    new InputStreamReader(
-                        Objects.requireNonNull(TrcPose2D.class.getClassLoader()).getResourceAsStream(path)):
-                    new FileReader(path));
             List<TrcPose2D> poseList = new ArrayList<>();
-            String line;
 
-            in.readLine();  // Get rid of the first header line
-            while ((line = in.readLine()) != null)
+            reader.readLine();  // Get rid of the first header line.
+
+            String line;
+            while ((line = reader.readLine()) != null)
             {
+                if (line.isEmpty())
+                {
+                    continue;
+                }
+
                 String[] tokens = line.split(",");
 
                 if (tokens.length != 3)
@@ -138,42 +165,45 @@ public class TrcPose2D
                     throw new IllegalArgumentException("There must be 3 columns in the csv file!");
                 }
 
-                double[] elements = new double[tokens.length];
+                double x = Double.parseDouble(tokens[0].trim());
+                double y = Double.parseDouble(tokens[1].trim());
+                double angle = Double.parseDouble(tokens[2].trim());
 
-                for (int i = 0; i < elements.length; i++)
-                {
-                    elements[i] = Double.parseDouble(tokens[i]);
-                }
-
-                TrcPose2D pose = new TrcPose2D(elements[0], elements[1], elements[2]);
-                poseList.add(pose);
+                poseList.add(new TrcPose2D(x, y, angle));
             }
-            in.close();
 
-            poses = poseList.toArray(new TrcPose2D[0]);
+            return poseList.toArray(new TrcPose2D[0]);
         }
         catch (IOException e)
         {
             throw new RuntimeException(e);
         }
-
-        return poses;
     }   //loadPosesFromCsv
 
     /**
      * This method compares this pose with the specified pose for equality.
      *
+     * @param o specifies the object to compare with this pose.
      * @return true if equal, false otherwise.
      */
     @Override
     public boolean equals(Object o)
     {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
-        TrcPose2D pose2D = (TrcPose2D) o;
-        return Double.compare(pose2D.x, x) == 0 &&
-               Double.compare(pose2D.y, y) == 0 &&
-               Double.compare(pose2D.angle, angle) == 0;
+        if (this == o)
+        {
+            return true;
+        }
+
+        if (o == null || getClass() != o.getClass())
+        {
+            return false;
+        }
+
+        TrcPose2D pose = (TrcPose2D) o;
+
+        return Double.compare(pose.x, x) == 0 &&
+               Double.compare(pose.y, y) == 0 &&
+               Double.compare(pose.angle, angle) == 0;
     }   //equals
 
     /**
@@ -217,7 +247,7 @@ public class TrcPose2D
      */
     public RealVector toPosVector()
     {
-        return MatrixUtils.createRealVector(new double[]{x, y});
+        return TrcUtil.createVector(x, y);
     }   //toPosVector
 
     /**
@@ -232,13 +262,12 @@ public class TrcPose2D
     }   //distanceTo
 
     //
-    // Linear Vector Arithmetic Methods (Parallel to TrcPose3D)
+    // Linear Vector Arithmetic Methods.
     //
 
     /**
-     * This method adds another pose to this one (Vector addition).
-     * Positions compound lineally, orientations remain untouched.
-     * Parallel to TrcPose3D.add.
+     * This method adds another pose to this one (vector addition).
+     * Positions are added linearly and this pose's orientation is preserved.
      *
      * @param pose specifies the pose to be added.
      * @return resulting summed pose.
@@ -249,8 +278,8 @@ public class TrcPose2D
     }   //add
 
     /**
-     * This method subtracts another pose from this one (Vector subtraction).
-     * Parallel to TrcPose3D.subtract.
+     * This method subtracts another pose from this one (vector subtraction).
+     * This pose's orientation is preserved.
      *
      * @param pose specifies the pose to be subtracted.
      * @return resulting difference pose.
@@ -261,10 +290,10 @@ public class TrcPose2D
     }   //subtract
 
     /**
-     * This method negates the positional translations of this pose.
-     * Parallel to TrcPose3D.negate.
+     * This method negates the positional translation of this pose.
+     * The orientation is preserved.
      *
-     * @return negated translation pose.
+     * @return pose with negated translation.
      */
     public TrcPose2D negate()
     {
@@ -272,8 +301,8 @@ public class TrcPose2D
     }   //negate
 
     /**
-     * This method scales the positional translations of this pose by a constant multiplier.
-     * Parallel to TrcPose3D.scale.
+     * This method scales the positional translation of this pose by a constant multiplier.
+     * The orientation is preserved.
      *
      * @param scale specifies the scalar multiplier.
      * @return scaled pose.
@@ -288,78 +317,82 @@ public class TrcPose2D
     //
 
     /**
-     * This method translates this pose with the x and y offset in reference to its own local angle.
-     * Parallel to TrcPose3D.translatePose.
+     * This method translates this pose by the specified offset in its local coordinate frame.
      *
-     * @param xOffset specifies the x offset in reference to the angle of the pose.
-     * @param yOffset specifies the y offset in reference to the angle of the pose.
+     * @param xOffset specifies the x offset in the local coordinate frame.
+     * @param yOffset specifies the y offset in the local coordinate frame.
      * @return translated pose.
      */
     public TrcPose2D translatePose(double xOffset, double yOffset)
     {
-        return this.addRelativePose(new TrcPose2D(xOffset, yOffset, 0.0));
+        RealVector offset = TrcUtil.createVector(xOffset, yOffset);
+        RealVector rotatedOffset = TrcUtil.rotateCW(offset, angle);
+        return new TrcPose2D(x + rotatedOffset.getEntry(0), y + rotatedOffset.getEntry(1), angle);
     }   //translatePose
 
     /**
-     * This method rotates this pose's positional coordinate vector around the world origin center point.
-     * Maps perfectly to TrcLib CW-positive convention.
+     * This method rotates this pose's positional coordinate around the world origin.
+     * The pose's orientation is unchanged.
      *
-     * @param angle specifies the angle in degrees to rotate the coordinates by.
-     * @return rotated pose.
+     * @param rotationAngle specifies the rotation angle in degrees.
+     * @return a new pose with the rotated positional coordinate and unchanged orientation.
      */
-    public TrcPose2D rotatePose(double angle)
+    public TrcPose2D rotate(double rotationAngle)
     {
-        RealVector vec = TrcUtil.rotateCW(toPosVector(), angle);
-        return new TrcPose2D(vec.getEntry(0), vec.getEntry(1), this.angle + angle);
-    }   //rotatePose
+        RealVector rotatedPos = TrcUtil.rotateCW(toPosVector(), rotationAngle);
+        return new TrcPose2D(rotatedPos.getEntry(0), rotatedPos.getEntry(1), angle);
+    }   //rotate
 
     /**
-     * This method adds a relative pose transformation onto this tracking base frame.
-     * The relative pose contains a local vector translation and relative orientation offset.
-     * Parallel to TrcPose3D.addRelativePose.
+     * This method rotates this pose around the world origin.
+     * Both the positional coordinate and the pose's orientation are rotated by
+     * the same amount.
      *
-     * @param relativePose specifies the local child pose relative to this parent frame.
-     * @return consolidated global field pose.
+     * @param rotationAngle specifies the rotation angle in degrees.
+     * @return a new pose with the rotated positional coordinate and orientation.
+     */
+    public TrcPose2D rotatePose(double rotationAngle)
+    {
+        RealVector rotatedPos = TrcUtil.rotateCW(toPosVector(), rotationAngle);
+        return new TrcPose2D(rotatedPos.getEntry(0), rotatedPos.getEntry(1), angle + rotationAngle);
+    }   //roatePose
+
+    /**
+     * This method adds a relative pose transformation to this pose.
+     * The relative pose's translation is expressed in this pose's local coordinate frame.
+     *
+     * @param relativePose specifies the relative pose to add.
+     * @return resulting global pose.
      */
     public TrcPose2D addRelativePose(TrcPose2D relativePose)
     {
-        RealVector baseVec = MatrixUtils.createRealVector(new double[]{this.x, this.y});
-        RealVector rotatedRelativeVec = TrcUtil.rotateCW(relativePose.toPosVector(), this.angle);
-        RealVector combinedVec = baseVec.add(rotatedRelativeVec);
-
-        return new TrcPose2D(combinedVec.getEntry(0), combinedVec.getEntry(1), this.angle + relativePose.angle);
+        RealVector rotatedRelativePos = TrcUtil.rotateCW(relativePose.toPosVector(), angle);
+        return new TrcPose2D(
+            x + rotatedRelativePos.getEntry(0), y + rotatedRelativePos.getEntry(1), angle + relativePose.angle);
     }   //addRelativePose
 
     /**
-     * This method returns a transformed pose relative to the given reference base pose.
-     * Maps perfectly to TrcLib Left-Handed CW-positive un-rotation transformations.
-     * Unified replacement for relativeFrom/subtractRelativePose.
+     * This method returns this pose expressed relative to the specified reference pose.
      *
-     * @param pose           specifies the reference base pose.
-     * @param transformAngle specifies true to also transform angle, false to leave it alone.
-     * @return pose relative to the given pose.
+     * @param pose specifies the reference pose.
+     * @param transformAngle specifies true to express the angle relative to the reference pose,
+     *                       false to preserve this pose's absolute angle.
+     * @return this pose expressed in the reference pose's coordinate frame.
      */
     public TrcPose2D relativeTo(TrcPose2D pose, boolean transformAngle)
     {
-        double deltaX = this.x - pose.x;
-        double deltaY = this.y - pose.y;
-        double newAngle = this.angle;
-        RealVector deltaVec = MatrixUtils.createRealVector(new double[]{deltaX, deltaY});
-        // Un-rotate the delta vector into the target pose's frame by flipping direction
-        RealVector newPos = TrcUtil.rotateCW(deltaVec, -pose.angle);
-        if (transformAngle)
-        {
-            newAngle -= pose.angle;
-        }
-        return new TrcPose2D(newPos.getEntry(0), newPos.getEntry(1), newAngle);
+        RealVector delta = TrcUtil.createVector(this.x - pose.x, this.y - pose.y);
+        RealVector relativePos = TrcUtil.rotateCW(delta, -pose.angle);
+        double relativeAngle = transformAngle? this.angle - pose.angle: this.angle;
+        return new TrcPose2D(relativePos.getEntry(0), relativePos.getEntry(1), relativeAngle);
     }   //relativeTo
 
     /**
-     * This method returns a transformed pose relative to the given reference base pose.
-     * Compounds the orientation angles by default.
+     * This method returns this pose expressed relative to the specified reference pose,
+     * including transformation of its orientation.
      *
-     * @param pose specifies the reference base pose.
-     * @return pose relative to the given pose.
+     * @param pose specifies the reference pose.
+     * @return this pose expressed in the reference pose's coordinate frame.
      */
     public TrcPose2D relativeTo(TrcPose2D pose)
     {
@@ -367,17 +400,15 @@ public class TrcPose2D
     }   //relativeTo
 
     /**
-     * This method calculates the mathematical transformation inverse of this pose.
-     * Formulated for rigid-body CW positive coordinate frame compliance.
+     * This method returns the inverse of this pose transformation.
      *
-     * @return inverted coordinate frame pose mapping.
+     * @return inverse pose transformation.
      */
     public TrcPose2D inverse()
     {
-        double invAngle = -this.angle;
-        RealVector negatedPos = this.toPosVector().mapMultiply(-1.0);
-        RealVector invPos = TrcUtil.rotateCW(negatedPos, invAngle);
-        return new TrcPose2D(invPos.getEntry(0), invPos.getEntry(1), invAngle);
+        double inverseAngle = -angle;
+        RealVector inversePos = TrcUtil.rotateCW(toPosVector().mapMultiply(-1.0), inverseAngle);
+        return new TrcPose2D(inversePos.getEntry(0), inversePos.getEntry(1), inverseAngle);
     }   //inverse
 
 }   //class TrcPose2D
