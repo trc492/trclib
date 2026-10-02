@@ -238,9 +238,12 @@ public class TrcVision
         /**
          * This method returns the robot field pose on the ground.
          *
-         * @return robot field pose, null if not supported.
+         * @param targetFieldPose specifies 3D target field pose, can be null if not provided in which case the
+         *                        vision library has built-in Target field poses that calculates robotPose. If
+         *                        provided, this method will use it to calculate robot pose.
+         * @return robot field pose.
          */
-        public abstract TrcPose2D getRobotPose();
+        public abstract TrcPose2D getRobotPose(TrcPose3D targetFieldPose);
 
         /**
          * This method returns the projected 2D pose on the ground of the detected target relative to the camera.
@@ -348,9 +351,36 @@ public class TrcVision
                 Locale.US,
                 "label=%s,robotPose=%s,targetPose=%s,target(dist=%.1f,width=%.1f,area=%.3f)" +
                 ",pixelRect=%s(w=%.0f,h=%.0f),rotatedRectAngle=%.1f",
-                label, getRobotPose(), getTargetPose(), getTargetDistance(), getTargetWidth(),
+                label, getRobotPose(null), getTargetPose(), getTargetDistance(), getTargetWidth(),
                 getNormalizedTargetArea(), getPixelRect(), getPixelWidth(), getPixelHeight(), getRotatedRectAngle());
         }   //toString
+
+        /**
+         * This method is called to compute robot pose with the given target field pose.
+         *
+         * @param targetFieldPose specifies 3D field pose of the target.
+         * @return calculated robot pose.
+         */
+        protected TrcPose2D getRobotPoseByTargetFieldPose(TrcPose3D targetFieldPose)
+        {
+            TrcPose2D pose = null;
+            // Extract your verified local relative target pose (Robot Space, projected to floor)
+            TrcPose2D relTarget2d = getTargetPose();
+
+            if (relTarget2d != null)
+            {
+                TrcPose2D targetField2d = targetFieldPose.toTrcPose2D();
+                TrcPose2D unnormalizedRobotPose = targetField2d.addRelativePose(relTarget2d.inverse());
+                // Wrap and normalize heading between [-180, 180] degrees
+                double normalizedYaw = (unnormalizedRobotPose.angle + 180.0) % 360.0;
+                if (normalizedYaw < 0) normalizedYaw += 360.0;
+                normalizedYaw -= 180.0;
+
+                pose = new TrcPose2D(unnormalizedRobotPose.x, unnormalizedRobotPose.y, normalizedYaw);
+            }
+
+            return pose;
+        }   //getRobotPoseByTargetFieldPose
 
         /**
          * This method calculates the detected target pose by determining the pixel to real world scale using the
