@@ -473,6 +473,18 @@ public class TrcPose3D
     }   //relativeTo
 
     /**
+     * This method returns this pose expressed relative to the specified reference pose,
+     * including transformation of its orientation.
+     *
+     * @param pose specifies the reference pose.
+     * @return this pose expressed in the reference pose's coordinate frame.
+     */
+    public TrcPose3D relativeTo(TrcPose3D pose)
+    {
+        return relativeTo(pose, true);
+    }   //relativeTo
+
+    /**
      * Returns the rigid-body inverse of this pose.
      *
      * @return inverted pose.

@@ -317,7 +317,7 @@ public class TrcVision
         public final String label;
         protected final CameraInfo cameraInfo;
         protected TrcPose2D robotPose = null;
-        protected TrcPose3D targetPose3d = null;
+        public TrcPose3D targetPose3d = null;
         protected TrcPose2D targetPose2d = null;
         protected Double targetDistance = null;
         protected Double targetWidth = null;
