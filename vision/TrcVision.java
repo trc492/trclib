@@ -317,7 +317,7 @@ public class TrcVision
         public final String label;
         protected final CameraInfo cameraInfo;
         protected TrcPose2D robotPose = null;
-        public TrcPose3D targetPose3d = null;
+        protected TrcPose3D targetPose3d = null;
         protected TrcPose2D targetPose2d = null;
         protected Double targetDistance = null;
         protected Double targetWidth = null;
@@ -355,6 +355,22 @@ public class TrcVision
                 label, getRobotPose(null), getTargetPose(), getTargetDistance(), getTargetWidth(),
                 getNormalizedTargetArea(), getPixelRect(), getPixelWidth(), getPixelHeight(), getRotatedRectAngle());
         }   //toString
+
+        /**
+         * This method returns the projected 3D pose on the ground of the detected target relative to the robot center.
+         *
+         * @return pose of the detected target relative to camera, null if not supported.
+         */
+        public TrcPose3D getTargetPose3d()
+        {
+            if (targetPose3d != null)
+            {
+                // getTargetPose will calculate targetPose3d if appropriate.
+                getTargetPose();
+            }
+
+            return targetPose3d;
+        }   //getTargetPose3d
 
         /**
          * This method is called to compute robot pose with the given target field pose.
