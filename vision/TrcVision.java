@@ -246,7 +246,7 @@ public class TrcVision
         public abstract TrcPose2D getRobotPose(TrcPose3D targetFieldPose);
 
         /**
-         * This method returns the projected 2D pose on the ground of the detected target relative to the camera.
+         * This method returns the projected 2D pose on the ground of the detected target relative to the robot center.
          *
          * @return pose of the detected target relative to camera, null if not supported.
          */
@@ -317,7 +317,8 @@ public class TrcVision
         public final String label;
         protected final CameraInfo cameraInfo;
         protected TrcPose2D robotPose = null;
-        protected TrcPose2D targetPose = null;
+        protected TrcPose3D targetPose3d = null;
+        protected TrcPose2D targetPose2d = null;
         protected Double targetDistance = null;
         protected Double targetWidth = null;
         protected Double normalizedTargetArea = null;
@@ -349,7 +350,7 @@ public class TrcVision
         {
             return String.format(
                 Locale.US,
-                "label=%s,robotPose=%s,targetPose=%s,target(dist=%.1f,width=%.1f,area=%.3f)" +
+                "label=%s,robotPose=%s,targetPose2d=%s,target(dist=%.1f,width=%.1f,area=%.3f)" +
                 ",pixelRect=%s(w=%.0f,h=%.0f),rotatedRectAngle=%.1f",
                 label, getRobotPose(null), getTargetPose(), getTargetDistance(), getTargetWidth(),
                 getNormalizedTargetArea(), getPixelRect(), getPixelWidth(), getPixelHeight(), getRotatedRectAngle());
@@ -405,13 +406,13 @@ public class TrcVision
                 // pixelWidth / xFocalLength = knownWidth / distance
                 // => distance = knownWidth * xFocalLength / pixelWidth
                 targetDistance = (knownWidth * cameraInfo.lensInfo.fx) / pixelRect.width;
-                targetPose = new TrcPose2D(
+                targetPose2d = new TrcPose2D(
                     targetDistance * Math.sin(bearingRad),
                     targetDistance * Math.cos(bearingRad),
                     bearingDeg);
             }
 
-            return targetPose;
+            return targetPose2d;
         }   //getTargetPoseByKnownWidth
 
         /**
@@ -455,11 +456,11 @@ public class TrcVision
                     targetDistance -= adjustment;
                 }
                 // Don't have enough info to determine pitch and roll.
-                targetPose = new TrcPose2D(xDistanceFromCamera, yDistanceFromCamera, bearingDeg);
+                targetPose2d = new TrcPose2D(xDistanceFromCamera, yDistanceFromCamera, bearingDeg);
                 targetWidth = TrcUtil.magnitude(bottomRight.x - bottomLeft.x, bottomRight.y - bottomLeft.y);
             }
 
-            return targetPose;
+            return targetPose2d;
         }   //getTargetPoseByHomography
 
         /**
@@ -492,19 +493,19 @@ public class TrcVision
 
                 targetDistance = Math.abs(targetPitchFromGroundRad) < 1e-4?
                     Double.MAX_VALUE: (targetGroundOffset - cameraInfo.camPose.z)/Math.tan(targetPitchFromGroundRad);
-                targetPose = new TrcPose2D(
+                targetPose2d = new TrcPose2D(
                     targetDistance * Math.sin(targetBearingRad),
                     targetDistance * Math.cos(targetBearingRad),
                     targetBearingDeg);
                 TrcDbgTrace.globalTraceDebug(
                     "TargetInfo",
                     "groundOffset=%.1f, cameraZ=%.1f, camPitch=%.1f, targetElevation=%.1f, targetDepth=%.1f, " +
-                        "targetBearing=%.1f, targetPose=%s",
+                        "targetBearing=%.1f, targetPose2d=%s",
                     targetGroundOffset, cameraInfo.camPose.z, cameraInfo.camPose.pitch,
-                    Math.toDegrees(targetElevationRad), targetDistance, targetBearingDeg, targetPose);
+                    Math.toDegrees(targetElevationRad), targetDistance, targetBearingDeg, targetPose2d);
             }
 
-            return targetPose;
+            return targetPose2d;
         }   //getTargetPoseByPixelPosition
 
         /**
@@ -515,17 +516,20 @@ public class TrcVision
          *        robot center.
          * @return target position in 2D robot space (Y forward, X right, heading CW from the positive Y axis).
          */
-        public static TrcPose2D transformCameraSpaceToRobotSpace(TrcPose3D targetPoseCameraSpace, TrcPose3D cameraPose)
+        public static TrcPose3D transformCameraSpaceToRobotSpace(TrcPose3D targetPoseCameraSpace, TrcPose3D cameraPose)
         {
             // Combine the target's relative camera-space pose onto the camera's physical mounting pose.
             // This rotates the target vector into global space and compounds the 3D orientations properly.
-            TrcPose3D targetPosInRobotSpace = cameraPose.addRelativePose(targetPoseCameraSpace);
+            return cameraPose.addRelativePose(targetPoseCameraSpace);
+        }   //transformCameraSpaceToRobotSpace
+
+        public static TrcPose2D project3dTo2dSpace(TrcPose3D target3dPose)
+        {
             // Project components into TrcLib 2D space (Y forward, X right, heading CW from the Y-axis)
             // Using Math.atan2(x, y) establishes a 0-heading along the positive Y-axis, increasing CW toward positive X.
-            double angleDeg = Math.toDegrees(Math.atan2(targetPosInRobotSpace.x, targetPosInRobotSpace.y));
-
-            return new TrcPose2D(targetPosInRobotSpace.x, targetPosInRobotSpace.y, angleDeg);
-        }   //transformCameraSpaceToRobotSpace
+            return new TrcPose2D(
+                target3dPose.x, target3dPose.y, Math.toDegrees(Math.atan2(target3dPose.x, target3dPose.y)));
+        }   //project3dTo2dSpace
     }   //class TargetInfo
 
 }   //class TrcVision

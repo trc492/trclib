@@ -765,7 +765,7 @@ public class TrcOpenCvColorBlobPipeline implements TrcOpenCvPipeline
         @Override
         public TrcPose2D getTargetPose()
         {
-            if (targetPose == null)
+            if (targetPose2d == null)
             {
                 if (solvePnpParams != null && solvePnpParams.cameraMatrix != null && solvePnpParams.distCoeffs != null)
                 {
@@ -792,7 +792,7 @@ public class TrcOpenCvColorBlobPipeline implements TrcOpenCvPipeline
                                 rvec,
                                 tvec))
                             {
-                                targetPose = projectPose(rvec, tvec, solvePnpParams.cameraPose);
+                                targetPose2d = projectPose(rvec, tvec, solvePnpParams.cameraPose);
                             }
                         }
                         finally
@@ -805,27 +805,27 @@ public class TrcOpenCvColorBlobPipeline implements TrcOpenCvPipeline
                 else if (targetKnownWidth != null)
                 {
                     // Good and much less work as long as the target width is known.
-                    targetPose = getTargetPoseByKnownWidth(targetKnownWidth);
+                    targetPose2d = getTargetPoseByKnownWidth(targetKnownWidth);
                 }
                 else if (homographyMapper != null)
                 {
                     // Good but needs camera fixed and Homography calibration.
-                    targetPose = getTargetPoseByHomography(homographyMapper, targetGroundOffset);
+                    targetPose2d = getTargetPoseByHomography(homographyMapper, targetGroundOffset);
                 }
                 else if (cameraInfo != null)
                 {
                     // Worst because it depends on the camera pitch. The flatter the camera pitch, the bigger
                     // the error.
-                    targetPose = getTargetPoseByPixelPosition(targetGroundOffset);
+                    targetPose2d = getTargetPoseByPixelPosition(targetGroundOffset);
                 }
 
-                if (targetPose != null)
+                if (targetPose2d != null)
                 {
-                    targetDistance = TrcUtil.magnitude(targetPose.x, targetPose.y);
+                    targetDistance = TrcUtil.magnitude(targetPose2d.x, targetPose2d.y);
                 }
             }
 
-            return targetPose != null? targetPose.clone(): null;
+            return targetPose2d != null? targetPose2d.clone(): null;
         }   //getTargetPose
 
         /**
@@ -859,7 +859,7 @@ public class TrcOpenCvColorBlobPipeline implements TrcOpenCvPipeline
                 {
                     targetWidth = solvePnpParams.objWidth;
                 }
-                else if (targetPose == null)
+                else if (targetPose2d == null)
                 {
                     // Some getTargetPose method may give you targetWidth (i.e. Homography), try it.
                     getTargetPose();
