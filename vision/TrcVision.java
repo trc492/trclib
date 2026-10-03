@@ -538,14 +538,6 @@ public class TrcVision
             // This rotates the target vector into global space and compounds the 3D orientations properly.
             return cameraPose.addRelativePose(targetPoseCameraSpace);
         }   //transformCameraSpaceToRobotSpace
-
-        public static TrcPose2D project3dTo2dSpace(TrcPose3D target3dPose)
-        {
-            // Project components into TrcLib 2D space (Y forward, X right, heading CW from the Y-axis)
-            // Using Math.atan2(x, y) establishes a 0-heading along the positive Y-axis, increasing CW toward positive X.
-            return new TrcPose2D(
-                target3dPose.x, target3dPose.y, Math.toDegrees(Math.atan2(target3dPose.x, target3dPose.y)));
-        }   //project3dTo2dSpace
     }   //class TargetInfo
 
 }   //class TrcVision

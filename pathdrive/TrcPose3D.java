@@ -272,6 +272,19 @@ public class TrcPose3D
     }   //toTrcPose2D
 
     /**
+     * Converts this 3D pose to a 2D pose, using the direction of the X/Y position as the 2D heading (bearing).
+     *
+     * <p>Unlike {@link #toTrcPose2D()}, this method does not preserve yaw.
+     * The resulting angle is the bearing from the origin to the position.</p>
+     *
+     * @return a 2D pose containing the X and Y position and its bearing.
+     */
+    public TrcPose2D toTrcPose2DBearing()
+    {
+        return new TrcPose2D(x, y, Math.toDegrees(Math.atan2(x, y)));
+    }   //toTrcPose2DBearing
+
+    /**
      * This method returns the positional vector of this pose.
      *
      * @return positional vector.
