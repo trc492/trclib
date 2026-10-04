@@ -210,6 +210,18 @@ public class TrcVision
         double getOffset(Object targetType);
     }   //interface TargetGroundOffset
 
+    public interface AprilTagFieldPose
+    {
+        /**
+         * This method is called by AprilTag detection to get the AprilTag field pose for calculating robot pose.
+         *
+         * @param targetInfo specifies the TargetInfo for the provider to examine AprilTag info to determine which
+         *                   AprilTag field pose to return.
+         * @return appropriate AprilTag field pose.
+         */
+        TrcPose3D getFieldPose(TargetInfo targetInfo);
+    }   //interface AprilTagFieldPose
+
     /**
      * This interface provides a method for filtering false positive objects in the detected target list.
      */
@@ -238,12 +250,9 @@ public class TrcVision
         /**
          * This method returns the robot field pose on the ground.
          *
-         * @param targetFieldPose specifies 3D target field pose, can be null if not provided in which case the
-         *                        vision library has built-in Target field poses that calculates robotPose. If
-         *                        provided, this method will use it to calculate robot pose.
          * @return robot field pose.
          */
-        public abstract TrcPose2D getRobotPose(TrcPose3D targetFieldPose);
+        public abstract TrcPose2D getRobotPose();
 
         /**
          * This method returns the projected 2D pose on the ground of the detected target relative to the robot center.
@@ -316,6 +325,7 @@ public class TrcVision
 
         public final String label;
         protected final CameraInfo cameraInfo;
+        protected final AprilTagFieldPose aprilTagFieldPoseCallback;
         protected TrcPose2D robotPose = null;
         protected TrcPose3D targetPose3d = null;
         protected TrcPose2D targetPose2d = null;
@@ -333,11 +343,14 @@ public class TrcVision
          *
          * @param label specifies the target label.
          * @param cameraInfo specifies camera information.
+         * @param aprilTagFieldPoseCallback specifies the method to call to get the AprilTag field pose for calculating
+         *                                  robot pose, can be null if not provided.
          */
-        public TargetInfo(String label, CameraInfo cameraInfo)
+        public TargetInfo(String label, CameraInfo cameraInfo, AprilTagFieldPose aprilTagFieldPoseCallback)
         {
             this.label = label;
             this.cameraInfo = cameraInfo;
+            this.aprilTagFieldPoseCallback = aprilTagFieldPoseCallback;
         }   //TargetInfo
 
         /**
@@ -352,7 +365,7 @@ public class TrcVision
                 Locale.US,
                 "label=%s,robotPose=%s,targetPose2d=%s,target(dist=%.1f,width=%.1f,area=%.3f)" +
                 ",pixelRect=%s(w=%.0f,h=%.0f),rotatedRectAngle=%.1f",
-                label, getRobotPose(null), getTargetPose(), getTargetDistance(), getTargetWidth(),
+                label, getRobotPose(), getTargetPose(), getTargetDistance(), getTargetWidth(),
                 getNormalizedTargetArea(), getPixelRect(), getPixelWidth(), getPixelHeight(), getRotatedRectAngle());
         }   //toString
 

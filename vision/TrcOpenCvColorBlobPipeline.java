@@ -718,7 +718,7 @@ public class TrcOpenCvColorBlobPipeline implements TrcOpenCvPipeline
             String label, TrcVision.CameraInfo cameraInfo, MatOfPoint contour, Double targetKnownWidth,
             double targetGroundOffset, TrcHomographyMapper homographyMapper)
         {
-            super(label, cameraInfo);
+            super(label, cameraInfo, null);
             this.contour = contour;
             this.targetKnownWidth = targetKnownWidth;
             this.targetGroundOffset = targetGroundOffset;
@@ -745,13 +745,10 @@ public class TrcOpenCvColorBlobPipeline implements TrcOpenCvPipeline
         /**
          * This method returns the robot field pose on the ground.
          *
-         * @param targetFieldPose specifies 3D target field pose, can be null if not provided in which case the
-         *                        vision library has built-in Target field poses that calculates robotPose. If
-         *                        provided, this method will use it to calculate robot pose.
          * @return robot field pose.
          */
         @Override
-        public TrcPose2D getRobotPose(TrcPose3D targetFieldPose)
+        public TrcPose2D getRobotPose()
         {
             // ColorBlob detection does not support calculating robotPose.
             return null;
