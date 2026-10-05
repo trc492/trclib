@@ -537,20 +537,6 @@ public class TrcVision
             return targetPose2d;
         }   //getTargetPoseByPixelPosition
 
-        /**
-         * This method transforms a target pose in camera space into the main robot frame of reference.
-         *
-         * @param targetPoseCameraSpace specifies the 3D target pose in Camera Space.
-         * @param cameraPose specifies the physical location and mounting orientation of the camera relative to the
-         *        robot center.
-         * @return target position in 2D robot space (Y forward, X right, heading CW from the positive Y axis).
-         */
-        public static TrcPose3D transformCameraSpaceToRobotSpace(TrcPose3D targetPoseCameraSpace, TrcPose3D cameraPose)
-        {
-            // Combine the target's relative camera-space pose onto the camera's physical mounting pose.
-            // This rotates the target vector into global space and compounds the 3D orientations properly.
-            return cameraPose.addRelativePose(targetPoseCameraSpace);
-        }   //transformCameraSpaceToRobotSpace
     }   //class TargetInfo
 
 }   //class TrcVision
