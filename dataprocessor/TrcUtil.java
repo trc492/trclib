@@ -575,6 +575,21 @@ public class TrcUtil
     }   //bytesToShort
 
     /**
+     * This method wraps and normalizes the angle to the range [-180, 180) degrees.
+     *
+     * @param angle specifies the angle to be normalized.
+     * @return normalized angle in the range [-180, 180) degrees.
+     */
+    public static double normalizeAngle(double angle)
+    {
+        double normalizedAngle = (angle + 180.0) % 360.0;
+        if (normalizedAngle < 0) normalizedAngle += 360.0;
+        normalizedAngle -= 180.0;
+
+        return normalizedAngle;
+    }   //normalizeAngle
+
+    /**
      * Convert a point from a polar coordinate system to a cartesian coordinate system.
      *
      * @param r     Magnitude of vector
