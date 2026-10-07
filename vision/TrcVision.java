@@ -38,6 +38,8 @@ import trclib.robotcore.TrcDbgTrace;
  */
 public class TrcVision
 {
+    private static final String moduleName = TrcVision.class.getSimpleName();
+
     /**
      * This class contains the Camera Lens info used by OpenCV SolvePnP.
      */
@@ -394,19 +396,29 @@ public class TrcVision
         protected TrcPose2D getRobotPoseByTargetFieldPose(TrcPose3D targetFieldPose)
         {
             TrcPose2D pose = null;
-            // Extract your verified local relative target pose (Robot Space, projected to floor)
-            TrcPose2D relTarget2d = getTargetPose();
+            TrcPose3D targetPoseRobotSpace = getTargetPose3d();
 
-            if (relTarget2d != null)
+            if (targetPoseRobotSpace != null)
             {
-                TrcPose2D targetField2d = targetFieldPose.toTrcPose2D();
-                TrcPose2D unnormalizedRobotPose = targetField2d.addRelativePose(relTarget2d.inverse());
-                // Wrap and normalize heading between [-180, 180] degrees
-                double normalizedYaw = (unnormalizedRobotPose.angle + 180.0) % 360.0;
-                if (normalizedYaw < 0) normalizedYaw += 360.0;
-                normalizedYaw -= 180.0;
+//                TrcPose3D targetPoseRobotSpaceInv = targetPoseRobotSpace.inverse();
+//                TrcPose2D robotFieldPose2d =
+//                    targetFieldPose.addRelativePose(targetPoseRobotSpaceInv).toTrcPose2D();
+//                // Wrap and normalize heading between [-180, 180] degrees
+//                double normalizedYaw = TrcUtil.normalizeAngle(robotFieldPose2d.angle);
+//
+//                pose = new TrcPose2D(robotFieldPose2d.x, robotFieldPose2d.y, normalizedYaw);
+//                TrcDbgTrace.globalTraceInfo(
+//                    moduleName,
+//                    "targetFieldPose=%s, targetPoseRobotSpace/Inv=%s/%s, robotFieldPose2d=%s, normalizedYaw=%.1f",
+//                    targetFieldPose, targetPoseRobotSpace, targetPoseRobotSpaceInv, robotFieldPose2d, normalizedYaw);
+                TrcPose2D targetPoseRobotSpace2d = targetPoseRobotSpace.toTrcPose2D();
+                TrcPose2D targetFieldPose2d = targetFieldPose.toTrcPose2D();
 
-                pose = new TrcPose2D(unnormalizedRobotPose.x, unnormalizedRobotPose.y, normalizedYaw);
+                pose = targetFieldPose2d.addRelativePose(targetPoseRobotSpace2d.inverse());
+                TrcDbgTrace.globalTraceInfo(
+                    moduleName,
+                    "targetFieldPose/2d=%s/%s, targetPoseRobotSpace/2d=%s/%s, robotPose=%s",
+                    targetFieldPose, targetFieldPose2d, targetPoseRobotSpace, targetPoseRobotSpace2d, pose);
             }
 
             return pose;

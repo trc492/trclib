@@ -429,16 +429,13 @@ public class TrcPose3D
         Rotation currentRotation = getRotation();
         Rotation relativeRotation = relativePose.getRotation();
         /*
-         * Apache Commons Math applies the argument rotation after the
-         * instance rotation. Therefore:
+         * R_final = R_current * R_relative.
          *
-         *     relativeRotation.applyTo(currentRotation)
-         *
-         * represents:
-         *
-         *     currentRotation * relativeRotation
+         * With Apache Commons Math VECTOR_OPERATOR semantics,
+         * currentRotation.applyTo(relativeRotation) represents the
+         * composition currentRotation o relativeRotation.
          */
-        Rotation compoundedRotation = relativeRotation.applyTo(currentRotation);
+        Rotation compoundedRotation = currentRotation.applyTo(relativeRotation);
         finalPose.setOrientation(compoundedRotation);
 
         return finalPose;
@@ -465,14 +462,13 @@ public class TrcPose3D
         if (transformAngle)
         {
             /*
-             * Desired rotation:
+             * R_relative = R_reference^-1 * R_this.
              *
-             *     R_relative = R_reference^-1 * R_this
-             *
-             * With Apache Rotation.applyTo(), this is obtained by applying
-             * the reference inverse first in the composition:
+             * With Apache Commons Math VECTOR_OPERATOR semantics,
+             * referenceInverse.applyTo(getRotation()) represents the
+             * composition referenceInverse o thisRotation.
              */
-            Rotation relativeRotation = getRotation().applyTo(referenceInverse);
+            Rotation relativeRotation = referenceInverse.applyTo(getRotation());
             relativePose.setOrientation(relativeRotation);
         }
         else
@@ -514,25 +510,22 @@ public class TrcPose3D
     }   //inverse
 
     /**
-     * Converts this pose's TRC pitch, roll and yaw to an Apache Commons Math
-     * rotation.
+     * Converts this pose's TRC pitch, roll and yaw to an Apache Commons Math rotation.
      *
-     * <p>TRC yaw is clockwise-positive while Apache Commons Math uses the
-     * mathematical counter-clockwise-positive convention, so yaw is negated.
+     * @return the corresponding Apache rotation.
      */
     private Rotation getRotation()
     {
-        return new Rotation(
-            RotationOrder.XYZ,
-            RotationConvention.VECTOR_OPERATOR,
-            Math.toRadians(pitch),
-            Math.toRadians(roll),
-            Math.toRadians(-yaw));
+        return getRotation(pitch, roll, yaw);
     }   //getRotation
 
     /**
-     * Creates an Apache rotation from the specified TRC pitch, roll and yaw
-     * angles.
+     * Creates an Apache rotation from the specified TRC pitch, roll and yaw angles.
+     *
+     * <p>TRC uses extrinsic XYZ rotations. With Apache Commons Math VECTOR_OPERATOR
+     * semantics, the equivalent Cardan representation is ZYX with the angles supplied
+     * in reverse order. TRC yaw is clockwise-positive, so yaw is negated when converting
+     * to Apache's mathematical counter-clockwise-positive convention.</p>
      *
      * @param pitch specifies the rotation angle around the X-axis in degrees.
      * @param roll specifies the rotation angle around the Y-axis in degrees.
@@ -542,22 +535,24 @@ public class TrcPose3D
     private static Rotation getRotation(double pitch, double roll, double yaw)
     {
         return new Rotation(
-            RotationOrder.XYZ,
+            RotationOrder.ZYX,
             RotationConvention.VECTOR_OPERATOR,
-            Math.toRadians(pitch),
+            Math.toRadians(-yaw),
             Math.toRadians(roll),
-            Math.toRadians(-yaw));
+            Math.toRadians(pitch));
     }   //getRotation
 
     /**
      * Extracts TRC pitch, roll and yaw from an Apache Commons Math rotation.
+     *
+     * @param rotation specifies the Apache rotation.
      */
     private void setOrientation(Rotation rotation)
     {
-        double[] angles = rotation.getAngles(RotationOrder.XYZ, RotationConvention.VECTOR_OPERATOR);
+        double[] angles = rotation.getAngles(RotationOrder.ZYX, RotationConvention.VECTOR_OPERATOR);
 
-        pitch = Math.toDegrees(angles[0]);
+        pitch = Math.toDegrees(angles[2]);
         roll = Math.toDegrees(angles[1]);
-        yaw = -Math.toDegrees(angles[2]);
+        yaw = -Math.toDegrees(angles[0]);
     }   //setOrientation
 }   //class TrcPose3D
