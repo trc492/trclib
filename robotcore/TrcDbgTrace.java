@@ -338,6 +338,29 @@ public class TrcDbgTrace
     }   //traceMsgWorker
 
     /**
+     * This method is called to print an unconditional message.
+     *
+     * @param callerInstance specifies the name to identify the caller.
+     * @param text specifies the message text.
+     */
+    public void traceMsg(String callerInstance, String text)
+    {
+        traceMsgWorker(callerInstance, 2, MsgLevel.INFO, text);
+    }   //traceMsg
+
+    /**
+     * This method is called to print an unconditional message.
+     *
+     * @param callerInstance specifies the name to identify the caller.
+     * @param format specifies the format string of the message.
+     * @param args specifies the message arguments.
+     */
+    public void traceMsg(String callerInstance, String format, Object... args)
+    {
+        traceMsgWorker(callerInstance, 2, MsgLevel.INFO, String.format(format, args));
+    }   //traceMsg
+
+    /**
      * This method is called to print a fatal message.
      *
      * @param callerInstance specifies the name to identify the caller.
