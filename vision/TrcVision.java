@@ -400,6 +400,18 @@ public class TrcVision
 
             if (targetPoseRobotSpace != null)
             {
+                // targetPoseRobotSpace is already on the floor, convert it to TrcPose2D.
+                TrcPose2D targetPoseRobotSpace2d = targetPoseRobotSpace.toTrcPose2D();
+                // targetFieldPose is also on the floor, convert it to TrcPose2D.
+                TrcPose2D targetFieldPose2d = targetFieldPose.toTrcPose2D();
+                // Apply 2D vector math to calculate the robot pose.
+                pose = targetFieldPose2d.addRelativePose(targetPoseRobotSpace2d.inverse());
+                TrcDbgTrace.globalTraceInfo(
+                    moduleName,
+                    "targetFieldPose/2d=%s/%s, targetPoseRobotSpace/2d=%s/%s, robotPose=%s",
+                    targetFieldPose, targetFieldPose2d, targetPoseRobotSpace, targetPoseRobotSpace2d, pose);
+//                // The following code is an alternative way to calculate robot pose by sticking with 3D space.
+//                // 2D is faster and more efficient.
 //                TrcPose3D targetPoseRobotSpaceInv = targetPoseRobotSpace.inverse();
 //                TrcPose2D robotFieldPose2d =
 //                    targetFieldPose.addRelativePose(targetPoseRobotSpaceInv).toTrcPose2D();
@@ -411,14 +423,6 @@ public class TrcVision
 //                    moduleName,
 //                    "targetFieldPose=%s, targetPoseRobotSpace/Inv=%s/%s, robotFieldPose2d=%s, normalizedYaw=%.1f",
 //                    targetFieldPose, targetPoseRobotSpace, targetPoseRobotSpaceInv, robotFieldPose2d, normalizedYaw);
-                TrcPose2D targetPoseRobotSpace2d = targetPoseRobotSpace.toTrcPose2D();
-                TrcPose2D targetFieldPose2d = targetFieldPose.toTrcPose2D();
-
-                pose = targetFieldPose2d.addRelativePose(targetPoseRobotSpace2d.inverse());
-                TrcDbgTrace.globalTraceInfo(
-                    moduleName,
-                    "targetFieldPose/2d=%s/%s, targetPoseRobotSpace/2d=%s/%s, robotPose=%s",
-                    targetFieldPose, targetFieldPose2d, targetPoseRobotSpace, targetPoseRobotSpace2d, pose);
             }
 
             return pose;
