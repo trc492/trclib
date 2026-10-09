@@ -378,7 +378,7 @@ public class TrcVision
          */
         public TrcPose3D getTargetPose3d()
         {
-            if (targetPose3d != null)
+            if (targetPose3d == null)
             {
                 // getTargetPose will calculate targetPose3d if appropriate.
                 getTargetPose();
@@ -406,23 +406,9 @@ public class TrcVision
                 TrcPose2D targetFieldPose2d = targetFieldPose.toTrcPose2D();
                 // Apply 2D vector math to calculate the robot pose.
                 pose = targetFieldPose2d.addRelativePose(targetPoseRobotSpace2d.inverse());
-                TrcDbgTrace.globalTraceInfo(
-                    moduleName,
-                    "targetFieldPose/2d=%s/%s, targetPoseRobotSpace/2d=%s/%s, robotPose=%s",
+                TrcDbgTrace.globalTraceDebug(
+                    moduleName, "targetFieldPose/2d=%s/%s, targetPoseRobotSpace/2d=%s/%s, robotPose=%s",
                     targetFieldPose, targetFieldPose2d, targetPoseRobotSpace, targetPoseRobotSpace2d, pose);
-//                // The following code is an alternative way to calculate robot pose by sticking with 3D space.
-//                // 2D is faster and more efficient.
-//                TrcPose3D targetPoseRobotSpaceInv = targetPoseRobotSpace.inverse();
-//                TrcPose2D robotFieldPose2d =
-//                    targetFieldPose.addRelativePose(targetPoseRobotSpaceInv).toTrcPose2D();
-//                // Wrap and normalize heading between [-180, 180] degrees
-//                double normalizedYaw = TrcUtil.normalizeAngle(robotFieldPose2d.angle);
-//
-//                pose = new TrcPose2D(robotFieldPose2d.x, robotFieldPose2d.y, normalizedYaw);
-//                TrcDbgTrace.globalTraceInfo(
-//                    moduleName,
-//                    "targetFieldPose=%s, targetPoseRobotSpace/Inv=%s/%s, robotFieldPose2d=%s, normalizedYaw=%.1f",
-//                    targetFieldPose, targetPoseRobotSpace, targetPoseRobotSpaceInv, robotFieldPose2d, normalizedYaw);
             }
 
             return pose;
