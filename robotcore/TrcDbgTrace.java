@@ -43,6 +43,7 @@ public class TrcDbgTrace
      */
     public enum MsgLevel
     {
+        MSG(0),
         FATAL(1),
         ERR(2),
         WARN(3),
@@ -345,7 +346,7 @@ public class TrcDbgTrace
      */
     public void traceMsg(String callerInstance, String text)
     {
-        traceMsgWorker(callerInstance, 2, MsgLevel.INFO, text);
+        traceMsgWorker(callerInstance, 2, MsgLevel.MSG, text);
     }   //traceMsg
 
     /**
@@ -357,7 +358,7 @@ public class TrcDbgTrace
      */
     public void traceMsg(String callerInstance, String format, Object... args)
     {
-        traceMsgWorker(callerInstance, 2, MsgLevel.INFO, String.format(format, args));
+        traceMsgWorker(callerInstance, 2, MsgLevel.MSG, String.format(format, args));
     }   //traceMsg
 
     /**
@@ -533,6 +534,29 @@ public class TrcDbgTrace
             traceMsgWorker(callerInstance, 2, MsgLevel.VERBOSE, String.format(format, args));
         }
     }   //traceVerbose
+
+    /**
+     * This method is called to print an unconditional message using the global tracer.
+     *
+     * @param callerInstance specifies the name to identify the caller.
+     * @param text specifies the message text.
+     */
+    public static void globalTraceMsg(String callerInstance, String text)
+    {
+        globalTracer.traceMsgWorker(callerInstance, 2, MsgLevel.MSG, text);
+    }   //globalTraceMsg
+
+    /**
+     * This method is called to print an unconditional message using the global tracer.
+     *
+     * @param callerInstance specifies the name to identify the caller.
+     * @param format specifies the format string of the message.
+     * @param args specifies the message arguments.
+     */
+    public static void globalTraceMsg(String callerInstance, String format, Object... args)
+    {
+        globalTracer.traceMsgWorker(callerInstance, 2, MsgLevel.MSG, String.format(format, args));
+    }   //globalTraceMsg
 
     /**
      * This method is called to print a fatal message using the global tracer.
