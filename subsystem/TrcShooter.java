@@ -38,9 +38,9 @@ import trclib.sensor.TrcTriggerThresholdRange;
 import trclib.timer.TrcTimer;
 
 /**
- * This class implements a platform independent auto shooter subsystem. It consists of one or two shooter motors and
+ * This class implements a platform independent auto shooter subsystem. It consists of one or two shoot motors and
  * optionally a tilt motor and/or a pan motor. It provides methods to automate the shooting operation which includes
- * aiming by panning and tilting to the specified angles and spinning the shooter motor to the specified velocity.
+ * aiming by panning and tilting to the specified angles and spinning the shoot motors to the specified velocity.
  * It then uses the caller provided shoot method to deliver the object to the shooter and signals completion if necessary.
  */
 public class TrcShooter implements TrcExclusiveSubsystem
@@ -178,13 +178,13 @@ public class TrcShooter implements TrcExclusiveSubsystem
 
     public static class GoalTrackingParams
     {
-        public boolean trackFlywheel = false;
+        public boolean trackFlywheelVel = false;
         public boolean trackTiltPos = false;
         public boolean trackPanPos = false;
 
-        public GoalTrackingParams(boolean trackFlywheel, boolean trackTiltPos, boolean trackPanPos)
+        public GoalTrackingParams(boolean trackFlywheelVel, boolean trackTiltPos, boolean trackPanPos)
         {
-            this.trackFlywheel = trackFlywheel;
+            this.trackFlywheelVel = trackFlywheelVel;
             this.trackTiltPos = trackTiltPos;
             this.trackPanPos = trackPanPos;
         }   //GoalTrackingParams
@@ -192,7 +192,7 @@ public class TrcShooter implements TrcExclusiveSubsystem
         @Override
         public String toString()
         {
-            return "(trackFlywheel=" + trackFlywheel +
+            return "(trackFlywheelVel=" + trackFlywheelVel +
                    ",trackTiltPos=" + trackTiltPos +
                    ",trackPanPos=" + trackPanPos + ")";
         }   //toString
@@ -203,20 +203,21 @@ public class TrcShooter implements TrcExclusiveSubsystem
         private boolean active = false;
         private TrcEvent shooterReadyEvent = null;
         private double shooterReadyTimeout = 0.0;
-        private TrcEvent shooter1OnTargetEvent = null;
-        private TrcEvent shooter2OnTargetEvent = null;
+        private TrcEvent shootMotor1OnTargetEvent = null;
+        private TrcEvent shootMotor2OnTargetEvent = null;
         private TrcEvent tiltOnTargetEvent = null;
         private TrcEvent panOnTargetEvent = null;
     }   //class ShooterState
 
     private final ShooterState shooterState = new ShooterState();
     private final AtomicReference<GoalTrackingParams> goalTrackingParams = new AtomicReference<>(null);
+
     public final TrcDbgTrace tracer;
     private final String instanceName;
-    public final TrcMotor shooterMotor1;
-    public final TrcTrigger shooterMotor1VelTrigger;
-    public final TrcMotor shooterMotor2;
-    public final TrcTrigger shooterMotor2VelTrigger;
+    public final TrcMotor shootMotor1;
+    public final TrcTrigger shootMotor1VelTrigger;
+    public final TrcMotor shootMotor2;
+    public final TrcTrigger shootMotor2VelTrigger;
     public final TrcMotor tiltMotor;
     private final PanTiltParams tiltParams;
     public final TrcMotor panMotor;
@@ -231,19 +232,19 @@ public class TrcShooter implements TrcExclusiveSubsystem
     private Object shootContext = null;
     private String shootOpOwner = null;
     private Double shootOffDelay = null;
-    private Double maxShooter1MaxRPM = null;
-    private Double maxShooter2MaxRPM = null;
+    private Double maxShootMotor1MaxRPM = null;
+    private Double maxShootMotor2MaxRPM = null;
     private AimInfoSource aimInfoSource = null;
 
     /**
      * Constructor: Creates an instance of the object.
      *
      * @param instanceName specifies the hardware name.
-     * @param shooterMotor1 specifies the shooter motor 1 object.
-     * @param shooterMotor1HasVelTrigger specifies true to create velocity trigger for shooter motor 1,
+     * @param shootMotor1 specifies the shoot motor 1 object.
+     * @param shootMotor1HasVelTrigger specifies true to create velocity trigger for shoot motor 1,
      *        false otherwise.
-     * @param shooterMotor2 specifies the shooter motor 2 object, can be null for one-motor shooter.
-     * @param shooterMotor2HasVelTrigger specifies true to create velocity trigger for shooter motor 2,
+     * @param shootMotor2 specifies the shoot motor 2 object, can be null for one-motor shooter.
+     * @param shootMotor2HasVelTrigger specifies true to create velocity trigger for shoot motor 2,
      *        false otherwise.
      * @param tiltMotor specifies the tilt motor object, can be null if none.
      * @param tiltParams specifies the tilt parameters, null if no tilt motor.
@@ -251,23 +252,23 @@ public class TrcShooter implements TrcExclusiveSubsystem
      * @param panParams specifies the pan parameters, null if no pan motor.
      */
     public TrcShooter(
-        String instanceName, TrcMotor shooterMotor1, boolean shooterMotor1HasVelTrigger, TrcMotor shooterMotor2,
-        boolean shooterMotor2HasVelTrigger, TrcMotor tiltMotor, PanTiltParams tiltParams, TrcMotor panMotor,
+        String instanceName, TrcMotor shootMotor1, boolean shootMotor1HasVelTrigger, TrcMotor shootMotor2,
+        boolean shootMotor2HasVelTrigger, TrcMotor tiltMotor, PanTiltParams tiltParams, TrcMotor panMotor,
         PanTiltParams panParams)
     {
         this.tracer = new TrcDbgTrace();
         this.instanceName = instanceName;
-        this.shooterMotor1 = shooterMotor1;
-        this.shooterMotor2 = shooterMotor2;
+        this.shootMotor1 = shootMotor1;
+        this.shootMotor2 = shootMotor2;
         this.tiltMotor = tiltMotor;
         this.tiltParams = tiltParams;
         this.panMotor = panMotor;
         this.panParams = panParams;
 
-        shooterMotor1VelTrigger = shooterMotor1HasVelTrigger?
-            new TrcTriggerThresholdRange(instanceName + ".ShooterMotor1VelTrigger", this::getShooterMotor1RPM): null;
-        shooterMotor2VelTrigger = shooterMotor2HasVelTrigger?
-            new TrcTriggerThresholdRange(instanceName + ".ShooterMotor2VelTrigger", this::getShooterMotor2RPM): null;
+        shootMotor1VelTrigger = shootMotor1HasVelTrigger?
+            new TrcTriggerThresholdRange(instanceName + ".ShootMotor1VelTrigger", this::getShootMotor1RPM): null;
+        shootMotor2VelTrigger = shootMotor2HasVelTrigger?
+            new TrcTriggerThresholdRange(instanceName + ".ShootMotor2VelTrigger", this::getShootMotor2RPM): null;
 
         aimTimer = new TrcTimer(instanceName + ".aimTimer");
         shootTimer = new TrcTimer(instanceName + ".shootTimer");
@@ -302,7 +303,7 @@ public class TrcShooter implements TrcExclusiveSubsystem
             if (!completed)
             {
                 // The operation was canceled, stop the shooter motor.
-                stopShooter();
+                stopShootMotors();
                 if (tiltMotor != null)
                 {
                     tiltMotor.cancel();
@@ -313,6 +314,7 @@ public class TrcShooter implements TrcExclusiveSubsystem
                     panMotor.cancel();
                 }
             }
+
             shootOp = null;
             shootContext = null;
             shootOpOwner = null;
@@ -373,7 +375,7 @@ public class TrcShooter implements TrcExclusiveSubsystem
         tracer.traceInfo(instanceName, "Stop GoalTracking.");
         if (panMotor != null) panMotor.cancel();
         if (tiltMotor != null) tiltMotor.cancel();
-        stopShooter();
+        stopShootMotors();
     }   //stopGoalTracking
 
     /**
@@ -390,12 +392,13 @@ public class TrcShooter implements TrcExclusiveSubsystem
         GoalTrackingParams trackingParams = goalTrackingParams.get();
         AimInfo aimInfo = aimInfoSource.getAimInfo();
 
+        // Update aiming if available.
         if (aimInfo != null)
         {
-            if (trackingParams.trackFlywheel &&
+            if (trackingParams.trackFlywheelVel &&
                 (aimInfo.flywheel1RPM != null || aimInfo.flywheel2RPM != null))
             {
-                setShooterMotorRPM(aimInfo.flywheel1RPM, aimInfo.flywheel2RPM);
+                setShootMotorRPM(aimInfo.flywheel1RPM, aimInfo.flywheel2RPM);
             }
 
             if (trackingParams.trackTiltPos && aimInfo.tiltAngle != null)
@@ -411,16 +414,19 @@ public class TrcShooter implements TrcExclusiveSubsystem
 
         synchronized (shooterState)
         {
+            // Check for aiming ready (i.e. flywheel velocities, pan/tilt positions are all on-target) and signal
+            // shooter ready event (or timed out).
             if (shooterState.shooterReadyEvent != null)
             {
                 boolean timedOut = shooterState.shooterReadyTimeout > 0.0 &&
                                    TrcTimer.getCurrentTime() > shooterState.shooterReadyTimeout;
                 if (timedOut ||
-                    (shooterMotor1 == null || shooterMotor1.isVelocityOnTarget()) &&
-                    (shooterMotor2 == null || shooterMotor2.isVelocityOnTarget()) &&
+                    (shootMotor1 == null || shootMotor1.isVelocityOnTarget()) &&
+                    (shootMotor2 == null || shootMotor2.isVelocityOnTarget()) &&
                     (panMotor == null || panMotor.isPositionOnTarget()) &&
                     (tiltMotor == null || tiltMotor.isPositionOnTarget()))
                 {
+                    // Signal and consume the event.
                     shooterState.shooterReadyEvent.signal();
                     shooterState.shooterReadyEvent = null;
                     shooterState.shooterReadyTimeout = 0.0;
@@ -428,8 +434,8 @@ public class TrcShooter implements TrcExclusiveSubsystem
                         instanceName, "%s is %s: rpm1=%f/%f, rpm2=%f/%f, tilt=%f/%f, pan=%f/%f",
                         instanceName,
                         timedOut? "TimedOut": "Ready",
-                        getShooterMotor1RPM(), getShooterMotor1TargetRPM(),
-                        getShooterMotor2RPM(), getShooterMotor2TargetRPM(),
+                        getShootMotor1RPM(), getShootMotor1TargetRPM(),
+                        getShootMotor2RPM(), getShootMotor2TargetRPM(),
                         getTiltAngle(), getTiltAngleTarget(),
                         getPanAngle(), getPanAngleTarget());
                 }
@@ -482,7 +488,7 @@ public class TrcShooter implements TrcExclusiveSubsystem
     }   //disableGoalTracking
 
     /**
-     * This method checks if the target pan angle crosses the hardstop. If so, it will adjust the pan angle so the
+     * This method checks if the target pan angle crosses the hard-stop. If so, it will adjust the pan angle so the
      * turret will turn the other way avoid crossing over the hard stop.
      *
      * @param targetPanAngle specifies the target pan angle.
@@ -496,7 +502,7 @@ public class TrcShooter implements TrcExclusiveSubsystem
         {
             if (targetPanAngle + 360.0 > maxPanAngle)
             {
-                tracer.traceDebug(instanceName, "Crossing hardstop CCW to dead zone at %f", targetPanAngle);
+                tracer.traceDebug(instanceName, "Crossing hard-stop CCW to dead zone at %f", targetPanAngle);
                 // We landed inside the dead zone, just stay at the edge of it.
                 targetPanAngle = minPanAngle;
             }
@@ -504,14 +510,14 @@ public class TrcShooter implements TrcExclusiveSubsystem
             {
                 targetPanAngle += 360.0;
                 tracer.traceDebug(
-                    instanceName, "Crossing hardstop CCW, spin it the other way to %f", targetPanAngle);
+                    instanceName, "Crossing hard-stop CCW, spin it the other way to %f", targetPanAngle);
             }
         }
         else if (targetPanAngle > maxPanAngle)
         {
             if (targetPanAngle - 360.0 < minPanAngle)
             {
-                tracer.traceDebug(instanceName, "Crossing hardstop CW to dead zone at %f", targetPanAngle);
+                tracer.traceDebug(instanceName, "Crossing hard-stop CW to dead zone at %f", targetPanAngle);
                 // We landed inside the dead zone, just stay at the edge of it.
                 targetPanAngle = maxPanAngle;
             }
@@ -519,7 +525,7 @@ public class TrcShooter implements TrcExclusiveSubsystem
             {
                 targetPanAngle -= 360.0;
                 tracer.traceDebug(
-                    instanceName, "Crossing hardstop CW, spin it the other way to %f", targetPanAngle);
+                    instanceName, "Crossing hard-stop CW, spin it the other way to %f", targetPanAngle);
             }
         }
 
@@ -527,45 +533,54 @@ public class TrcShooter implements TrcExclusiveSubsystem
     }   //adjustPanAngleToAvoidCrossover
 
     /**
-     * This method enables power mode on the shooter motors. In power mode, it will do open-loop control of the
+     * This method enables power mode on the shoot motors. In power mode, it will do open-loop control of the
      * flywheel using percentage power of targetRPM/maxRPM. This is a failsafe mode in case the flywheel encoder
      * has malfunctioned.
      *
-     * @param maxShooter1MaxRPM specifies maximum shooter motor RPM for enabling power mode,
+     * @param maxShootMotor1MaxRPM specifies maximum shoot motor RPM for enabling power mode,
      *        null for disabling power mode.
-     * @param maxShooter2MaxRPM specifies maximum shooter motor RPM, null if motor 2 does not exist.
+     * @param maxShootMotor2MaxRPM specifies maximum shoot motor RPM, null if motor 2 does not exist.
      */
-    public void enableShooterPowerMode(Double maxShooter1MaxRPM, Double maxShooter2MaxRPM)
+    public void enablePowerShootMode(Double maxShootMotor1MaxRPM, Double maxShootMotor2MaxRPM)
     {
-        this.maxShooter1MaxRPM = maxShooter1MaxRPM;
-        this.maxShooter2MaxRPM = maxShooter2MaxRPM;
-    }   //enableShooterPowerMode
+        this.maxShootMotor1MaxRPM = maxShootMotor1MaxRPM;
+        this.maxShootMotor2MaxRPM = maxShootMotor2MaxRPM;
+    }   //enablePowerShootMode
 
     /**
      * This method disables power mode on the shooter motors.
      */
-    public void disableShooterPowerMode()
+    public void disablePowerShootMode()
     {
-        this.maxShooter1MaxRPM = null;
-        this.maxShooter2MaxRPM = null;
-    }   //disableShooterPowerMode
+        this.maxShootMotor1MaxRPM = null;
+        this.maxShootMotor2MaxRPM = null;
+    }   //disablePowerShootMode
 
     /**
-     * This method checks if the shooter motor power mode is enabled.
+     * This method checks if the shoot motor power mode is enabled.
      *
      * @return true if power mode is enabled, false if disabled.
      */
-    public boolean isShooterPowerModeEnabled()
+    public boolean isPowerShootModeEnabled()
     {
         // Only need to check max velocity of motor 1. Max velocity of motor 2 could be null because it doesn't exist,
         // not because power mode is disabled.
-        return maxShooter1MaxRPM != null;
-    }   //isShooterPowerModeEnabled
+        return maxShootMotor1MaxRPM != null;
+    }   //isPowerShootModeEnabled
+
+    //
+    // SOTM Support.
+    //
+
+    private static final boolean COMPENSATE_ROBOT_ROTATION = true;
+    private static final boolean COMPENSATE_TURRET_OFFSET = false;
+    private static final boolean COMPENSATE_EXIT_VELOCITY = false;
+    private static final double ROTATION_COMP_GAIN = COMPENSATE_TURRET_OFFSET? 1.0: 0.2;
 
     /**
      * This method compensates the TargetInfo by the motion of the robot.
      *
-     * @param driveBase specifies the drive base object.
+     * @param driveBase specifies the drive base object for getting drive base velocity.
      * @param turretOffsetX specifies the X offset of the turret from robot center.
      * @param turretOffsetY specifies the Y offset of the turret from robot center.
      * @param targetInfoSource specifies the method to call to recompute TargetInfo by current target pose.
@@ -577,10 +592,6 @@ public class TrcShooter implements TrcExclusiveSubsystem
      *        exits the shooter. TOF only accounts after the ball exits the shooter.
      * @return compensated Target Info.
      */
-    private static final boolean COMPENSATE_ROBOT_ROTATION = true;
-    private static final boolean COMPENSATE_TURRET_OFFSET = false;
-    private static final boolean COMPENSATE_EXIT_VELOCITY = false;
-    private static final double ROTATION_COMP_GAIN = COMPENSATE_TURRET_OFFSET? 1.0: 0.2;
     public TargetInfo compensateRobotMotion(
         TrcDriveBase driveBase, double turretOffsetX, double turretOffsetY, TargetInfoSource targetInfoSource,
         TargetInfo targetInfo, double dragCoeff, double tofErrorThreshold, int maxIterations, double shooterExitDelay)
@@ -752,8 +763,8 @@ public class TrcShooter implements TrcExclusiveSubsystem
     }   //waitForShooterReady
 
     /**
-     * This method sets the shooter velocity and the tilt/pan angles if tilt/pan exist. This method is asynchronous.
-     * When both shooter velocity and tilt/pan positions have reached target and if shoot method is provided, it will
+     * This method sets the shoot velocity and the tilt/pan angles if tilt/pan exist. This method is asynchronous.
+     * When both shoot velocities and tilt/pan positions have reached target and if shoot method is provided, it will
      * shoot and signal an event if provided.
      *
      * @param owner specifies the owner that acquired the subsystem ownerships, null if no ownership required.
@@ -806,37 +817,37 @@ public class TrcShooter implements TrcExclusiveSubsystem
                 this.shootOpOwner = shootOp != null ? owner : null;
                 this.shootOffDelay = shootOffDelay;
 
-                if (maxShooter1MaxRPM != null)
+                if (maxShootMotor1MaxRPM != null)
                 {
-                    // Shooter is in power mode.
-                    shooterState.shooter1OnTargetEvent = null;
-                    shooterMotor1.setPower(TrcUtil.clipRange(flywheel1RPM/maxShooter1MaxRPM));
+                    // Shoot motor is in power mode.
+                    shooterState.shootMotor1OnTargetEvent = null;
+                    shootMotor1.setPower(TrcUtil.clipRange(flywheel1RPM/maxShootMotor1MaxRPM));
                 }
                 else
                 {
-                    // Shooter is in velocity mode.
-                    shooterState.shooter1OnTargetEvent = new TrcEvent(instanceName + ".shooter1OnTarget");
-                    shooterState.shooter1OnTargetEvent.setCallback(this::onTarget, null);
-                    shooterMotor1.setVelocity(0.0, flywheel1RPM/60.0, 0.0, shooterState.shooter1OnTargetEvent);
+                    // Shoot motor is in velocity mode.
+                    shooterState.shootMotor1OnTargetEvent = new TrcEvent(instanceName + ".shootMotor1OnTarget");
+                    shooterState.shootMotor1OnTargetEvent.setCallback(this::onTarget, null);
+                    shootMotor1.setVelocity(0.0, flywheel1RPM/60.0, 0.0, shooterState.shootMotor1OnTargetEvent);
                 }
 
-                if (shooterMotor2 != null)
+                if (shootMotor2 != null)
                 {
-                    if (maxShooter2MaxRPM != null)
+                    if (maxShootMotor2MaxRPM != null)
                     {
-                        shooterState.shooter2OnTargetEvent = null;
-                        shooterMotor2.setPower(TrcUtil.clipRange(flywheel2RPM/maxShooter2MaxRPM));
+                        shooterState.shootMotor2OnTargetEvent = null;
+                        shootMotor2.setPower(TrcUtil.clipRange(flywheel2RPM/maxShootMotor2MaxRPM));
                     }
                     else
                     {
-                        shooterState.shooter2OnTargetEvent = new TrcEvent(instanceName + ".shooter2OnTarget");
-                        shooterState.shooter2OnTargetEvent.setCallback(this::onTarget, null);
-                        shooterMotor2.setVelocity(0.0, flywheel2RPM/60.0, 0.0, shooterState.shooter2OnTargetEvent);
+                        shooterState.shootMotor2OnTargetEvent = new TrcEvent(instanceName + ".shootMotor2OnTarget");
+                        shooterState.shootMotor2OnTargetEvent.setCallback(this::onTarget, null);
+                        shootMotor2.setVelocity(0.0, flywheel2RPM/60.0, 0.0, shooterState.shootMotor2OnTargetEvent);
                     }
                 }
                 else
                 {
-                    shooterState.shooter2OnTargetEvent = null;
+                    shooterState.shootMotor2OnTargetEvent = null;
                 }
 
                 if (tiltMotor != null && tiltAngle != null)
@@ -950,15 +961,15 @@ public class TrcShooter implements TrcExclusiveSubsystem
             tracer.traceDebug(
                 instanceName,
                 "canceled=" + canceled +
-                ",shooter1Event=" + shooterState.shooter1OnTargetEvent +
-                ",shooter2Event=" + shooterState.shooter2OnTargetEvent +
+                ",shooter1Event=" + shooterState.shootMotor1OnTargetEvent +
+                ",shooter2Event=" + shooterState.shootMotor2OnTargetEvent +
                 ",tiltEvent=" + shooterState.tiltOnTargetEvent +
                 ",panEvent=" + shooterState.panOnTargetEvent +
                 ",aimOnly=" + (shootOp == null));
             if (!canceled)
             {
-                if ((shooterState.shooter1OnTargetEvent == null || shooterState.shooter1OnTargetEvent.isSignaled()) &&
-                    (shooterState.shooter2OnTargetEvent == null || shooterState.shooter2OnTargetEvent.isSignaled()) &&
+                if ((shooterState.shootMotor1OnTargetEvent == null || shooterState.shootMotor1OnTargetEvent.isSignaled()) &&
+                    (shooterState.shootMotor2OnTargetEvent == null || shooterState.shootMotor2OnTargetEvent.isSignaled()) &&
                     (shooterState.tiltOnTargetEvent == null || shooterState.tiltOnTargetEvent.isSignaled()) &&
                     (shooterState.panOnTargetEvent == null || shooterState.panOnTargetEvent.isSignaled()))
                 {
@@ -999,7 +1010,7 @@ public class TrcShooter implements TrcExclusiveSubsystem
         else if (shootOffDelay == 0.0)
         {
             tracer.traceInfo(instanceName, "Shoot completed, stop shooter motor.");
-            stopShooter();
+            stopShootMotors();
             finish(true);
         }
         else
@@ -1028,7 +1039,7 @@ public class TrcShooter implements TrcExclusiveSubsystem
         tracer.traceInfo(instanceName, "Timed out: completion=" + completion);
         // Either the operation was timed out or there was a shootOffDelay.
         // Either way, we will turn off the shooter motor.
-        stopShooter();
+        stopShootMotors();
         finish(completion);
     }   //timedOut
 
@@ -1037,227 +1048,227 @@ public class TrcShooter implements TrcExclusiveSubsystem
     //
 
     /**
-     * This method returns the shooter motor 1 object.
+     * This method returns the shoot motor 1 object.
      *
-     * @return shooter motor 1.
+     * @return shoot motor 1.
      */
-    public TrcMotor getShooterMotor1()
+    public TrcMotor getShootMotor1()
     {
-        return shooterMotor1;
-    }   //getShooterMotor1
+        return shootMotor1;
+    }   //getShootMotor1
 
     /**
-     * This method returns the shooter motor 2 object if any.
+     * This method returns the shoot motor 2 object if any.
      *
-     * @return shooter motor 2, null if none.
+     * @return shoot motor 2, null if none.
      */
-    public TrcMotor getShooterMotor2()
+    public TrcMotor getShootMotor2()
     {
-        return shooterMotor2 != null? shooterMotor2: shooterMotor1.getFollower(0);
-    }   //getShooterMotor2
+        return shootMotor2 != null? shootMotor2: shootMotor1.getFollower(0);
+    }   //getShootMotor2
 
     /**
-     * This method returns the created Shooter motor 1 velocity trigger if any.
+     * This method returns the created Shoot motor 1 velocity trigger if any.
      *
-     * @return created shooter motor 1 velocity trigger, null if none created.
+     * @return created shoot motor 1 velocity trigger, null if none created.
      */
-    public TrcTriggerThresholdRange getShooterMotor1VelTrigger()
+    public TrcTriggerThresholdRange getShootMotor1VelTrigger()
     {
-        return (TrcTriggerThresholdRange) shooterMotor1VelTrigger;
-    }   //getShooterMotor1VelTrigger
+        return (TrcTriggerThresholdRange) shootMotor1VelTrigger;
+    }   //getShootMotor1VelTrigger
 
     /**
-     * This method returns the created Shooter motor 2 velocity trigger if any.
+     * This method returns the created Shoot motor 2 velocity trigger if any.
      *
-     * @return created shooter motor 2 velocity trigger, null if none created.
+     * @return created shoot motor 2 velocity trigger, null if none created.
      */
-    public TrcTriggerThresholdRange getShooterMotor2VelTrigger()
+    public TrcTriggerThresholdRange getShootMotor2VelTrigger()
     {
-        return (TrcTriggerThresholdRange) shooterMotor2VelTrigger;
-    }   //getShooterMotor2VelTrigger
+        return (TrcTriggerThresholdRange) shootMotor2VelTrigger;
+    }   //getShootMotor2VelTrigger
 
     /**
-     * This methods returns the shooter motor 1 power.
+     * This methods returns the shoot motor 1 power.
      *
-     * @return shooter motor 1 power.
+     * @return shoot motor 1 power.
      */
-    public double getShooterMotor1Power()
+    public double getShootMotor1Power()
     {
-        return shooterMotor1.getPower();
-    }   //getShooterMotor1Power
+        return shootMotor1.getPower();
+    }   //getShootMotor1Power
 
     /**
-     * This methods returns the shooter motor 2 power if any.
+     * This methods returns the shoot motor 2 power if any.
      *
-     * @return shooter motor 2 power, null if none.
+     * @return shoot motor 2 power, null if none.
      */
-    public Double getShooterMotor2Power()
+    public Double getShootMotor2Power()
     {
-        TrcMotor motor2 = getShooterMotor2();
+        TrcMotor motor2 = getShootMotor2();
         return motor2 != null? motor2.getPower(): null;
-    }   //getShooterMotor2Power
+    }   //getShootMotor2Power
 
     /**
-     * This methods returns the shooter motor 1 current.
+     * This methods returns the shoot motor 1 current.
      *
-     * @return shooter motor 1 current.
+     * @return shoot motor 1 current.
      */
-    public double getShooterMotor1Current()
+    public double getShootMotor1Current()
     {
-        return shooterMotor1.getCurrent();
-    }   //getShooterMotor1Current
+        return shootMotor1.getCurrent();
+    }   //getShootMotor1Current
 
     /**
-     * This methods returns the shooter motor 2 current if any.
+     * This methods returns the shoot motor 2 current if any.
      *
-     * @return shooter motor 2 current, null if none.
+     * @return shoot motor 2 current, null if none.
      */
-    public Double getShooterMotor2Current()
+    public Double getShootMotor2Current()
     {
-        TrcMotor motor2 = getShooterMotor2();
+        TrcMotor motor2 = getShootMotor2();
         return motor2 != null? motor2.getCurrent(): null;
-    }   //getShooterMotor2Current
+    }   //getShootMotor2Current
 
     /**
-     * This method returns the shooter motor 1 current velocity.
+     * This method returns the shoot motor 1 current velocity.
      *
-     * @return shooter motor 1 current velocity in revolutions per second.
+     * @return shoot motor 1 current velocity in revolutions per second.
      */
-    public double getShooterMotor1Velocity()
+    public double getShootMotor1Velocity()
     {
-        return shooterMotor1.getVelocity();
-    }   //getShooterMotor1Velocity
+        return shootMotor1.getVelocity();
+    }   //getShootMotor1Velocity
 
     /**
-     * This method returns the shooter motor 1 current RPM.
+     * This method returns the shoot motor 1 current RPM.
      *
-     * @return shooter motor 1 current velocity in RPM.
+     * @return shoot motor 1 current velocity in RPM.
      */
-    public double getShooterMotor1RPM()
+    public double getShootMotor1RPM()
     {
-        return shooterMotor1.getVelocity() * 60.0;
-    }   //getShooterMotor1RPM
+        return shootMotor1.getVelocity() * 60.0;
+    }   //getShootMotor1RPM
 
     /**
-     * This method returns the shooter motor 2 current velocity if any.
+     * This method returns the shoot motor 2 current velocity if any.
      *
-     * @return shooter motor 2 current velocity in revolutions per second, null if none.
+     * @return shoot motor 2 current velocity in revolutions per second, null if none.
      */
-    public Double getShooterMotor2Velocity()
+    public Double getShootMotor2Velocity()
     {
-        TrcMotor motor2 = getShooterMotor2();
+        TrcMotor motor2 = getShootMotor2();
         return motor2 != null? motor2.getVelocity(): null;
-    }   //getShooterMotor2Velocity
+    }   //getShootMotor2Velocity
 
     /**
-     * This method returns the shooter motor 2 current RPM if any.
+     * This method returns the shoot motor 2 current RPM if any.
      *
-     * @return shooter motor 2 current velocity in RPM, null if none.
+     * @return shoot motor 2 current velocity in RPM, null if none.
      */
-    public Double getShooterMotor2RPM()
+    public Double getShootMotor2RPM()
     {
-        TrcMotor motor2 = getShooterMotor2();
+        TrcMotor motor2 = getShootMotor2();
         return motor2 != null? motor2.getVelocity() * 60.0: null;
-    }   //getShooterMotor2RPM
+    }   //getShootMotor2RPM
 
     /**
-     * This method returns the shooter motor 1 current target velocity.
+     * This method returns the shoot motor 1 current target velocity.
      *
-     * @return shooter motor 1 current target velocity in revolutions per second.
+     * @return shoot motor 1 current target velocity in revolutions per second.
      */
-    public double getShooterMotor1TargetVelocity()
+    public double getShootMotor1TargetVelocity()
     {
-        return shooterMotor1.getPidTarget();
-    }   //getShooterMotor1TargetVelocity
+        return shootMotor1.getPidTarget();
+    }   //getShootMotor1TargetVelocity
 
     /**
-     * This method returns the shooter motor 1 current target RPM.
+     * This method returns the shoot motor 1 current target RPM.
      *
-     * @return shooter motor 1 current target velocity in RPM.
+     * @return shoot motor 1 current target velocity in RPM.
      */
-    public double getShooterMotor1TargetRPM()
+    public double getShootMotor1TargetRPM()
     {
-        return shooterMotor1.getPidTarget() * 60.0;
-    }   //getShooterMotor1TargetRPM
+        return shootMotor1.getPidTarget() * 60.0;
+    }   //getShootMotor1TargetRPM
 
     /**
-     * This method returns the shooter motor 2 current target velocity if any.
+     * This method returns the shoot motor 2 current target velocity if any.
      *
-     * @return shooter motor 2 current target velocity in revolutions per second, 0.0 if none.
+     * @return shoot motor 2 current target velocity in revolutions per second, 0.0 if none.
      */
-    public double getShooterMotor2TargetVelocity()
+    public double getShootMotor2TargetVelocity()
     {
-        TrcMotor motor2 = getShooterMotor2();
+        TrcMotor motor2 = getShootMotor2();
         return motor2 != null? motor2.getPidTarget(): 0.0;
-    }   //getShooterMotor2TargetVelocity
+    }   //getShootMotor2TargetVelocity
 
     /**
-     * This method returns the shooter motor 2 current target RPM if any.
+     * This method returns the shoot motor 2 current target RPM if any.
      *
-     * @return shooter motor 2 current target velocity in RPM, 0.0 if none.
+     * @return shoot motor 2 current target velocity in RPM, 0.0 if none.
      */
-    public double getShooterMotor2TargetRPM()
+    public double getShootMotor2TargetRPM()
     {
-        TrcMotor motor2 = getShooterMotor2();
+        TrcMotor motor2 = getShootMotor2();
         return motor2 != null? motor2.getPidTarget() * 60.0: 0.0;
-    }   //getShooterMotor2TargetRPM
+    }   //getShootMotor2TargetRPM
 
     /**
-     * This method sets the shooter motor velocity.
+     * This method sets the shoot motor velocity.
      *
      * @param flywheel1RPM specifies the motor 1 RPM.
      * @param flywheel2RPM specifies the motor 2 RPM, ignore if no motor 2.
      */
-    public void setShooterMotorRPM(Double flywheel1RPM, Double flywheel2RPM)
+    public void setShootMotorRPM(Double flywheel1RPM, Double flywheel2RPM)
     {
         if (flywheel1RPM != null)
         {
-            if (maxShooter1MaxRPM != null)
+            if (maxShootMotor1MaxRPM != null)
             {
-                shooterMotor1.setPower(TrcUtil.clipRange(flywheel1RPM/maxShooter1MaxRPM));
+                shootMotor1.setPower(TrcUtil.clipRange(flywheel1RPM/maxShootMotor1MaxRPM));
             }
             else
             {
-                shooterMotor1.setVelocity(null, 0.0, flywheel1RPM/60.0, 0.0, null);
+                shootMotor1.setVelocity(null, 0.0, flywheel1RPM/60.0, 0.0, null);
             }
         }
 
-        if (flywheel2RPM != null && shooterMotor2 != null)
+        if (flywheel2RPM != null && shootMotor2 != null)
         {
-            if (maxShooter2MaxRPM != null)
+            if (maxShootMotor2MaxRPM != null)
             {
-                shooterMotor2.setPower(TrcUtil.clipRange(flywheel2RPM/maxShooter2MaxRPM));
+                shootMotor2.setPower(TrcUtil.clipRange(flywheel2RPM/maxShootMotor2MaxRPM));
             }
             else
             {
-                shooterMotor2.setVelocity(null, 0.0, flywheel2RPM/60.0, 0.0, null);
+                shootMotor2.setVelocity(null, 0.0, flywheel2RPM/60.0, 0.0, null);
             }
         }
-    }   //setShooterMotorRPM
+    }   //setShootMotorRPM
 
     /**
-     * This method sets the shooter motor velocity in RPM.
+     * This method sets the shoot motor velocities in RPM.
      *
      * @param velocity1 specifies the motor 1 velocity in rev/sec.
      * @param velocity2 specifies the motor 2 velocity in rev/sec, null if motor2 does not exist.
      */
-    public void setShooterMotorVelocity(Double velocity1, Double velocity2)
+    public void setShootMotorVelocity(Double velocity1, Double velocity2)
     {
-        setShooterMotorRPM(velocity1 != null? velocity1*60.0: null, velocity2 != null? velocity2*60.0: null);
-    }   //setShooterMotorVelocity
+        setShootMotorRPM(velocity1 != null? velocity1*60.0: null, velocity2 != null? velocity2*60.0: null);
+    }   //setShootMotorVelocity
 
     /**
-     * This method stops the shooter. Use this method instead of setting shooter velocity to zero because the shooter
-     * will coast to a stop instead of stopping abruptly.
+     * This method stops the shoot motors. Use this method instead of setting shoot velocity to zero because the shoot
+     * motors will coast to a stop instead of stopping abruptly.
      */
-    public void stopShooter()
+    public void stopShootMotors()
     {
-        shooterMotor1.cancel();
-        if (shooterMotor2 != null)
+        shootMotor1.cancel();
+        if (shootMotor2 != null)
         {
-            shooterMotor2.cancel();
+            shootMotor2.cancel();
         }
-    }   //stopShooter
+    }   //stopShootMotors
 
     //
     // Tilt motor methods.

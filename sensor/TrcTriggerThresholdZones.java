@@ -39,15 +39,56 @@ import trclib.timer.TrcTimer;
 public class TrcTriggerThresholdZones implements TrcTrigger
 {
     /**
+     * This class encapsulates all the current trigger info.
+     */
+    public static class TriggerInfo
+    {
+        public double sensorValue;
+        public int currZone;
+        public int prevZone;
+
+        public TriggerInfo()
+        {
+            this.sensorValue = 0.0;
+            this.currZone = -1;
+            this.prevZone = -1;
+        }   //TriggerInfo
+
+        public TriggerInfo(double sensorValue, int currZone, int prevZone)
+        {
+            this.sensorValue = sensorValue;
+            this.currZone = currZone;
+            this.prevZone = prevZone;
+        }   //TriggerInfo
+
+        public void setAs(TriggerInfo other)
+        {
+            this.sensorValue = other.sensorValue;
+            this.currZone = other.currZone;
+            this.prevZone = other.prevZone;
+        }   //setAs
+
+        @Override
+        public TriggerInfo clone()
+        {
+            return new TriggerInfo(this.sensorValue, this.currZone, this.prevZone);
+        }   //clone
+
+        @Override
+        public String toString()
+        {
+            return String.format(Locale.US, "(value=%.3f,zone=%d->%d)", sensorValue, prevZone, currZone);
+        }   //toString
+    }   //class TriggerInfo
+
+    /**
      * This class encapsulates the trigger state. Access to this object must be thread safe (i.e. needs to be
      * synchronized).
      */
     private static class TriggerState
     {
-        volatile double sensorValue;
-        volatile int sensorZone;
-        volatile int prevZone;
-        volatile boolean triggerEnabled;
+        TriggerInfo triggerInfo;
+        boolean triggerEnabled;
         TriggerMode triggerMode;
         TrcEvent triggerEvent;
         TrcEvent.Callback triggerCallback;
@@ -55,9 +96,7 @@ public class TrcTriggerThresholdZones implements TrcTrigger
 
         TriggerState(double sensorValue, int sensorZone, boolean triggerEnabled)
         {
-            this.sensorValue = sensorValue;
-            this.sensorZone = sensorZone;
-            this.prevZone = sensorZone;
+            this.triggerInfo = new TriggerInfo(sensorValue, sensorZone, sensorZone);
             this.triggerEnabled = triggerEnabled;
             this.triggerMode = null;
             this.triggerEvent = null;
@@ -68,36 +107,16 @@ public class TrcTriggerThresholdZones implements TrcTrigger
         @Override
         public String toString()
         {
-            return String.format(
-                Locale.US, "(value=%f,Zone=%d,prevZone=%d,Enabled=%s)",
-                sensorValue, sensorZone, prevZone, triggerEnabled);
+            return String.format(Locale.US, "(triggerInfo=%s,enabled=%s)", triggerInfo, triggerEnabled);
         }   //toString
 
     }   //class TriggerState
 
-    /**
-     * This class encapsulates all the info for the the trigger event callback.
-     */
-    public static class CallbackContext
-    {
-        public double sensorValue;
-        public int prevZone;
-        public int currZone;
-
-        @Override
-        public String toString()
-        {
-            return String.format(Locale.US, "(value=%f,prevZone=%d,currZone=%d)", sensorValue, prevZone, currZone);
-        }   //toString
-
-    }   //class CallbackContext
-
-    private final TrcDbgTrace tracer;
+    public final TrcDbgTrace tracer;
     private final String instanceName;
     private final DoubleSupplier valueSource;
     private final TrcTimer timer;
     private final TriggerState triggerState;
-    private final CallbackContext callbackContext;
     private final TrcTaskMgr.TaskObject triggerTaskObj;
     private final double[] thresholdPoints;
 
@@ -124,7 +143,6 @@ public class TrcTriggerThresholdZones implements TrcTrigger
 
         double value = getSensorValue();
         triggerState = new TriggerState(value, getValueZone(value), false);
-        callbackContext = new CallbackContext();
         triggerTaskObj = TrcTaskMgr.createTask(instanceName + ".triggerTask", this::triggerTask);
     }   //TrcTriggerThresholdZones
 
@@ -198,15 +216,15 @@ public class TrcTriggerThresholdZones implements TrcTrigger
             if (enabled)
             {
                 triggerState.triggerEvent.clear();
-                triggerState.sensorValue = getSensorValue();
-                triggerState.sensorZone = getValueZone(triggerState.sensorValue);
-                triggerState.prevZone = triggerState.sensorZone;
+                triggerState.triggerInfo.sensorValue = getSensorValue();
+                triggerState.triggerInfo.prevZone = triggerState.triggerInfo.currZone
+                                                  = getValueZone(triggerState.triggerInfo.sensorValue);
                 triggerTaskObj.registerTask(TrcTaskMgr.TaskType.PRE_PERIODIC_TASK);
             }
             else
             {
                 triggerTaskObj.unregisterTask();
-                triggerState.triggerEvent. cancel();
+                triggerState.triggerEvent.cancel();
                 triggerState.triggerEvent = null;
             }
             triggerState.triggerEnabled = enabled;
@@ -340,13 +358,29 @@ public class TrcTriggerThresholdZones implements TrcTrigger
     }   //getSensorState
 
     /**
+     * This method returns the trigger info of the current trigger state.
+     *
+     * @return current trigger info.
+     */
+    public TriggerInfo getTriggerInfo()
+    {
+        synchronized (triggerState)
+        {
+            return triggerState.triggerInfo.clone();
+        }
+    }   //getTriggerInfo
+
+    /**
      * This method returns the current zone it is in.
      *
      * @return current zone index.
      */
     public int getCurrentZone()
     {
-        return triggerState.sensorZone;
+        synchronized (triggerState)
+        {
+            return triggerState.triggerInfo.currZone;
+        }
     }   //getCurrentZone
 
     /**
@@ -356,7 +390,10 @@ public class TrcTriggerThresholdZones implements TrcTrigger
      */
     public int getPreviousZone()
     {
-        return triggerState.prevZone;
+        synchronized (triggerState)
+        {
+            return triggerState.triggerInfo.prevZone;
+        }
     }   //getPreviousZone
 
     /**
@@ -365,7 +402,7 @@ public class TrcTriggerThresholdZones implements TrcTrigger
      * @param value specifies the sensor value.
      * @return sensor zone the value is in.
      */
-    private int getValueZone(double value)
+    public int getValueZone(double value)
     {
         int zone = -1;
 
@@ -415,14 +452,14 @@ public class TrcTriggerThresholdZones implements TrcTrigger
 
         synchronized (triggerState)
         {
-            if (currZone != triggerState.sensorZone)
+            if (currZone != triggerState.triggerInfo.currZone)
             {
                 //
                 // We have crossed to another zone, let's notify somebody.
                 //
-                prevZone = triggerState.sensorZone;
-                triggerState.sensorZone = currZone;
-                triggerState.prevZone = prevZone;
+                prevZone = triggerState.triggerInfo.currZone;
+                triggerState.triggerInfo.currZone = currZone;
+                triggerState.triggerInfo.prevZone = prevZone;
                 if (triggerState.triggerMode == TriggerMode.OnBoth ||
                     triggerState.triggerMode == TriggerMode.OnActive && prevZone < currZone ||
                     triggerState.triggerMode == TriggerMode.OnInactive && prevZone > currZone)
@@ -433,7 +470,7 @@ public class TrcTriggerThresholdZones implements TrcTrigger
                     callbackThread = triggerState.callbackThread;
                 }
             }
-            triggerState.sensorValue = currValue;
+            triggerState.triggerInfo.sensorValue = currValue;
         }
         // Do not hold the lock while doing callback.
         if (triggered)
@@ -441,13 +478,7 @@ public class TrcTriggerThresholdZones implements TrcTrigger
             tracer.traceDebug(instanceName, "Crossing zones %d->%d (value=%f)", prevZone, currZone, currValue);
             if (callback != null)
             {
-                synchronized (callbackContext)
-                {
-                    callbackContext.sensorValue = currValue;
-                    callbackContext.prevZone = prevZone;
-                    callbackContext.currZone = currZone;
-                }
-                triggerEvent.setCallback(callbackThread, callback, callbackContext);
+                triggerEvent.setCallback(callbackThread, callback, new TriggerInfo(currValue, currZone, prevZone));
             }
             triggerEvent.signal();
         }
