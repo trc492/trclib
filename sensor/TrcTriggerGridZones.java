@@ -46,6 +46,12 @@ public class TrcTriggerGridZones implements TrcTrigger
             this.xTriggerInfo = xTriggerInfo;
             this.yTriggerInfo = yTriggerInfo;
         }   //GridTriggerInfo
+
+        @Override
+        public GridTriggerInfo clone()
+        {
+            return new GridTriggerInfo(xTriggerInfo.clone(), yTriggerInfo.clone());
+        }   //clone
     }   //class GridTriggerInfo
 
     /**
@@ -265,6 +271,14 @@ public class TrcTriggerGridZones implements TrcTrigger
     {
         gridTriggerCallback((TrcTriggerThresholdZones.TriggerInfo) context, canceled, false);
     }   //gridYTriggerCallback
+
+    public GridTriggerInfo getGridTriggerInfo()
+    {
+        synchronized (triggerState)
+        {
+            return triggerState.gridTriggerInfo.clone();
+        }
+    }   //getGridTriggerInfo
 
     /**
      * This method checks if the trigger task is enabled.

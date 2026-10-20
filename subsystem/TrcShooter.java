@@ -33,8 +33,6 @@ import trclib.robotcore.TrcEvent;
 import trclib.robotcore.TrcExclusiveSubsystem;
 import trclib.robotcore.TrcRobot;
 import trclib.robotcore.TrcTaskMgr;
-import trclib.sensor.TrcTrigger;
-import trclib.sensor.TrcTriggerThresholdRange;
 import trclib.timer.TrcTimer;
 
 /**
@@ -176,18 +174,18 @@ public class TrcShooter implements TrcExclusiveSubsystem
         }   //toString
     }   //class AimConvergenceStats
 
-    public static class GoalTrackingParams
+    public static class TargetTrackingParams
     {
         public boolean trackFlywheelVel = false;
         public boolean trackTiltPos = false;
         public boolean trackPanPos = false;
 
-        public GoalTrackingParams(boolean trackFlywheelVel, boolean trackTiltPos, boolean trackPanPos)
+        public TargetTrackingParams(boolean trackFlywheelVel, boolean trackTiltPos, boolean trackPanPos)
         {
             this.trackFlywheelVel = trackFlywheelVel;
             this.trackTiltPos = trackTiltPos;
             this.trackPanPos = trackPanPos;
-        }   //GoalTrackingParams
+        }   //TargetTrackingParams
 
         @Override
         public String toString()
@@ -196,7 +194,7 @@ public class TrcShooter implements TrcExclusiveSubsystem
                    ",trackTiltPos=" + trackTiltPos +
                    ",trackPanPos=" + trackPanPos + ")";
         }   //toString
-    }   //class GoalTrackingParams
+    }   //class TargetTrackingParams
 
     private static class ShooterState
     {
@@ -210,21 +208,19 @@ public class TrcShooter implements TrcExclusiveSubsystem
     }   //class ShooterState
 
     private final ShooterState shooterState = new ShooterState();
-    private final AtomicReference<GoalTrackingParams> goalTrackingParams = new AtomicReference<>(null);
+    private final AtomicReference<TargetTrackingParams> targetTrackingParams = new AtomicReference<>(null);
 
     public final TrcDbgTrace tracer;
     private final String instanceName;
     public final TrcMotor shootMotor1;
-    public final TrcTrigger shootMotor1VelTrigger;
     public final TrcMotor shootMotor2;
-    public final TrcTrigger shootMotor2VelTrigger;
     public final TrcMotor tiltMotor;
     private final PanTiltParams tiltParams;
     public final TrcMotor panMotor;
     private final PanTiltParams panParams;
     private final TrcTimer aimTimer;
     private final TrcTimer shootTimer;
-    private final TrcTaskMgr.TaskObject goalTrackingTaskObj;
+    private final TrcTaskMgr.TaskObject targetTrackingTaskObj;
 
     private String currOwner = null;
     private TrcEvent completionEvent = null;
@@ -241,20 +237,15 @@ public class TrcShooter implements TrcExclusiveSubsystem
      *
      * @param instanceName specifies the hardware name.
      * @param shootMotor1 specifies the shoot motor 1 object.
-     * @param shootMotor1HasVelTrigger specifies true to create velocity trigger for shoot motor 1,
-     *        false otherwise.
      * @param shootMotor2 specifies the shoot motor 2 object, can be null for one-motor shooter.
-     * @param shootMotor2HasVelTrigger specifies true to create velocity trigger for shoot motor 2,
-     *        false otherwise.
      * @param tiltMotor specifies the tilt motor object, can be null if none.
      * @param tiltParams specifies the tilt parameters, null if no tilt motor.
      * @param panMotor specifies the pan motor object, can be null if none.
      * @param panParams specifies the pan parameters, null if no pan motor.
      */
     public TrcShooter(
-        String instanceName, TrcMotor shootMotor1, boolean shootMotor1HasVelTrigger, TrcMotor shootMotor2,
-        boolean shootMotor2HasVelTrigger, TrcMotor tiltMotor, PanTiltParams tiltParams, TrcMotor panMotor,
-        PanTiltParams panParams)
+        String instanceName, TrcMotor shootMotor1, TrcMotor shootMotor2, TrcMotor tiltMotor, PanTiltParams tiltParams,
+        TrcMotor panMotor, PanTiltParams panParams)
     {
         this.tracer = new TrcDbgTrace();
         this.instanceName = instanceName;
@@ -265,14 +256,9 @@ public class TrcShooter implements TrcExclusiveSubsystem
         this.panMotor = panMotor;
         this.panParams = panParams;
 
-        shootMotor1VelTrigger = shootMotor1HasVelTrigger?
-            new TrcTriggerThresholdRange(instanceName + ".ShootMotor1VelTrigger", this::getShootMotor1RPM): null;
-        shootMotor2VelTrigger = shootMotor2HasVelTrigger?
-            new TrcTriggerThresholdRange(instanceName + ".ShootMotor2VelTrigger", this::getShootMotor2RPM): null;
-
         aimTimer = new TrcTimer(instanceName + ".aimTimer");
         shootTimer = new TrcTimer(instanceName + ".shootTimer");
-        goalTrackingTaskObj = TrcTaskMgr.createTask(instanceName + ".goalTracking", this::goalTrackingTask);
+        targetTrackingTaskObj = TrcTaskMgr.createTask(instanceName + ".targetTracking", this::targetTrackingTask);
     }   //TrcShooter
 
     /**
@@ -352,7 +338,7 @@ public class TrcShooter implements TrcExclusiveSubsystem
     public void cancel(String owner)
     {
         tracer.traceInfo(instanceName, "owner=" + owner);
-        disableGoalTracking();
+        disableTargetTracking();
         if (validateOwnership(owner))
         {
             finish(false);
@@ -368,28 +354,28 @@ public class TrcShooter implements TrcExclusiveSubsystem
     }   //cancel
 
     /**
-     * This method stops Goal Tracking.
+     * This method stops Target Tracking.
      */
-    private void stopGoalTracking()
+    private void stopTargetTracking()
     {
-        tracer.traceInfo(instanceName, "Stop GoalTracking.");
+        tracer.traceInfo(instanceName, "Stop TargetTracking.");
         if (panMotor != null) panMotor.cancel();
         if (tiltMotor != null) tiltMotor.cancel();
         stopShootMotors();
-    }   //stopGoalTracking
+    }   //stopTargetTracking
 
     /**
-     * This method is called periodically to perform goal tracking.
+     * This method is called periodically to perform target tracking.
      *
      * @param taskType specifies the type of task being run. This may be useful for handling multiple task types.
      * @param runMode specifies the competition mode (e.g. Autonomous, TeleOp, Test).
      * @param slowPeriodicLoop specifies true if it is running the slow periodic loop on the main robot thread,
      *        false otherwise.
      */
-    private void goalTrackingTask(TrcTaskMgr.TaskType taskType, TrcRobot.RunMode runMode, boolean slowPeriodicLoop)
+    private void targetTrackingTask(TrcTaskMgr.TaskType taskType, TrcRobot.RunMode runMode, boolean slowPeriodicLoop)
     {
-        // If goalTrackingTask is running, aimInfoSource should not be null.
-        GoalTrackingParams trackingParams = goalTrackingParams.get();
+        // If targetTrackingTask is running, aimInfoSource should not be null.
+        TargetTrackingParams trackingParams = targetTrackingParams.get();
         AimInfo aimInfo = aimInfoSource.getAimInfo();
 
         // Update aiming if available.
@@ -441,51 +427,51 @@ public class TrcShooter implements TrcExclusiveSubsystem
                 }
             }
         }
-    }   //goalTrackingTask
+    }   //targetTrackingTask
 
     /**
-     * This method checks if Goal Tracking is enabled.
+     * This method checks if Target Tracking is enabled.
      *
-     * @return true if Goal Tracking is enabled, false if disabled.
+     * @return true if Target Tracking is enabled, false if disabled.
      */
-    public boolean isGoalTrackingEnabled()
+    public boolean isTargetTrackingEnabled()
     {
-        return goalTrackingParams.get() != null;
-    }   //isGoalTrackingEnabled
+        return targetTrackingParams.get() != null;
+    }   //isTargetTrackingEnabled
 
     /**
-     * This method enables Goal Tracking.
+     * This method enables Target Tracking.
      *
-     * @param trackingParams specifies the goal tracking parameters.
+     * @param trackingParams specifies the target tracking parameters.
      * @param aimInfoSource specifies the method to call for getting AimInfo.
      */
-    public void enableGoalTracking(GoalTrackingParams trackingParams, AimInfoSource aimInfoSource)
+    public void enableTargetTracking(TargetTrackingParams trackingParams, AimInfoSource aimInfoSource)
     {
-        tracer.traceInfo(instanceName, "Enable GoalTracking (trackingParams=%s).", trackingParams);
+        tracer.traceInfo(instanceName, "Enable TargetTracking (trackingParams=%s).", trackingParams);
         // Cancel previous operation if any.
         finish(false);
         this.aimInfoSource = aimInfoSource;
-        if (goalTrackingParams.getAndSet(trackingParams) == null)
+        if (targetTrackingParams.getAndSet(trackingParams) == null)
         {
             // Tracking task was not enabled, enable it now.
-            goalTrackingTaskObj.registerTask(TrcTaskMgr.TaskType.POST_PERIODIC_TASK);
+            targetTrackingTaskObj.registerTask(TrcTaskMgr.TaskType.POST_PERIODIC_TASK);
         }
-    }   //enableGoalTracking
+    }   //enableTargetTracking
 
     /**
-     * This method disables Goal Tracking.
+     * This method disables Target Tracking.
      */
-    public void disableGoalTracking()
+    public void disableTargetTracking()
     {
-        GoalTrackingParams trackingParams = goalTrackingParams.getAndSet(null);
+        TargetTrackingParams trackingParams = targetTrackingParams.getAndSet(null);
         if (trackingParams != null)
         {
-            tracer.traceInfo(instanceName, "Disable Goal Tracking.");
-            stopGoalTracking();
-            goalTrackingTaskObj.unregisterTask();
+            tracer.traceInfo(instanceName, "Disable Target Tracking.");
+            stopTargetTracking();
+            targetTrackingTaskObj.unregisterTask();
             aimInfoSource = null;
         }
-    }   //disableGoalTracking
+    }   //disableTargetTracking
 
     /**
      * This method checks if the target pan angle crosses the hard-stop. If so, it will adjust the pan angle so the
@@ -763,6 +749,18 @@ public class TrcShooter implements TrcExclusiveSubsystem
     }   //waitForShooterReady
 
     /**
+     * This method cancels a previous call to waitForShooterReady.
+     */
+    public void cancelShooterWait()
+    {
+        synchronized (shooterState)
+        {
+            shooterState.shooterReadyEvent = null;
+            shooterState.shooterReadyTimeout = 0.0;
+        }
+    }   //cancelShooterWait
+
+    /**
      * This method sets the shoot velocity and the tilt/pan angles if tilt/pan exist. This method is asynchronous.
      * When both shoot velocities and tilt/pan positions have reached target and if shoot method is provided, it will
      * shoot and signal an event if provided.
@@ -817,21 +815,28 @@ public class TrcShooter implements TrcExclusiveSubsystem
                 this.shootOpOwner = shootOp != null ? owner : null;
                 this.shootOffDelay = shootOffDelay;
 
-                if (maxShootMotor1MaxRPM != null)
+                if (flywheel1RPM != null)
                 {
-                    // Shoot motor is in power mode.
-                    shooterState.shootMotor1OnTargetEvent = null;
-                    shootMotor1.setPower(TrcUtil.clipRange(flywheel1RPM/maxShootMotor1MaxRPM));
+                    if (maxShootMotor1MaxRPM != null)
+                    {
+                        // Shoot motor is in power mode.
+                        shooterState.shootMotor1OnTargetEvent = null;
+                        shootMotor1.setPower(TrcUtil.clipRange(flywheel1RPM/maxShootMotor1MaxRPM));
+                    }
+                    else
+                    {
+                        // Shoot motor is in velocity mode.
+                        shooterState.shootMotor1OnTargetEvent = new TrcEvent(instanceName + ".shootMotor1OnTarget");
+                        shooterState.shootMotor1OnTargetEvent.setCallback(this::onTarget, null);
+                        shootMotor1.setVelocity(0.0, flywheel1RPM/60.0, 0.0, shooterState.shootMotor1OnTargetEvent);
+                    }
                 }
                 else
                 {
-                    // Shoot motor is in velocity mode.
-                    shooterState.shootMotor1OnTargetEvent = new TrcEvent(instanceName + ".shootMotor1OnTarget");
-                    shooterState.shootMotor1OnTargetEvent.setCallback(this::onTarget, null);
-                    shootMotor1.setVelocity(0.0, flywheel1RPM/60.0, 0.0, shooterState.shootMotor1OnTargetEvent);
+                    shooterState.shootMotor1OnTargetEvent = null;
                 }
 
-                if (shootMotor2 != null)
+                if (flywheel2RPM != null && shootMotor2 != null)
                 {
                     if (maxShootMotor2MaxRPM != null)
                     {
@@ -1038,7 +1043,7 @@ public class TrcShooter implements TrcExclusiveSubsystem
         Boolean completion = (Boolean) context;
         tracer.traceInfo(instanceName, "Timed out: completion=" + completion);
         // Either the operation was timed out or there was a shootOffDelay.
-        // Either way, we will turn off the shooter motor.
+        // Either way, we will turn off the shoot motor.
         stopShootMotors();
         finish(completion);
     }   //timedOut
@@ -1066,26 +1071,6 @@ public class TrcShooter implements TrcExclusiveSubsystem
     {
         return shootMotor2 != null? shootMotor2: shootMotor1.getFollower(0);
     }   //getShootMotor2
-
-    /**
-     * This method returns the created Shoot motor 1 velocity trigger if any.
-     *
-     * @return created shoot motor 1 velocity trigger, null if none created.
-     */
-    public TrcTriggerThresholdRange getShootMotor1VelTrigger()
-    {
-        return (TrcTriggerThresholdRange) shootMotor1VelTrigger;
-    }   //getShootMotor1VelTrigger
-
-    /**
-     * This method returns the created Shoot motor 2 velocity trigger if any.
-     *
-     * @return created shoot motor 2 velocity trigger, null if none created.
-     */
-    public TrcTriggerThresholdRange getShootMotor2VelTrigger()
-    {
-        return (TrcTriggerThresholdRange) shootMotor2VelTrigger;
-    }   //getShootMotor2VelTrigger
 
     /**
      * This methods returns the shoot motor 1 power.
@@ -1377,8 +1362,8 @@ public class TrcShooter implements TrcExclusiveSubsystem
      */
     public void setTiltPower(String owner, double power)
     {
-        // Nobody should call setTiltPower if GoalTracking is enabled.
-        if (tiltMotor != null && !isGoalTrackingEnabled())
+        // Nobody should call setTiltPower if TargetTracking is enabled.
+        if (tiltMotor != null && !isTargetTrackingEnabled())
         {
             tiltMotor.setPower(owner, 0.0, power, 0.0, null);;
         }
@@ -1406,8 +1391,8 @@ public class TrcShooter implements TrcExclusiveSubsystem
      */
     public void setTiltPidPower(String owner, double power, double powerLimit, boolean holdTarget)
     {
-        // Nobody should call setTiltPidPower if GoalTracking is enabled.
-        if (tiltMotor != null && !isGoalTrackingEnabled())
+        // Nobody should call setTiltPidPower if TargetTracking is enabled.
+        if (tiltMotor != null && !isTargetTrackingEnabled())
         {
             tiltMotor.setPidPower(owner, power, powerLimit, tiltParams.minPos, tiltParams.maxPos, holdTarget);
         }
@@ -1553,8 +1538,8 @@ public class TrcShooter implements TrcExclusiveSubsystem
      */
     public void setPanPower(String owner, double power)
     {
-        // Nobody should call setPanPower if GoalTracking is enabled.
-        if (panMotor != null && !isGoalTrackingEnabled())
+        // Nobody should call setPanPower if TargetTracking is enabled.
+        if (panMotor != null && !isTargetTrackingEnabled())
         {
             panMotor.setPower(owner, 0.0, power, 0.0, null);;
         }
@@ -1582,8 +1567,8 @@ public class TrcShooter implements TrcExclusiveSubsystem
      */
     public void setPanPidPower(String owner, double power, double powerLimit, boolean holdTarget)
     {
-        // Nobody should call setPanPidPower if GoalTracking is enabled.
-        if (panMotor != null && !isGoalTrackingEnabled())
+        // Nobody should call setPanPidPower if TargetTracking is enabled.
+        if (panMotor != null && !isTargetTrackingEnabled())
         {
             panMotor.setPidPower(owner, power, powerLimit, panParams.minPos, panParams.maxPos, holdTarget);
         }

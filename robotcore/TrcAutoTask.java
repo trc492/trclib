@@ -101,6 +101,16 @@ public abstract class TrcAutoTask<T>
     }   //TrcAutoTask
 
     /**
+     * Constructor: Create an instance of the object.
+     *
+     * @param instanceName specifies the task name.
+     */
+    protected TrcAutoTask(String instanceName)
+    {
+        this(instanceName, TrcTaskMgr.TaskType.POST_PERIODIC_TASK);
+    }   //TrcAutoTask
+
+    /**
      * This method returns the instance name.
      *
      * @return instance name.
