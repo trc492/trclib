@@ -168,15 +168,21 @@ public class TrcTriggerDigitalSource implements TrcTrigger
             timer.cancel();
             if (enabled)
             {
-                triggerState.triggerEvent.clear();
+                if (triggerState.triggerEvent != null)
+                {
+                    triggerState.triggerEvent.clear();
+                }
                 triggerState.sensorState = digitalSource.getAsBoolean();
                 triggerTaskObj.registerTask(TrcTaskMgr.TaskType.PRE_PERIODIC_TASK);
             }
             else
             {
                 triggerTaskObj.unregisterTask();
-                triggerState.triggerEvent.cancel();
-                triggerState.triggerEvent = null;
+                if (triggerState.triggerEvent != null)
+                {
+                    triggerState.triggerEvent.cancel();
+                    triggerState.triggerEvent = null;
+                }
             }
             triggerState.triggerEnabled = enabled;
             tracer.traceDebug(instanceName, "enabled=" + enabled + " (state=" + triggerState + ")");
@@ -198,11 +204,6 @@ public class TrcTriggerDigitalSource implements TrcTrigger
             // Enable trigger only if it's not already enabled.
             if (!triggerState.triggerEnabled)
             {
-                if (event != null)
-                {
-                    event.clear();
-                }
-
                 setTriggerParams(triggerMode, event);
                 if (triggerDelay != null)
                 {
