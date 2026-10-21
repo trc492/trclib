@@ -153,10 +153,10 @@ public class TrcTriggerGridZones implements TrcTrigger
                     event.clear();
                 }
 
-                triggerState.gridTriggerInfo.xTriggerInfo = gridXZoneTrigger.getTriggerInfo();
-                triggerState.gridTriggerInfo.yTriggerInfo = gridYZoneTrigger.getTriggerInfo();
                 gridXZoneTrigger.enableTrigger(triggerDelay, triggerMode, this::gridXTriggerCallback);
                 gridYZoneTrigger.enableTrigger(triggerDelay, triggerMode, this::gridYTriggerCallback);
+                triggerState.gridTriggerInfo.xTriggerInfo = gridXZoneTrigger.getTriggerInfo();
+                triggerState.gridTriggerInfo.yTriggerInfo = gridYZoneTrigger.getTriggerInfo();
                 triggerState.triggerEnabled = true;
                 tracer.traceDebug(instanceName, "EnableTrigger: State=(" + triggerState + ")");
             }
