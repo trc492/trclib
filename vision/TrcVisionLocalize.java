@@ -27,7 +27,7 @@ import trclib.pathdrive.TrcPose2D;
 /**
  * This class allows robot re-localization while it's moving.
  */
-public class TrcVisionRelocalize
+public class TrcVisionLocalize
 {
     private static final int DEF_BUFFER_SIZE = 100;
 
@@ -52,7 +52,7 @@ public class TrcVisionRelocalize
      * @param bufferSize specifies the circular buffer size. The buffer should be large enough to contain data to
      *        cover the worst case period of processing a vision frame.
      */
-    public TrcVisionRelocalize(int bufferSize)
+    public TrcVisionLocalize(int bufferSize)
     {
         timedPoses = new TimedPose[bufferSize];
         for (int i = 0; i < bufferSize; i++)
@@ -60,15 +60,15 @@ public class TrcVisionRelocalize
             timedPoses[i] = null;
         }
         index = 0;
-    }   //TrcVisionRelocalize
+    }   //TrcVisionLocalize
 
     /**
      * Constructor: Create an instance of the object.
      */
-    public TrcVisionRelocalize()
+    public TrcVisionLocalize()
     {
         this(DEF_BUFFER_SIZE);
-    }   //TrcVisionRelocalize
+    }   //TrcVisionLocalize
 
     /**
      * This method adds the current timestamp and robot pose in a history queue.
@@ -94,9 +94,9 @@ public class TrcVisionRelocalize
      * @param robotPose specifies the current robot pose.
      * @return re-localized robot pose.
      */
-    public TrcPose2D getRelocalizedPose(double visionTimestamp, TrcPose2D visionPose, TrcPose2D robotPose)
+    public TrcPose2D getLocalizedPose(double visionTimestamp, TrcPose2D visionPose, TrcPose2D robotPose)
     {
-        TrcPose2D relocalizedPose = visionPose;
+        TrcPose2D localizedPose = visionPose;
 
         synchronized (timedPoses)
         {
@@ -131,11 +131,11 @@ public class TrcVisionRelocalize
             if (minTimeDeltaPose != null)
             {
                 TrcPose2D deltaPose = robotPose.relativeTo(minTimeDeltaPose.pose);
-                relocalizedPose = visionPose.addRelativePose(deltaPose);
+                localizedPose = visionPose.addRelativePose(deltaPose);
             }
         }
 
-        return relocalizedPose;
-    }   //getRelocalizedPose
+        return localizedPose;
+    }   //getLocalizedPose
 
-}   //class TrcVisionRelocalize
+}   //class TrcVisionLocalize
