@@ -733,12 +733,12 @@ public class TrcShooter implements TrcExclusiveSubsystem
     }   //getExitVelocity
 
     /**
-     * This method waits for the shooter finished aiming the target and will signal the given event.
+     * This method monitors for the shooter finished aiming the target and will signal the given event.
      *
      * @param event specifies the event to signal when aiming is on-target.
      * @param timeout specifies timeout in seconds.
      */
-    public void waitForShooterReady(TrcEvent event, double timeout)
+    public void monitorShooterReady(TrcEvent event, double timeout)
     {
         synchronized (shooterState)
         {
@@ -746,7 +746,7 @@ public class TrcShooter implements TrcExclusiveSubsystem
             shooterState.shooterReadyEvent = event;
             shooterState.shooterReadyTimeout = timeout > 0.0? TrcTimer.getCurrentTime() + timeout: 0.0;
         }
-    }   //waitForShooterReady
+    }   //monitorShooterReady
 
     /**
      * This method cancels a previous call to waitForShooterReady.
