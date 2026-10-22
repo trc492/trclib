@@ -343,12 +343,16 @@ public class TrcTriggerDigitalSource implements TrcTrigger
         if (triggered)
         {
             tracer.traceDebug(instanceName, "changes state " + prevState + "->" + currState);
+            if (triggerEvent != null)
+            {
+                triggerEvent.signal();
+            }
+
             if (callback != null)
             {
                 callbackContext.set(currState);
                 triggerEvent.setCallback(callbackThread, callback, callbackContext);
             }
-            triggerEvent.signal();
         }
     }   //triggerTask
 
