@@ -423,7 +423,7 @@ public class TrcPidDrive
 //    }   //setStuckWheelHandler
 
     /**
-     * This methods sets the turn mode. Supported modes are in-place (default), pivot and curve.
+     * This method sets the turn mode. Supported modes are in-place (default), pivot and curve.
      *
      * @param turnMode specifies the turn mode to set to.
      */

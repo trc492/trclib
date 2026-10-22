@@ -584,7 +584,7 @@ public class TrcPidController
     }   //getTarget
 
     /**
-     * This methods sets the target set point.
+     * This method sets the target set point.
      *
      * @param target specifies the target set point.
      * @param warpSpace specifies the warp space object if the target is in one, null if not.
@@ -649,7 +649,7 @@ public class TrcPidController
     }   //setTarget
 
     /**
-     * This methods sets the target set point.
+     * This method sets the target set point.
      *
      * @param target specifies the target set point.
      * @param warpSpace specifies the warp space object if the target is in one, null if not.
@@ -660,7 +660,7 @@ public class TrcPidController
     }   //setTarget
 
     /**
-     * This methods sets the target set point.
+     * This method sets the target set point.
      *
      * @param target specifies the target set point.
      * @param resetError specifies true to reset error state, false otherwise. It is important to preserve error
@@ -672,7 +672,7 @@ public class TrcPidController
     }   //setTarget
 
     /**
-     * This methods sets the target set point.
+     * This method sets the target set point.
      *
      * @param target specifies the target set point.
      */

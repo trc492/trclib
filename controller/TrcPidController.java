@@ -684,7 +684,7 @@ public class TrcPidController
     }   //getAccelerationSetpoint
 
     /**
-     * This methods sets the target set point.
+     * This method sets the target set point.
      *
      * @param target specifies the target set point.
      * @param warpSpace specifies the warp space object if the target is in one, null if not.
@@ -737,7 +737,7 @@ public class TrcPidController
     }   //setTarget
 
     /**
-     * This methods sets the target set point.
+     * This method sets the target set point.
      *
      * @param target specifies the target set point.
      */

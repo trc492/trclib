@@ -91,7 +91,7 @@ public class TrcTimer
     }   //toString
 
     /**
-     * This methods sets the expire time relative to the current time. When the time expires, it will signal the
+     * This method sets the expired time relative to the current time. When the time expires, it will signal the
      * event if provided. It will also do the notification callback if provided.
      *
      * @param time specifies the expire time in seconds relative to the current time.
@@ -140,7 +140,7 @@ public class TrcTimer
     }   //set
 
     /**
-     * This methods sets the expire time relative to the current time. When the time expires, it will signal the
+     * This method sets the expired time relative to the current time. When the time expires, it will signal the
      * given event.
      *
      * @param time specifies the expire time in seconds relative to the current time.
@@ -152,8 +152,8 @@ public class TrcTimer
     }   //set
 
     /**
-     * This methods sets the expire time relative to the current time. When the time expires, it will do the
-     * notificaton callback.
+     * This method sets the expired time relative to the current time. When the time expires, it will do the
+     * notification callback.
      *
      * @param time specifies the expire time in seconds relative to the current time.
      * @param callback specifies the callback when time has expired.
@@ -165,10 +165,10 @@ public class TrcTimer
     }   //set
 
     /**
-     * This methods sets the expire time relative to the current time. When the time expires, it will do the
-     * notificaton callback.
+     * This method sets the expired time relative to the current time. When the time expires, it will do the
+     * notification callback.
      *
-     * @param time specifies the expire time in seconds relative to the current time.
+     * @param time specifies the expired time in seconds relative to the current time.
      * @param callback specifies the callback when time has expired.
      */
     public void set(double time, TrcEvent.Callback callback)
@@ -180,7 +180,7 @@ public class TrcTimer
      * This method cancels the timer if it's set but has not expired. If the timer is canceled, the event is signaled.
      *
      * @param doNotify specifies true to notify the timer owner of the cancellation, false if called internally to
-     *                 to re-arm the previous non-expired timer.
+     *                 re-arm the previous non-expired timer.
      */
     private void cancel(boolean doNotify)
     {

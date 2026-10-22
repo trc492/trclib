@@ -1073,7 +1073,7 @@ public class TrcShooter implements TrcExclusiveSubsystem
     }   //getShootMotor2
 
     /**
-     * This methods returns the shoot motor 1 power.
+     * This method returns the shoot motor 1 power.
      *
      * @return shoot motor 1 power.
      */
@@ -1083,7 +1083,7 @@ public class TrcShooter implements TrcExclusiveSubsystem
     }   //getShootMotor1Power
 
     /**
-     * This methods returns the shoot motor 2 power if any.
+     * This method returns the shoot motor 2 power if any.
      *
      * @return shoot motor 2 power, null if none.
      */
@@ -1094,7 +1094,7 @@ public class TrcShooter implements TrcExclusiveSubsystem
     }   //getShootMotor2Power
 
     /**
-     * This methods returns the shoot motor 1 current.
+     * This method returns the shoot motor 1 current.
      *
      * @return shoot motor 1 current.
      */
@@ -1104,7 +1104,7 @@ public class TrcShooter implements TrcExclusiveSubsystem
     }   //getShootMotor1Current
 
     /**
-     * This methods returns the shoot motor 2 current if any.
+     * This method returns the shoot motor 2 current if any.
      *
      * @return shoot motor 2 current, null if none.
      */

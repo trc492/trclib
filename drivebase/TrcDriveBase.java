@@ -1548,7 +1548,7 @@ public abstract class TrcDriveBase implements TrcExclusiveSubsystem
     }   //setBrakeMode
 
     /**
-     * This methods stops the drive base.
+     * This method stops the drive base.
      *
      * @param owner specifies the ID string of the caller for checking ownership, can be null if caller is not
      *              ownership aware.
@@ -1577,7 +1577,7 @@ public abstract class TrcDriveBase implements TrcExclusiveSubsystem
     }   //stop
 
     /**
-     * This methods stops the drive base.
+     * This method stops the drive base.
      */
     public void stop()
     {

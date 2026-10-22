@@ -57,7 +57,7 @@ public abstract class TrcAutoTask<T>
     protected abstract void stopSubsystems(String owner);
 
     /**
-     * This methods is called periodically to run the auto task state.
+     * This method is called periodically to run the auto task state.
      *
      * @param owner specifies the owner that acquired the subsystem ownerships.
      * @param state specifies the current state of the task.
@@ -249,7 +249,7 @@ public abstract class TrcAutoTask<T>
     }   //setTaskEnabled
 
     /**
-     * This methods is called periodically to run the auto task.
+     * This method is called periodically to run the auto task.
      *
      * @param taskType specifies the type of task being run.
      * @param runMode specifies the competition mode (e.g. Autonomous, TeleOp, Test).
