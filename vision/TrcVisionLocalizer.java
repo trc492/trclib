@@ -25,11 +25,11 @@
 import trclib.pathdrive.TrcPose2D;
 
 /**
- * This class allows robot re-localization while it's moving.
+ * This class allows robot localization while it's moving.
  */
-public class TrcVisionLocalize
+public class TrcVisionLocalizer
 {
-    private static final int DEF_BUFFER_SIZE = 100;
+    public static final int DEF_BUFFER_SIZE = 100;
 
     public static class TimedPose
     {
@@ -52,7 +52,7 @@ public class TrcVisionLocalize
      * @param bufferSize specifies the circular buffer size. The buffer should be large enough to contain data to
      *        cover the worst case period of processing a vision frame.
      */
-    public TrcVisionLocalize(int bufferSize)
+    public TrcVisionLocalizer(int bufferSize)
     {
         timedPoses = new TimedPose[bufferSize];
         for (int i = 0; i < bufferSize; i++)
@@ -60,15 +60,15 @@ public class TrcVisionLocalize
             timedPoses[i] = null;
         }
         index = 0;
-    }   //TrcVisionLocalize
+    }   //TrcVisionLocalizer
 
     /**
      * Constructor: Create an instance of the object.
      */
-    public TrcVisionLocalize()
+    public TrcVisionLocalizer()
     {
         this(DEF_BUFFER_SIZE);
-    }   //TrcVisionLocalize
+    }   //TrcVisionLocalizer
 
     /**
      * This method adds the current timestamp and robot pose in a history queue.
@@ -86,13 +86,13 @@ public class TrcVisionLocalize
     }   //addTimedPose
 
     /**
-     * This method calculates the re-localized pose accounting for robot movement with the given vision timestamp
+     * This method calculates the localized pose accounting for robot movement with the given vision timestamp
      * and vision determined robot pose.
      *
      * @param visionTimestamp specifies the vision timestamp.
      * @param visionPose specifies the vision determined robot pose at the time of the processed vision frame.
      * @param robotPose specifies the current robot pose.
-     * @return re-localized robot pose.
+     * @return localized robot pose.
      */
     public TrcPose2D getLocalizedPose(double visionTimestamp, TrcPose2D visionPose, TrcPose2D robotPose)
     {
@@ -127,7 +127,7 @@ public class TrcVisionLocalize
                 }
             }
             // Determine the relative position from the time of the vision frame to current robot pose.
-            // Adjust the vision re-localized pose with the same amount of travel.
+            // Adjust the vision localized pose with the same amount of travel.
             if (minTimeDeltaPose != null)
             {
                 TrcPose2D deltaPose = robotPose.relativeTo(minTimeDeltaPose.pose);
@@ -138,4 +138,4 @@ public class TrcVisionLocalize
         return localizedPose;
     }   //getLocalizedPose
 
-}   //class TrcVisionLocalize
+}   //class TrcVisionLocalizer
