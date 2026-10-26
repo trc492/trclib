@@ -36,8 +36,7 @@ import trclib.robotcore.TrcDbgTrace;
  */
 public class TrcPath
 {
-    private static final TrcDbgTrace.MsgLevel msgLevel = TrcDbgTrace.MsgLevel.INFO;
-    private final String moduleName = getClass().getSimpleName();
+    private final String moduleName = TrcPath.class.getSimpleName();
 
     /**
      * This method loads waypoints from a CSV file and create a path with them.
@@ -52,7 +51,7 @@ public class TrcPath
         return new TrcPath(inDegrees, TrcWaypoint.loadPointsFromCsv(path, loadFromResources));
     }   //loadPathFromCsv
 
-    public final TrcDbgTrace tracer;
+    private static final TrcDbgTrace tracer = new TrcDbgTrace();
     private final TrcWaypoint[] waypoints;
     private boolean inDegrees;
 
@@ -65,8 +64,6 @@ public class TrcPath
      */
     public TrcPath(boolean inDegrees, TrcWaypoint... waypoints)
     {
-        tracer = new TrcDbgTrace();
-        tracer.setTraceLevel(msgLevel);
         if (waypoints == null || waypoints.length <= 1)
         {
             throw new IllegalArgumentException("Waypoints cannot be null or have less than 2 entries!");
