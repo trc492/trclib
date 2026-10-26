@@ -36,7 +36,7 @@ import trclib.robotcore.TrcDbgTrace;
  */
 public class TrcPath
 {
-    private final String moduleName = TrcPath.class.getSimpleName();
+    private static final String moduleName = TrcPath.class.getSimpleName();
 
     /**
      * This method loads waypoints from a CSV file and create a path with them.
