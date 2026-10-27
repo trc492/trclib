@@ -113,6 +113,19 @@ public class TrcPidController
             return "(PIDFZ:" + kP + "," + kI + "," + kD + "," + kF + "," + iZone + ")";
         }   //toString
 
+        /**
+         * This method copies the other PidCoefficients object to this one.
+         *
+         * @param other specifies the other PidCoefficients object.
+         */
+        public void setAs(PidCoefficients other)
+        {
+            this.kP = other.kP;
+            this.kI = other.kI;
+            this.kD = other.kD;
+            this.kF = other.kF;
+            this.iZone = other.iZone;
+        }   //setAs
     }   //class PidCoefficients
 
     /**
