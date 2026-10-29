@@ -365,9 +365,9 @@ public class TrcVision
         {
             return String.format(
                 Locale.US,
-                "label=%s,robotPose=%s,targetPose2d=%s,target(dist=%.1f,width=%.1f,area=%.3f)" +
+                "label=%s,robotPose=%s,targetPose3d=%s,target(dist=%.1f,width=%.1f,area=%.3f)" +
                 ",pixelRect=%s(w=%.0f,h=%.0f),rotatedRectAngle=%.1f",
-                label, getRobotPose(), getTargetPose(), getTargetDistance(), getTargetWidth(),
+                label, getRobotPose(), getTargetPose3d(), getTargetDistance(), getTargetWidth(),
                 getNormalizedTargetArea(), getPixelRect(), getPixelWidth(), getPixelHeight(), getRotatedRectAngle());
         }   //toString
 
