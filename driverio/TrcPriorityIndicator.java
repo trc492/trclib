@@ -449,14 +449,21 @@ public abstract class TrcPriorityIndicator
         // Only set the pattern if it is not already active. If pattern is null, that means no pattern is found.
         // In that case, we will turn the Indicator OFF.
         //
+        Pattern currPattern = getPattern();
         if (activePatternState == null || !activePatternState.on)
         {
             // No active pattern found or active pattern is OFF.
-            setPattern(null);
-            tracer.traceDebug(instanceName, "Set hardware to OFF.");
+            // Only turn the hardware OFF if it's not already OFF so we don't keep rewriting the hardware on every
+            // update.
+            if (currPattern != null)
+            {
+                setPattern(null);
+                tracer.traceDebug(instanceName, "Set hardware to OFF.");
+            }
         }
-        else if (activePatternState.pattern != getPattern())
+        else if (activePatternState.pattern != currPattern)
         {
+            // The active pattern is not the current one, and it is ON. Change the current pattern to it.
             setPattern(activePatternState.pattern);
             tracer.traceDebug(instanceName, "Set hardware to pattern: " + activePatternState.pattern);
         }
