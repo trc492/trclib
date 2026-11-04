@@ -156,7 +156,7 @@ public class TrcDbgTrace
      * folder. The file name will be formed by concatenating the date-time stamp with the specified file name.
      *
      * @param folderPath specifies the folder path.
-     * @param fileName specifies the file name, null if none provided.
+     * @param fileName specifies the file name without extension, null if none provided.
      * @return true if log file is successfully opened, false if it failed.
      */
     public static boolean openTraceLog(String folderPath, String fileName)
@@ -178,6 +178,7 @@ public class TrcDbgTrace
         {
             logFileName += "!" + fileName;
         }
+        fileName += ".log";
 
         boolean success = false;
         if (traceLogger == null)
@@ -196,13 +197,13 @@ public class TrcDbgTrace
     /**
      * This method closes the trace log file and optionally renames it.
      *
-     * @param fileName specifies the filename to rename the log to, null if no renaming.
+     * @param fileName specifies the filename without extension to rename the log to, null if no renaming.
      */
     public static void closeTraceLog(String fileName)
     {
         if (traceLogger != null)
         {
-            traceLogger.closeLogger(fileName);
+            traceLogger.closeLogger(fileName + ".log");
             traceLogger = null;
         }
     }   //closeTraceLog
