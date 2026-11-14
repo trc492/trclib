@@ -749,16 +749,16 @@ public class TrcShooter implements TrcExclusiveSubsystem
     }   //monitorShooterReady
 
     /**
-     * This method cancels a previous call to waitForShooterReady.
+     * This method cancels a previous call to monitorShooterReady.
      */
-    public void cancelShooterWait()
+    public void cancelShooterMonitor()
     {
         synchronized (shooterState)
         {
             shooterState.shooterReadyEvent = null;
             shooterState.shooterReadyTimeout = 0.0;
         }
-    }   //cancelShooterWait
+    }   //cancelShooterMonitor
 
     /**
      * This method sets the shoot velocity and the tilt/pan angles if tilt/pan exist. This method is asynchronous.
