@@ -31,9 +31,21 @@ public interface TrcEncoder
     /**
      * This method resets the encoder position to the given position.
      *
-     * @param position specifies the encoder position to be reset to.
+     * @param position specifies the encoder position to be reset to in sensor unit.
      */
     void reset(double position);
+
+    /**
+     * This method resets the encoder so that its scaled position equals the given position. This allows the caller
+     * to reset the encoder without knowing its sensor units.
+     *
+     * @param position specifies the position to reset to in scaled units.
+     */
+    default void resetScaledPosition(double position)
+    {
+        throw new UnsupportedOperationException(
+            getClass().getSimpleName() + " does not support resetScaledPosition.");
+    }   //resetScaledPosition
 
     /**
      * This method reads the raw encoder position in encoder units (generally encoder counts).
@@ -73,7 +85,7 @@ public interface TrcEncoder
     /**
      * This method checks if the encoder direction is inverted.
      *
-     * @return true if encoder direction is rerversed, false otherwise.
+     * @return true if encoder direction is reversed, false otherwise.
      */
     boolean isInverted();
 

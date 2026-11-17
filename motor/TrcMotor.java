@@ -1288,11 +1288,42 @@ public abstract class TrcMotor implements TrcMotorController, TrcExclusiveSubsys
     }   //getControllerPosition
 
     /**
+     * This method resets the motor position so that getPosition() returns the given position. The position is in
+     * scaled units, so the caller doesn't need to know the platform's sensor units. This is a software reset.
+     *
+     * @param position specifies the position to reset to in scaled units.
+     */
+    public void resetScaledPosition(double position)
+    {
+        if (encoder != null)
+        {
+            encoder.resetScaledPosition(position);
+        }
+        else
+        {
+            zeroPosition = getControllerPosition(false) + sensorOffset - position;
+        }
+
+        if (odometryEnabled)
+        {
+            synchronized (odometry)
+            {
+                // Keep cached odometry consistent so getPosition() isn't stale and velocity doesn't see the jump.
+                odometry.prevTimestamp = odometry.currTimestamp = TrcTimer.getCurrentTime();
+                odometry.prevPos = odometry.currPos = position;
+                odometry.velocity = 0.0;
+            }
+        }
+    }   //resetScaledPosition
+
+    /**
      * This method resets the motor position sensor to the given position if provided, typically an encoder.
      * Otherwise, it resets the one on the motor controller if it supports one. If hardware is false, it simulates
      * the reset by reading the current position as the zero position.
      *
-     * @param position specifies the motor position in rotations.
+     * @param position specifies the position to reset to in sensor units (the motor controller's native position
+     *        unit, e.g. encoder counts on FTC, rotations on most FRC controllers). After the reset, getPosition()
+     *        returns position * scale + offset.
      * @param hardware specifies true for resetting hardware position, false for resetting software position.
      */
     public void resetPosition(double position, boolean hardware)
@@ -1307,8 +1338,13 @@ public abstract class TrcMotor implements TrcMotorController, TrcExclusiveSubsys
             if (hardware)
             {
                 resetMotorPosition(position);
+                // Hardware now holds the position, so no software zero adjustment.
+                zeroPosition = 0.0;
             }
-            zeroPosition = getControllerPosition(false);
+            else
+            {
+                zeroPosition = getControllerPosition(false) - position*sensorScale;
+            }
         }
     }   //resetPosition
 
@@ -1316,7 +1352,9 @@ public abstract class TrcMotor implements TrcMotorController, TrcExclusiveSubsys
      * This method resets the motor position sensor, typically an encoder. This method emulates a reset for a
      * potentiometer by doing a soft reset.
      *
-     * @param position specifies the motor position in rotations.
+     * @param position specifies the position to reset to in sensor units (the motor controller's native position
+     *        unit, e.g. encoder counts on FTC, rotations on most FRC controllers). After the reset, getPosition()
+     *        returns position * scale + offset.
      */
     public void resetPosition(double position)
     {
@@ -2412,7 +2450,8 @@ public abstract class TrcMotor implements TrcMotorController, TrcExclusiveSubsys
             // currTarget is undetermined if the motor is stop.
             Double currTarget = power < 0.0? (Double)minPos: power > 0.0? (Double)maxPos: null;
             tracer.traceDebug(
-                instanceName, "power=%f, minPos=%f, maxPos=%f, holdTarget=%s, currPos=%f, currTarget=%s, prevTarget=%s",
+                instanceName,
+                "power=%f, minPos=%f, maxPos=%f, holdTarget=%s, currPos=%f, currTarget=%s, prevTarget=%s",
                 power, minPos, maxPos, holdTarget, currPos, currTarget, taskParams.prevPosTarget);
             power = Math.abs(power);
             synchronized (taskParams)
@@ -2426,8 +2465,8 @@ public abstract class TrcMotor implements TrcMotorController, TrcExclusiveSubsys
                 {
                     if (currTarget == null)
                     {
-                        // We are stopping, Relax the power range to power limit range so we have enough power to hold target if
-                        // necessary.
+                        // We are stopping, Relax the power range to power limit range so we have enough power to
+                        // hold target if necessary.
                         if (holdTarget)
                         {
                             // Hold target at current position.
@@ -4156,16 +4195,18 @@ public abstract class TrcMotor implements TrcMotorController, TrcExclusiveSubsys
         synchronized (odometry)
         {
             odometry.prevTimestamp = odometry.currTimestamp = TrcTimer.getCurrentTime();
-            odometry.prevPos = odometry.currPos = 0.0;
+            // After resetPosition(0.0) the position reads sensorOffset, not 0, so cache the actual reading.
+            odometry.prevPos = odometry.currPos = getControllerPosition(true);
             odometry.velocity = 0.0;
         }
     }   //resetOdometry
 
     /**
-     * This method returns a copy of the odometry data of the specified axis. It must be a copy so it won't change while
-     * the caller is accessing the data fields.
+     * This method returns a copy of the odometry data of the specified axis. It must be a copy so it won't change
+     * while the caller is accessing the data fields.
      *
-     * @param axisIndex specifies the axis index if it is a multi-axes sensor, 0 if it is a single axis sensor (not used).
+     * @param axisIndex specifies the axis index if it is a multi-axes sensor, 0 if it is a single axis sensor
+     *        (not used).
      * @return a copy of the odometry data of the specified axis.
      */
     @Override
@@ -4244,7 +4285,9 @@ public abstract class TrcMotor implements TrcMotorController, TrcExclusiveSubsys
 
                     try
                     {
-                        motor.odometry.velocity = motor.getMotorVelocity();
+                        motor.odometry.velocity =
+                            motor.encoder != null?
+                                motor.encoder.getScaledVelocity(): motor.getMotorVelocity()*motor.sensorScale;
                     }
                     catch (UnsupportedOperationException e)
                     {
@@ -4368,9 +4411,10 @@ public abstract class TrcMotor implements TrcMotorController, TrcExclusiveSubsys
 //     * Transforms the desired percentage of motor stall torque to the motor duty cycle (aka power)
 //     * that would give us that amount of torque at the current motor speed.
 //     *
-//     * @param desiredStallTorquePercentage specifies the desired percentage of motor torque to receive in percent of
-//     *        motor stall torque.
-//     * @return power percentage to apply to the motor to generate the desired torque (to the best ability of the motor).
+//     * @param desiredStallTorquePercentage specifies the desired percentage of motor torque to receive in percent
+//     *        of motor stall torque.
+//     * @return power percentage to apply to the motor to generate the desired torque (to the best ability of the
+//     *         motor).
 //     */
 //    private double transformTorqueToMotorPower(double desiredStallTorquePercentage)
 //    {
