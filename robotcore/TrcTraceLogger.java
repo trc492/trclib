@@ -23,13 +23,10 @@
 package trclib.robotcore;
 
 import java.io.BufferedWriter;
+import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.PrintWriter;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.nio.file.StandardCopyOption;
 import java.util.concurrent.LinkedBlockingQueue;
 
 import trclib.timer.TrcTimer;
@@ -176,14 +173,11 @@ public class TrcTraceLogger
         {
             traceLog.close();
             traceLog = null;
+
+            File logFile = new File(traceLogName);
             if (deleteLog)
             {
-                Path logFile = Paths.get(traceLogName);
-                try
-                {
-                    Files.deleteIfExists(logFile);
-                }
-                catch (IOException e)
+                if (logFile.exists() && !logFile.delete())
                 {
                     tracer.traceErr(traceLogName, "Failed to delete log file " + traceLogName);
                 }
@@ -191,14 +185,14 @@ public class TrcTraceLogger
             }
             else if (newLogName != null)
             {
-                Path source = Paths.get(traceLogName);
-                Path target = source.resolveSibling(newLogName);
+                File target = new File(logFile.getParentFile(), newLogName);
 
-                try
+                if (target.exists() && !target.delete())
                 {
-                    Files.move(source, target, StandardCopyOption.REPLACE_EXISTING);
+                    tracer.traceErr(traceLogName, "Failed to replace existing log file " + newLogName);
                 }
-                catch (IOException e)
+
+                if (!logFile.renameTo(target))
                 {
                     tracer.traceErr(
                         traceLogName, "Failed to rename log file from " + traceLogName + " to " + newLogName);
@@ -242,7 +236,15 @@ public class TrcTraceLogger
         }
         tracer.traceDebug(traceLogName, "Closing Trace Log");
 
-        closeLogFile();
+        try
+        {
+            closeLogFile();
+        }
+        catch (Throwable e)
+        {
+            // An uncaught exception on this thread would kill the whole robot app, so never let it escape.
+            tracer.traceErr(traceLogName, "Failed to close log file: " + e);
+        }
         loggerThread = null;
     }   //loggerTask
 
