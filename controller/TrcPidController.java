@@ -202,6 +202,9 @@ public class TrcPidController
         double stallDetectionTimeout = 0.0;
         double stallErrorRateThreshold = 0.0;
         Double stallDetectionStartTime = null;
+        Double lowBangBangPower = null;
+        Double highBangBangPower = null;
+        Double bangBangExitError = null;
         // Tracing Config.
         boolean verbosePidInfo = false;
         TrcRobotBattery battery = null;
@@ -549,7 +552,7 @@ public class TrcPidController
     {
         if (maxOutput <= minOutput)
         {
-            throw new IllegalArgumentException("maxOutput must be greater than minOutput");
+            throw new IllegalArgumentException(instanceName + ": maxOutput must be greater than minOutput");
         }
 
         synchronized (pidCtrlState)
@@ -574,7 +577,7 @@ public class TrcPidController
     {
         if (maxIntegral <= minIntegral)
         {
-            throw new IllegalArgumentException("maxIntegral must be greater than minIntegral.");
+            throw new IllegalArgumentException(instanceName + ": maxIntegral must be greater than minIntegral.");
         }
 
         synchronized (pidCtrlState)
@@ -848,7 +851,7 @@ public class TrcPidController
     {
         if (inputMin >= inputMax)
         {
-            throw new IllegalArgumentException("inputMax must be greater than inputMin.");
+            throw new IllegalArgumentException(instanceName + ": inputMax must be greater than inputMin.");
         }
 
         synchronized (pidCtrlState)
@@ -868,6 +871,71 @@ public class TrcPidController
             pidCtrlState.inputMin = pidCtrlState.inputMax = null;
         }
     }   //disableContinuousInput
+
+    /**
+     * This method enables Bang Bang mode in which it will return high power if input is below target and low power
+     * if input is above target. If exitError is not null, Bang Bang mode is automatically disabled the first time the
+     * error drops to or below exitError, and PID control takes over from there.
+     *
+     * @param lowPower specifies the power to apply when input is above target.
+     * @param highPower specifies the power to apply when input is below target.
+     * @param exitError specifies the error at or below which Bang Bang mode is disabled, null to stay in Bang Bang
+     *        mode until disableBangBangMode is called.
+     */
+    public void enableBangBangMode(double lowPower, double highPower, Double exitError)
+    {
+        if (highPower < lowPower)
+        {
+            throw new IllegalArgumentException(instanceName + ": highPower must be higher than lowPower");
+        }
+
+        synchronized (pidCtrlState)
+        {
+            pidCtrlState.lowBangBangPower = lowPower;
+            pidCtrlState.highBangBangPower = highPower;
+            pidCtrlState.bangBangExitError = exitError;
+            pidCtrlState.totalPosError = 0.0;
+        }
+    }   //enableBangBangMode
+
+    /**
+     * This method enables Bang Bang mode in which it will return high power if input is below target and low power
+     * if input is above target. It stays in Bang Bang mode until disableBangBangMode is called.
+     *
+     * @param lowPower specifies the power to apply when input is above target.
+     * @param highPower specifies the power to apply when input is below target.
+     */
+    public void enableBangBangMode(double lowPower, double highPower)
+    {
+        enableBangBangMode(lowPower, highPower, null);
+    }   //enableBangBangMode
+
+    /**
+     * This method disables Bang Bang mode.
+     */
+    public void disableBangBangMode()
+    {
+        synchronized (pidCtrlState)
+        {
+            pidCtrlState.lowBangBangPower = null;
+            pidCtrlState.highBangBangPower = null;
+            pidCtrlState.bangBangExitError = null;
+            pidCtrlState.totalPosError = 0.0;
+        }
+    }   //disableBangBangMode
+
+    /**
+     * This method checks if Bang Bang mode is enabled.
+     *
+     * @return true if bang bang is enabled, false if disabled.
+     */
+    public boolean isBangBangModeEnabled()
+    {
+        synchronized (pidCtrlState)
+        {
+            return pidCtrlState.lowBangBangPower != null;
+        }
+    }   //isBangBangModeEnabled
 
     /**
      * This method determines if we have reached the set point target. It is considered on target if the previous
@@ -1039,8 +1107,25 @@ public class TrcPidController
                 pidCtrlState.totalPosError = 0.0;
             }
 
+            // One-shot Bang Bang: hand over to PID control the first time the error reaches the exit threshold.
+            if (pidCtrlState.lowBangBangPower != null && pidCtrlState.bangBangExitError != null &&
+                pidCtrlState.posError <= pidCtrlState.bangBangExitError)
+            {
+                pidCtrlState.lowBangBangPower = null;
+                pidCtrlState.highBangBangPower = null;
+                pidCtrlState.bangBangExitError = null;
+                pidCtrlState.totalPosError = 0.0;
+            }
+
             double output;
-            if (squidModeEnabled)
+            if (pidCtrlState.lowBangBangPower != null)
+            {
+                pidCtrlState.pTerm = pidCtrlState.iTerm = pidCtrlState.dTerm = pidCtrlState.fTerm = 0.0;
+                output = TrcUtil.clipRange(
+                    pidCtrlState.posError > 0.0? pidCtrlState.highBangBangPower: pidCtrlState.lowBangBangPower,
+                    minOutput, maxOutput);
+            }
+            else if (squidModeEnabled)
             {
                 output = pidCtrlState.pidCoeffs.kP * Math.sqrt(absPosError) * Math.signum(pidCtrlState.posError);
             }
@@ -1219,6 +1304,9 @@ public class TrcPidController
                         ", dT=" + pidCtrlState.deltaTime +
                         ", CurrErr=" + pidCtrlState.posError +
                         ", ErrRate=" + pidCtrlState.velError +
+                        ", lowBangBangPower=" + pidCtrlState.lowBangBangPower +
+                        ", highBangBangPower=" + pidCtrlState.highBangBangPower +
+                        ", bangBangExitError=" + pidCtrlState.bangBangExitError +
                         ", Output=" + pidCtrlState.output + "(" + minOutput + "/" + maxOutput +
                         "), PIDFTerms=" + pidCtrlState.pTerm +
                         "/" + pidCtrlState.iTerm +
@@ -1236,6 +1324,9 @@ public class TrcPidController
                         ", dT=" + pidCtrlState.deltaTime +
                         ", CurrErr=" + pidCtrlState.posError +
                         ", ErrRate=" + pidCtrlState.velError +
+                        ", lowBangBangPower=" + pidCtrlState.lowBangBangPower +
+                        ", highBangBangPower=" + pidCtrlState.highBangBangPower +
+                        ", bangBangExitError=" + pidCtrlState.bangBangExitError +
                         ", Output=" + pidCtrlState.output + "(" + minOutput + "/" + maxOutput +
                         "), PIDFTerms=" + pidCtrlState.pTerm +
                         "/" + pidCtrlState.iTerm +
@@ -1254,6 +1345,9 @@ public class TrcPidController
                         ", dT=" + pidCtrlState.deltaTime +
                         ", CurrErr=" + pidCtrlState.posError +
                         ", ErrRate=" + pidCtrlState.velError +
+                        ", lowBangBangPower=" + pidCtrlState.lowBangBangPower +
+                        ", highBangBangPower=" + pidCtrlState.highBangBangPower +
+                        ", bangBangExitError=" + pidCtrlState.bangBangExitError +
                         ", Output=" + pidCtrlState.output + "(" + minOutput + "/" + maxOutput +
                         "), Volt=" + battery.getVoltage() +
                         "(" + battery.getLowestVoltage() + ")");
@@ -1267,6 +1361,9 @@ public class TrcPidController
                         ", dT=" + pidCtrlState.deltaTime +
                         ", CurrErr=" + pidCtrlState.posError +
                         ", ErrRate=" + pidCtrlState.velError +
+                        ", lowBangBangPower=" + pidCtrlState.lowBangBangPower +
+                        ", highBangBangPower=" + pidCtrlState.highBangBangPower +
+                        ", bangBangExitError=" + pidCtrlState.bangBangExitError +
                         ", Output=" + pidCtrlState.output + "(" + minOutput + "/" + maxOutput + ")");
                 }
             }
