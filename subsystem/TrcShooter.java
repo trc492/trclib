@@ -448,8 +448,20 @@ public class TrcShooter implements TrcExclusiveSubsystem
     public void enableTargetTracking(TargetTrackingParams trackingParams, AimInfoSource aimInfoSource)
     {
         tracer.traceInfo(instanceName, "Enable TargetTracking (trackingParams=%s).", trackingParams);
-        // Cancel previous operation if any.
-        finish(false);
+        synchronized (shooterState)
+        {
+            // Cancel a pending aim/shoot operation if any, so it doesn't fight with Target Tracking.
+            if (shooterState.active)
+            {
+                finish(false);
+            }
+        }
+        // Stop whatever the new tracking mode doesn't track, otherwise it would hold its last target. Motors that
+        // are tracked are left alone, so changing the tracking mode doesn't cause a glitch.
+        if (!trackingParams.trackFlywheelVel) stopShootMotors();
+        if (!trackingParams.trackTiltPos && tiltMotor != null) tiltMotor.cancel();
+        if (!trackingParams.trackPanPos && panMotor != null) panMotor.cancel();
+
         this.aimInfoSource = aimInfoSource;
         if (targetTrackingParams.getAndSet(trackingParams) == null)
         {
@@ -472,6 +484,16 @@ public class TrcShooter implements TrcExclusiveSubsystem
             aimInfoSource = null;
         }
     }   //disableTargetTracking
+
+    /**
+     * This method returns the current Target Tracking parameters.
+     *
+     * @return target tracking parameters, null if Target Tracking is disabled.
+     */
+    public TargetTrackingParams getTargetTrackingParams()
+    {
+        return targetTrackingParams.get();
+    }   //getTargetTrackingParams
 
     /**
      * This method checks if the target pan angle crosses the hard-stop. If so, it will adjust the pan angle so the
