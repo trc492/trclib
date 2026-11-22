@@ -178,7 +178,7 @@ public class TrcDbgTrace
         {
             logFileName += "!" + fileName;
         }
-        fileName += ".log";
+        logFileName += ".log";
 
         boolean success = false;
         if (traceLogger == null)
@@ -203,7 +203,7 @@ public class TrcDbgTrace
     {
         if (traceLogger != null)
         {
-            traceLogger.closeLogger(fileName + ".log");
+            traceLogger.closeLogger(fileName);
             traceLogger = null;
         }
     }   //closeTraceLog
