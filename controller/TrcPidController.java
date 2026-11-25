@@ -234,6 +234,14 @@ public class TrcPidController
             stallDetectionStartTime = null;
         }   //reset
 
+        /**
+         * This method resets the error integral to clear any integral wind-up without changing the set point.
+         */
+        void resetIntegral()
+        {
+            totalPosError = 0.0;
+            iTerm = 0.0;
+        }   //resetIntegral
     }   //class PidCtrlState
 
     private final TrcDashboard dashboard = TrcDashboard.getInstance();
@@ -245,6 +253,7 @@ public class TrcPidController
     private boolean absSetPoint = false;
     private boolean noOscillation = false;
     private boolean squidModeEnabled = false;
+    private boolean resetIntegralOnSignChange = false;
     private double minOutput = -1.0;
     private double maxOutput = 1.0;
     private double minIntegral = -1.0;
@@ -407,6 +416,22 @@ public class TrcPidController
             this.squidModeEnabled = enable;
         }
     }   //setSquidModeEnabled
+
+    /**
+     * This method enables/disables resetting the error integral when the error changes sign (i.e. the input crosses
+     * the set point). This prevents integral wind-up from overshooting the target. It is generally useful for
+     * position control dominated by friction, but should not be used where the integral term is needed to sustain a
+     * steady load such as velocity control or holding against gravity without power compensation.
+     *
+     * @param enable specifies true to enable and false to disable.
+     */
+    public void setResetIntegralOnSignChange(boolean enable)
+    {
+        synchronized (pidCtrlState)
+        {
+            this.resetIntegralOnSignChange = enable;
+        }
+    }   //setResetIntegralOnSignChange
 
     /**
      * This method enables/disables stall detection.
@@ -800,6 +825,17 @@ public class TrcPidController
     }   //reset
 
     /**
+     * This method resets the error integral to clear any integral wind-up without changing the set point.
+     */
+    public void resetIntegral()
+    {
+        synchronized (pidCtrlState)
+        {
+            pidCtrlState.resetIntegral();
+        }
+    }   //resetIntegral
+
+    /**
      * This method detects if PID is stalled.
      *
      * @return true if PID is stalled, false otherwise.
@@ -983,7 +1019,7 @@ public class TrcPidController
                     instanceName,
                     "InProgress: err=%f, errRate=%f, tolerance=%f",
                     pidCtrlState.posError, pidCtrlState.velError, tolerance);
-           }
+            }
             else if (settlingTime == 0.0 || currTime >= pidCtrlState.settlingStartTime + settlingTime)
             {
                 tracer.traceDebug(
@@ -1028,20 +1064,20 @@ public class TrcPidController
         return pidInput != null? pidInput.getAsDouble(): pidCtrlState.input;
     }   //getCurrentInput
 
-   /**
-    * This method calculates the PID output applying the PID equation to the given set point targets and current
-    * input value. It also applies FeedForward if provided.
-    *
-    * @param input specifies the current input value from the feedback device, null if not provided in which case
-    *         pidInput is called to get the current input value.
-    * @param posSetpoint specifies the position setpoint, null if not provided in which case the previous setpoint is
-    *        used unchanged.
-    * @param velSetpoint specifies the velocity setpoint, null if not provided in which case the previous setupoint is
-    *        used unchanged (could be null).
-    * @param accelSetpoint specifies the acceleration setpoint, null if not provided in which case the previous
-    *        setpoint is used unchanged (could be null).
-    * @return calculated PID output value.
-    */
+    /**
+     * This method calculates the PID output applying the PID equation to the given set point targets and current
+     * input value. It also applies FeedForward if provided.
+     *
+     * @param input specifies the current input value from the feedback device, null if not provided in which case
+     *        pidInput is called to get the current input value.
+     * @param posSetpoint specifies the position setpoint, null if not provided in which case the previous setpoint is
+     *        used unchanged.
+     * @param velSetpoint specifies the velocity setpoint, null if not provided in which case the previous setpoint is
+     *        used unchanged (could be null).
+     * @param accelSetpoint specifies the acceleration setpoint, null if not provided in which case the previous
+     *        setpoint is used unchanged (could be null).
+     * @return calculated PID output value.
+     */
     public double calculate(Double input, Double posSetpoint, Double velSetpoint, Double accelSetpoint)
     {
         if (input == null)
@@ -1068,7 +1104,7 @@ public class TrcPidController
             {
                 pidCtrlState.accelSetpoint = accelSetpoint;
             }
-            // Calculate detla time.
+            // Calculate delta time.
             Double prevTimestamp = pidCtrlState.timestamp;
             pidCtrlState.timestamp = TrcTimer.getCurrentTime();
             pidCtrlState.deltaTime = prevTimestamp != null? pidCtrlState.timestamp - prevTimestamp: 0.0;
@@ -1091,9 +1127,11 @@ public class TrcPidController
                 pidCtrlState.deltaTime > 0.0? (pidCtrlState.posError - prevPosError)/pidCtrlState.deltaTime: 0.0;
 
             // Calculate integral error.
-            // Only allow integration if error is within iZone.
+            // Only allow integration if error is within iZone. If enabled, also reset the integral when the error
+            // changes sign (crossed the set point) to prevent wind-up overshoot.
             double absPosError = Math.abs(pidCtrlState.posError);
-            if (pidCtrlState.deltaTime > 0.0 && pidCtrlState.pidCoeffs.kI != 0.0 &&
+            boolean crossedSetpoint = resetIntegralOnSignChange && prevPosError*pidCtrlState.posError < 0.0;
+            if (!crossedSetpoint && pidCtrlState.deltaTime > 0.0 && pidCtrlState.pidCoeffs.kI != 0.0 &&
                 (pidCtrlState.pidCoeffs.iZone == 0.0 || absPosError <= pidCtrlState.pidCoeffs.iZone))
             {
                 // Make sure the total error doesn't get wound up too much exceeding the Integral range.
@@ -1180,7 +1218,7 @@ public class TrcPidController
         return calculate(input, posSetpoint, null, null);
     }   //calculate
 
-   /**
+    /**
      * This method calculates the PID output applying the PID equation to the given set point targets and current
      * input value.
      *

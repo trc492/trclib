@@ -70,6 +70,7 @@ public abstract class TrcMotor implements TrcMotorController, TrcExclusiveSubsys
         public double pidSettling = 0.0;
         public boolean useSoftwarePid = true;
         public boolean enableSquid = false;
+        public boolean enableIntegralReset = false;
         public double pidTarget = 0.0;
 
         /**
@@ -215,6 +216,19 @@ public abstract class TrcMotor implements TrcMotorController, TrcExclusiveSubsys
         }   //setPidControlParams
 
         /**
+         * This method enables/disables resetting the PID integral when the error changes sign.
+         * Note: IntegralReset does not apply to velocity and current PID control.
+         *
+         * @param enable specifies true to enable integral reset, false to disable.
+         * @return this object for chaining.
+         */
+        public PidParams setIntegralResetEnabled(boolean enable)
+        {
+            this.enableIntegralReset = enable;
+            return this;
+        }   //setIntegralResetEnabled
+
+        /**
          * This method sets parameters related to tuning.
          *
          * @param pidTarget specifies PID control target value.
@@ -234,6 +248,7 @@ public abstract class TrcMotor implements TrcMotorController, TrcExclusiveSubsys
                    ",pidSettling=" + pidSettling +
                    ",useSoftwarePid=" + useSoftwarePid +
                    ",enableSquid=" + enableSquid +
+                   ",enableIntegralReset=" + enableIntegralReset +
                    ",pidTarget=" + pidTarget + ")";
         }   //toString
     }   //PidParams
@@ -2614,6 +2629,7 @@ public abstract class TrcMotor implements TrcMotorController, TrcExclusiveSubsys
      * This method sets the PID parameters of the motor's velocity PID controller. Note that PID coefficients are
      * different for software PID and controller built-in PID. If you enable/disable software PID, you need to set
      * the appropriate PID coefficients accordingly.
+     * Note: IntegralReset does not apply to velocity PID control.
      *
      * @param pidParams specifies the PID parameters.
      * @param pidInput specifies the method to call to get Velocity PID input, can be null to use built-in getVelocity.
@@ -2818,6 +2834,7 @@ public abstract class TrcMotor implements TrcMotorController, TrcExclusiveSubsys
                 posPidCtrl.setAbsoluteSetPoint(true);
             }
             posPidCtrl.setSquidModeEnabled(pidParams.enableSquid);
+            posPidCtrl.setResetIntegralOnSignChange(pidParams.enableIntegralReset);
         }
         else
         {
@@ -2979,6 +2996,7 @@ public abstract class TrcMotor implements TrcMotorController, TrcExclusiveSubsys
      * This method sets the PID parameters of the motor's current PID controller. Note that PID coefficients are
      * different for software PID and controller built-in PID. If you enable/disable software PID, you need to set
      * the appropriate PID coefficients accordingly.
+     * Note: IntegralReset does not apply to current PID control.
      *
      * @param pidParams specifies the PID parameters.
      * @param pidInput specifies the method to call to get Curret PID input, can be null to use built-in getCurrent.
@@ -3210,7 +3228,7 @@ public abstract class TrcMotor implements TrcMotorController, TrcExclusiveSubsys
      * stalled condition is then cleared. This assumes the caller has acquired the taskParams lock.
      *
      * @param power specifies the power applying to the motor.
-     * @return true if the motor was stalled, false otherwise.
+     * @return cleared motor power if motor was stalled and power was still applied, unchanged motor power otherwise.
      */
     private double checkStallReset(double power)
     {
