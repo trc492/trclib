@@ -71,6 +71,7 @@ public abstract class TrcMotor implements TrcMotorController, TrcExclusiveSubsys
         public boolean useSoftwarePid = true;
         public boolean enableSquid = false;
         public boolean enableIntegralReset = false;
+        public Double holdDeadband = null;
         public double pidTarget = 0.0;
 
         /**
@@ -172,6 +173,11 @@ public abstract class TrcMotor implements TrcMotorController, TrcExclusiveSubsys
         public PidParams setPidControlParams(
             double pidTolerance, double pidSettling, boolean useSoftwarePid, boolean enableSquid)
         {
+            if (this.holdDeadband != null && this.holdDeadband <= pidTolerance)
+            {
+                throw new IllegalStateException("PidTolerance must be smaller than HoldDeadband.");
+            }
+
             this.pidTolerance = pidTolerance;
             this.pidSettling = pidSettling;
             this.useSoftwarePid = useSoftwarePid;
@@ -229,6 +235,27 @@ public abstract class TrcMotor implements TrcMotorController, TrcExclusiveSubsys
         }   //setIntegralResetEnabled
 
         /**
+         * This method sets the hold deadband. When holding target, once the motor is on target (within pidTolerance
+         * for pidSettling), the motor output is turned off and the integral is cleared. It re-engages PID control
+         * when the error grows beyond the deadband. This prevents the motor from hunting within mechanical backlash.
+         * Note: this is only applicable for software position PID control.
+         *
+         * @param deadband specifies the re-engage tolerance, must be greater than pidTolerance.
+         * @return this object for chaining.
+         */
+        public PidParams setHoldDeadband(double deadband)
+        {
+            if (deadband <= this.pidTolerance)
+            {
+                throw new IllegalStateException(
+                    "Must set PidTolerance first and deadband value must be greater than PidTolerance.");
+            }
+
+            this.holdDeadband = deadband;
+            return this;
+        }   //setHoldDeadband
+
+        /**
          * This method sets parameters related to tuning.
          *
          * @param pidTarget specifies PID control target value.
@@ -249,6 +276,7 @@ public abstract class TrcMotor implements TrcMotorController, TrcExclusiveSubsys
                    ",useSoftwarePid=" + useSoftwarePid +
                    ",enableSquid=" + enableSquid +
                    ",enableIntegralReset=" + enableIntegralReset +
+                   ",holdDeadband=" + holdDeadband +
                    ",pidTarget=" + pidTarget + ")";
         }   //toString
     }   //PidParams
@@ -420,6 +448,7 @@ public abstract class TrcMotor implements TrcMotorController, TrcExclusiveSubsys
         TrcEvent notifyEvent = null;
         // holdTarget is only applicable for Position.
         boolean holdTarget = false;
+        boolean inHoldDeadband = false;
         // powerLimit is only applicable for Position.
         Double powerLimit = 1.0;
         // timeout is only applicable for Position.
@@ -1917,6 +1946,7 @@ public abstract class TrcMotor implements TrcMotorController, TrcExclusiveSubsys
             taskParams.duration = duration;
             taskParams.notifyEvent = completionEvent;
             taskParams.holdTarget = holdTarget;
+            taskParams.inHoldDeadband = false;
             taskParams.powerLimit = powerLimit;
             taskParams.timeout = timeout != 0.0? timeout + TrcTimer.getCurrentTime(): 0.0;
         }
@@ -3396,6 +3426,25 @@ public abstract class TrcMotor implements TrcMotorController, TrcExclusiveSubsys
                             profiledVelocity = calculateTargetVel(getPosition());
                             double pidPower = taskParams.softwarePidCtrl.calculate(
                                 null, null, profiledVelocity, null);
+                            if (taskParams.holdTarget && taskParams.softwarePidCtrl == posPidCtrl &&
+                                posPidParams.holdDeadband != null)
+                            {
+                                // Hold deadband: stop driving once on target, resume when the error exceeds the
+                                // deadband. calculate() still runs so the error and isOnTarget stay live.
+                                taskParams.inHoldDeadband =
+                                    taskParams.inHoldDeadband?
+                                        Math.abs(posPidCtrl.getError()) <= posPidParams.holdDeadband:
+                                        onTarget;
+                                if (taskParams.inHoldDeadband)
+                                {
+                                    posPidCtrl.resetIntegral();
+                                    pidPower = 0.0;
+                                }
+                            }
+                            else
+                            {
+                                taskParams.inHoldDeadband = false;
+                            }
                             // Apply power limit to the calculated PID power.
                             // Only applicable for Position control mode.
                             double limitedPower = taskParams.powerLimit != null?
@@ -3406,13 +3455,14 @@ public abstract class TrcMotor implements TrcMotorController, TrcExclusiveSubsys
                                 limitedPower;
                             tracer.traceDebug(
                                 instanceName,
-                                "\n\tonTarget=%s(%f/%f)\n\texpired=%s, stalled=%s, powerLimit=%f" +
+                                "\n\tonTarget=%s(%f/%f)\n\texpired=%s, stalled=%s, inHoldDeadband=%s, powerLimit=%f" +
                                 "\n\tpidPower=%f, limitedPower=%f, power=%f",
                                 onTarget,
                                 taskParams.softwarePidCtrl == posPidCtrl ? getPosition() :
                                     taskParams.softwarePidCtrl == velPidCtrl ? getVelocity() : getCurrent(),
                                 taskParams.softwarePidCtrl.getPositionSetpoint(),
-                                expired, stalled, taskParams.powerLimit, pidPower, limitedPower, power);
+                                expired, stalled, taskParams.inHoldDeadband, taskParams.powerLimit, pidPower,
+                                limitedPower, power);
                             if (tracePidInfo)
                             {
                                 taskParams.softwarePidCtrl.printPidInfo(tracer, verbosePidInfo, battery);
