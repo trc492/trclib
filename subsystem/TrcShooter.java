@@ -39,7 +39,8 @@ import trclib.timer.TrcTimer;
  * This class implements a platform independent auto shooter subsystem. It consists of one or two shoot motors and
  * optionally a tilt motor and/or a pan motor. It provides methods to automate the shooting operation which includes
  * aiming by panning and tilting to the specified angles and spinning the shoot motors to the specified velocity.
- * It then uses the caller provided shoot method to deliver the object to the shooter and signals completion if necessary.
+ * It then uses the caller provided shoot method to deliver the object to the shooter and signals completion if
+ * necessary.
  */
 public class TrcShooter implements TrcExclusiveSubsystem
 {
@@ -995,8 +996,10 @@ public class TrcShooter implements TrcExclusiveSubsystem
                 ",aimOnly=" + (shootOp == null));
             if (!canceled)
             {
-                if ((shooterState.shootMotor1OnTargetEvent == null || shooterState.shootMotor1OnTargetEvent.isSignaled()) &&
-                    (shooterState.shootMotor2OnTargetEvent == null || shooterState.shootMotor2OnTargetEvent.isSignaled()) &&
+                if ((shooterState.shootMotor1OnTargetEvent == null ||
+                     shooterState.shootMotor1OnTargetEvent.isSignaled()) &&
+                    (shooterState.shootMotor2OnTargetEvent == null ||
+                     shooterState.shootMotor2OnTargetEvent.isSignaled()) &&
                     (shooterState.tiltOnTargetEvent == null || shooterState.tiltOnTargetEvent.isSignaled()) &&
                     (shooterState.panOnTargetEvent == null || shooterState.panOnTargetEvent.isSignaled()))
                 {

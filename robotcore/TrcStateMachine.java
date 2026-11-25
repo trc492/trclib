@@ -251,7 +251,8 @@ public class TrcStateMachine<T>
      * @param timeout specifies a timeout value. A zero value means there is no timeout.
      * @param events specifies one or more events to wait for, cannot be null.
      */
-    public void waitForEvents(T nextState, boolean waitForAll, boolean initEventsClear, double timeout, TrcEvent... events)
+    public void waitForEvents(
+        T nextState, boolean waitForAll, boolean initEventsClear, double timeout, TrcEvent... events)
     {
         synchronized (eventList)
         {

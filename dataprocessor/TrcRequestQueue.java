@@ -300,17 +300,17 @@ public class TrcRequestQueue<R>
                 long startNanoTime = TrcTimer.getNanoTime();
                 entry.notifyEvent.signal();
                 long elapsedTime = TrcTimer.getNanoTime() - startNanoTime;
-        
+
                 totalNanoTime += elapsedTime;
                 totalRequests++;
-        
+
                 if (perfTracingEnabled)
                 {
                     tracer.traceInfo(
                         instanceName,
                         "Average request process time=%.6f sec", totalNanoTime/totalRequests/1000000000.0);
                 }
-        
+
                 if (entry.repeat)
                 {
                     //

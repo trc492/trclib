@@ -372,7 +372,8 @@ public class TrcUtil
      * @param value     The value to be checked.
      * @param low       The low limit of the range.
      * @param high      The high limit of the range.
-     * @param inclusive specifies true if the range is inclusive [low, high], otherwise the range is exclusive (low, high).
+     * @param inclusive specifies true if the range is inclusive [low, high], otherwise the range is
+     *                  exclusive (low, high).
      * @return true if the value is within range, false otherwise.
      */
     public static boolean inRange(int value, int low, int high, boolean inclusive)
@@ -399,7 +400,8 @@ public class TrcUtil
      * @param value     The value to be checked.
      * @param low       The low limit of the range.
      * @param high      The high limit of the range.
-     * @param inclusive specifies true if the range is inclusive [low, high], otherwise the range is exclusive (low,high).
+     * @param inclusive specifies true if the range is inclusive [low, high], otherwise the range is
+     *                  exclusive (low,high).
      * @return true if the value is within range, false otherwise.
      */
     public static boolean inRange(double value, double low, double high, boolean inclusive)

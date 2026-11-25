@@ -347,8 +347,10 @@ public class TrcPath
         double velocity = interpolate(point1.velocity, point2.velocity, weight);
         double acceleration = interpolate(point1.acceleration, point2.acceleration, weight);
         double jerk = interpolate(point1.jerk, point2.jerk, weight);
-        double heading = interpolate(point1.pose.angle,
-                                     TrcWarpSpace.getOptimizedTarget(point2.pose.angle, point1.pose.angle, inDegrees? 360.0: 2*Math.PI), weight);
+        double heading = interpolate(
+            point1.pose.angle,
+            TrcWarpSpace.getOptimizedTarget(point2.pose.angle, point1.pose.angle, inDegrees? 360.0: 2*Math.PI),
+            weight);
         return new TrcWaypoint(timestep, new TrcPose2D(x, y, heading), position, velocity, acceleration, jerk);
     }   //interpolate
 
@@ -431,7 +433,8 @@ public class TrcPath
      * Create a new path identical to this one, except the heading values are in degrees. If this path's headings are
      * already in degrees, just return deep copy.
      *
-     * @return A TrcPath object which the same waypoints except all heading values are now in degrees, if they weren't before.
+     * @return A TrcPath object which the same waypoints except all heading values are now in degrees, if they weren't
+     *         before.
      */
     public TrcPath toDegrees()
     {
@@ -452,7 +455,8 @@ public class TrcPath
      * Create a new path identical to this one, except the heading values are in radians. If this path's headings are
      * already in radians, just return deep copy.
      *
-     * @return A TrcPath object which the same waypoints except all heading values are now in radians, if they weren't before.
+     * @return A TrcPath object which the same waypoints except all heading values are now in radians, if they weren't
+     *         before.
      */
     public TrcPath toRadians()
     {

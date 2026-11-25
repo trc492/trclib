@@ -152,7 +152,7 @@ public class TrcPeriodicThread<T>
          * This method is called to set new data after new data have been acquired/processed. This method, along with
          * getData(), provides a thread-safe way to access the data produced or processed by the thread.
          *
-         * @param data specifies newly acquired/processed data. 
+         * @param data specifies newly acquired/processed data.
          */
         public synchronized void setData(T data)
         {
@@ -297,7 +297,7 @@ public class TrcPeriodicThread<T>
     /**
      * This method is called to set new data after new data have been acquired/processed.
      *
-     * @param data specifies newly acquired/processed data. 
+     * @param data specifies newly acquired/processed data.
      */
     public void setData(T data)
     {

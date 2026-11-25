@@ -739,7 +739,7 @@ public class TrcRollerIntake implements TrcExclusiveSubsystem
             ActionParams ap = (ActionParams) context;
             boolean gotObject = hasObject();
             boolean actionPending = false;
-    
+
             if (ap.intakeAction && !gotObject)
             {
                 // We are intaking but we don't have the object yet, enable front and back trigger if there is one.

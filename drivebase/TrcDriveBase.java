@@ -1662,10 +1662,10 @@ public abstract class TrcDriveBase implements TrcExclusiveSubsystem
      * @param owner     specifies the ID string of the caller for checking ownership, can be null if caller is not
      *                  ownership aware.
      * @param magnitude specifies the speed setting for the outside wheel in a turn, forward or backwards, +1 to -1.
-     * @param curve     specifies the rate of turn, constant for different forward speeds. Set curve less than 0 for left
-     *                  turn or curve greater than 0 for right turn. Set curve = e^(-r/w) to get a turn radius r for
-     *                  wheel base w of your robot. Conversely, turn radius r = -ln(curve)*w for a given value of curve
-     *                  and wheel base w.
+     * @param curve     specifies the rate of turn, constant for different forward speeds. Set curve less than 0 for
+     *                  left turn or curve greater than 0 for right turn. Set curve = e^(-r/w) to get a turn radius r
+     *                  for wheel base w of your robot. Conversely, turn radius r = -ln(curve)*w for a given value of
+     *                  curve and wheel base w.
      * @param inverted  specifies true to invert control (i.e. robot front becomes robot back).
      * @param driveTime specifies the amount of time in seconds after which the drive base will stop.
      * @param event     specifies the event to signal when driveTime has expired, can be null if not provided.
@@ -1727,10 +1727,10 @@ public abstract class TrcDriveBase implements TrcExclusiveSubsystem
      * @param owner     specifies the ID string of the caller for checking ownership, can be null if caller is not
      *                  ownership aware.
      * @param magnitude specifies the speed setting for the outside wheel in a turn, forward or backwards, +1 to -1.
-     * @param curve     specifies the rate of turn, constant for different forward speeds. Set curve less than 0 for left
-     *                  turn or curve greater than 0 for right turn. Set curve = e^(-r/w) to get a turn radius r for
-     *                  wheel base w of your robot. Conversely, turn radius r = -ln(curve)*w for a given value of curve
-     *                  and wheel base w.
+     * @param curve     specifies the rate of turn, constant for different forward speeds. Set curve less than 0 for
+     *                  left turn or curve greater than 0 for right turn. Set curve = e^(-r/w) to get a turn radius r
+     *                  for wheel base w of your robot. Conversely, turn radius r = -ln(curve)*w for a given value of
+     *                  curve and wheel base w.
      * @param inverted  specifies true to invert control (i.e. robot front becomes robot back).
      */
     public void curveDrive(String owner, double magnitude, double curve, boolean inverted)
@@ -1745,10 +1745,10 @@ public abstract class TrcDriveBase implements TrcExclusiveSubsystem
      * forward and backward. Increasing sensitivity causes sharper turns for fixed values of curve.
      *
      * @param magnitude specifies the speed setting for the outside wheel in a turn, forward or backwards, +1 to -1.
-     * @param curve     specifies the rate of turn, constant for different forward speeds. Set curve less than 0 for left
-     *                  turn or curve greater than 0 for right turn. Set curve = e^(-r/w) to get a turn radius r for
-     *                  wheel base w of your robot. Conversely, turn radius r = -ln(curve)*w for a given value of curve
-     *                  and wheel base w.
+     * @param curve     specifies the rate of turn, constant for different forward speeds. Set curve less than 0 for
+     *                  left turn or curve greater than 0 for right turn. Set curve = e^(-r/w) to get a turn radius r
+     *                  for wheel base w of your robot. Conversely, turn radius r = -ln(curve)*w for a given value of
+     *                  curve and wheel base w.
      * @param inverted  specifies true to invert control (i.e. robot front becomes robot back).
      * @param driveTime specifies the amount of time in seconds after which the drive base will stop.
      * @param event     specifies the event to signal when driveTime has expired, can be null if not provided.

@@ -876,8 +876,8 @@ public class TrcPurePursuitDrive
             {
                 //
                 // For non-holonomic drive base, the robot heading must be pointing to the endpoint of the line segment.
-                // So, we must ignore the provided startpoint heading and compute our own based on the startpoint heading
-                // and the relative angle of the startpoint from the endpoint.
+                // So, we must ignore the provided startpoint heading and compute our own based on the startpoint
+                // heading and the relative angle of the startpoint from the endpoint.
                 //
                 for (int i = 0; i < newPath.getSize() - 1; i++)
                 {

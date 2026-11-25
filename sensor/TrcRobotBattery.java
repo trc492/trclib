@@ -152,7 +152,7 @@ public abstract class TrcRobotBattery
      * This method returns the lowest voltage it has ever seen during the monitoring session.
      *
      * @return lowest battery voltage.
-     * @throws UnsupportedOperationException if voltage is not supported by the system. 
+     * @throws UnsupportedOperationException if voltage is not supported by the system.
      */
     public synchronized double getLowestVoltage()
     {
@@ -168,7 +168,7 @@ public abstract class TrcRobotBattery
      * This method returns the highest voltage it has ever seen during the monitoring session.
      *
      * @return highest battery voltage.
-     * @throws UnsupportedOperationException if voltage is not supported by the system. 
+     * @throws UnsupportedOperationException if voltage is not supported by the system.
      */
     public synchronized double getHighestVoltage()
     {
@@ -184,7 +184,7 @@ public abstract class TrcRobotBattery
      * This method returns the lowest current it has ever seen during the monitoring session.
      *
      * @return lowest battery current.
-     * @throws UnsupportedOperationException if current is not supported by the system. 
+     * @throws UnsupportedOperationException if current is not supported by the system.
      */
     public synchronized double getLowestCurrent()
     {
@@ -200,7 +200,7 @@ public abstract class TrcRobotBattery
      * This method returns the highest current it has ever seen during the monitoring session.
      *
      * @return highest battery current.
-     * @throws UnsupportedOperationException if current is not supported by the system. 
+     * @throws UnsupportedOperationException if current is not supported by the system.
      */
     public synchronized double getHighestCurrent()
     {
@@ -216,7 +216,7 @@ public abstract class TrcRobotBattery
      * This method returns the lowest power it has ever seen during the monitoring session.
      *
      * @return lowest battery power.
-     * @throws UnsupportedOperationException if power is not supported by the system. 
+     * @throws UnsupportedOperationException if power is not supported by the system.
      */
     public synchronized double getLowestPower()
     {
@@ -232,7 +232,7 @@ public abstract class TrcRobotBattery
      * This method returns the highest power it has ever seen during the monitoring session.
      *
      * @return highest battery power.
-     * @throws UnsupportedOperationException if power is not supported by the system. 
+     * @throws UnsupportedOperationException if power is not supported by the system.
      */
     public synchronized double getHighestPower()
     {

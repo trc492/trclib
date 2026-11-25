@@ -92,7 +92,7 @@ public class TrcSwerveDrive extends TrcSimpleDrive
         this.wheelBaseWidth = wheelBaseWidth;
         this.wheelBaseLength = wheelBaseLength;
         this.wheelBaseDiagonal = TrcUtil.magnitude(wheelBaseWidth, wheelBaseLength);
- 
+
         swerveModules = new TrcSwerveModule[4];
         swerveModules[MotorIndex.FrontLeft.value] = flModule;
         swerveModules[MotorIndex.FrontRight.value] = frModule;
