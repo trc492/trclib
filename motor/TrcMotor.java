@@ -458,7 +458,8 @@ public abstract class TrcMotor implements TrcMotorController, TrcExclusiveSubsys
         double calPower;
         boolean calibrating = false;
         TrcEvent zeroCalCallbackEvent = null;
-        Double zeroCalTimeout = null;
+        double zeroCalTimeout = 0.0;
+        Double zeroCalExpiredTime = null;
         // Stall protection.
         double stallMinPower = 0.0;
         double stallTolerance = 0.0;
@@ -1734,7 +1735,8 @@ public abstract class TrcMotor implements TrcMotorController, TrcExclusiveSubsys
         synchronized (taskParams)
         {
             taskParams.calibrating = false;
-            taskParams.zeroCalTimeout = null;
+            taskParams.zeroCalTimeout = 0.0;
+            taskParams.zeroCalExpiredTime = null;
 
             if (taskParams.zeroCalCallbackEvent != null)
             {
@@ -3307,7 +3309,15 @@ public abstract class TrcMotor implements TrcMotorController, TrcExclusiveSubsys
      */
     private boolean zeroCalibratingMotor(double calPower)
     {
-        boolean timedout = taskParams.zeroCalTimeout != null && TrcTimer.getCurrentTime() > taskParams.zeroCalTimeout;
+        // zeroCalibrate may be called before periodic tasks run, e.g. in robotInit. Therefore, don't start the
+        // timeout clock until we are actually starting zero calibrating.
+        if (taskParams.zeroCalExpiredTime == null && taskParams.zeroCalTimeout > 0.0)
+        {
+            taskParams.zeroCalExpiredTime = TrcTimer.getCurrentTime() + taskParams.zeroCalTimeout;
+        }
+
+        boolean timedout =
+            taskParams.zeroCalExpiredTime != null && TrcTimer.getCurrentTime() > taskParams.zeroCalExpiredTime;
         boolean done = isLowerLimitSwitchActive() || taskParams.stalled || timedout;
 
         if (done)
@@ -3339,7 +3349,8 @@ public abstract class TrcMotor implements TrcMotorController, TrcExclusiveSubsys
             setControllerMotorPower(0.0, true, true);
             resetPosition(0.0, false);
             taskParams.stalled = false;
-            taskParams.zeroCalTimeout = null;
+            taskParams.zeroCalExpiredTime = null;
+            taskParams.zeroCalTimeout = 0.0;
         }
         else
         {
@@ -3788,7 +3799,8 @@ public abstract class TrcMotor implements TrcMotorController, TrcExclusiveSubsys
             {
                 taskParams.calPower = calPower;
                 taskParams.notifyEvent = completionEvent;
-                taskParams.zeroCalTimeout = timeout > 0.0? TrcTimer.getCurrentTime() + timeout: null;
+                taskParams.zeroCalTimeout = timeout;
+                taskParams.zeroCalExpiredTime = null;
                 taskParams.calibrating = true;
                 taskParams.prevTime = null;
                 if (callback != null)
