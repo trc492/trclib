@@ -249,7 +249,7 @@ public abstract class TrcSubsystem<Action>
                 completionEvent.signalOnEvents(true, false, events);
             }
         }
-    }   //zeroCalibrate
+    }   //zeroCalibrateAll
 
     /**
      * This method enumerates all subsystems and calls their resetState method.
